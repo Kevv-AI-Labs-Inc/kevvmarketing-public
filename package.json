@@ -15,17 +15,11 @@
     "db:push": "node scripts/db-push-if-configured.mjs"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.10",
     "prettier": "^3.6.2"
   },
   "dependencies": {
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.5",
     "pg": "^8.13.0"
-  },
-  "overrides": {
-    "@esbuild-kit/core-utils": {
-      "esbuild": "^0.25.12"
-    }
   }
 }
