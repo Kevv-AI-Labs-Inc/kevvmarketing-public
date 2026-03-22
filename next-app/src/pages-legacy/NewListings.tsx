@@ -1,0 +1,339 @@
+// legacy page — incrementally migrated
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { trpc } from "@/lib/trpc";
+import {
+    Bath,
+    BedDouble,
+    Clock,
+    Flame,
+    Loader2,
+    MapPin,
+    Ruler,
+    X,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+
+type MlsListing = {
+    id: number;
+    listingKey: string;
+    listingId: string | null;
+    unparsedAddress: string | null;
+    city: string | null;
+    stateOrProvince: string | null;
+    postalCode: string | null;
+    listPrice: string | null;
+    propertyType: string | null;
+    standardStatus: string | null;
+    bedroomsTotal: number | null;
+    bathroomsTotalInteger: number | null;
+    livingArea: string | null;
+    publicRemarks: string | null;
+    modificationTimestamp: string | null;
+    thumbnailUrl?: string | null;
+};
+
+function formatPrice(price: string | null | undefined) {
+    if (!price) return "价格待定";
+    const num = Number(price);
+    if (!Number.isFinite(num)) return price;
+    if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`;
+    if (num >= 1_000) return `$${(num / 1_000).toFixed(0)}K`;
+    return `$${num.toLocaleString()}`;
+}
+
+function displayAddress(item: {
+    unparsedAddress?: string | null;
+    listingId?: string | null;
+    city?: string | null;
+    stateOrProvince?: string | null;
+}) {
+    const full = item.unparsedAddress?.trim();
+    if (full) return full;
+    return [item.city, item.stateOrProvince].filter(Boolean).join(", ") || item.listingId || "地址未知";
+}
+
+function timeAgo(dateStr: string | null | undefined) {
+    if (!dateStr) return "";
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) return "刚刚";
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
+
+export default function NewListings() {
+    const [hours, setHours] = useState("24");
+    const [selectedListing, setSelectedListing] = useState<MlsListing | null>(null);
+
+    const recentHours = Number(hours) || 24;
+
+    const listingsQuery = trpc.mls.getProperties.useQuery(
+        {
+            status: "Active",
+            limit: 100,
+            offset: 0,
+        },
+        { refetchInterval: 5 * 60 * 1000 }
+    );
+
+    // Fetch media for the selected listing
+    const detailQuery = trpc.mls.getPropertyById.useQuery(
+        { listingKey: selectedListing?.listingKey ?? "" },
+        { enabled: !!selectedListing }
+    );
+
+    const listings = (listingsQuery.data ?? []) as MlsListing[];
+
+    const stats = useMemo(() => {
+        const total = listings.length;
+        const cities = new Map<string, number>();
+        for (const item of listings) {
+            const city = item.city || "Unknown";
+            cities.set(city, (cities.get(city) || 0) + 1);
+        }
+        const topCities = Array.from(cities.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+        return { total, topCities };
+    }, [listings]);
+
+    return (
+        <div className="space-y-6 pb-8">
+            {/* Hero header */}
+            <div className="rounded-3xl border border-orange-400/20 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent p-6 text-foreground shadow-sm md:p-8">
+                <div className="flex items-center gap-2 text-sm text-orange-500">
+                    <Flame className="h-4 w-4" />
+                    最新上市
+                </div>
+                <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">
+                    New Listings
+                </h1>
+                <p className="mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">
+                    过去 {recentHours} 小时内刚 Active 的房源。实时关注最新机会。
+                </p>
+            </div>
+
+            {/* Filters + stats */}
+            <div className="flex flex-wrap items-center gap-3">
+                <Select value={hours} onValueChange={setHours}>
+                    <SelectTrigger className="w-40">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="6">最近 6 小时</SelectItem>
+                        <SelectItem value="12">最近 12 小时</SelectItem>
+                        <SelectItem value="24">最近 24 小时</SelectItem>
+                        <SelectItem value="48">最近 48 小时</SelectItem>
+                        <SelectItem value="72">最近 3 天</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                <Badge variant="secondary" className="gap-1">
+                    <Flame className="h-3 w-3" />
+                    {stats.total} 套新房源
+                </Badge>
+
+                {stats.topCities.slice(0, 3).map(([city, count]) => (
+                    <Badge key={city} variant="outline">
+                        {city} ({count})
+                    </Badge>
+                ))}
+            </div>
+
+            <div className="flex gap-6">
+                {/* Listing grid */}
+                <div className="flex-1 min-w-0">
+                    {listingsQuery.isLoading ? (
+                        <div className="flex items-center justify-center py-16 text-muted-foreground">
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            正在获取最新房源...
+                        </div>
+                    ) : listings.length === 0 ? (
+                        <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
+                            <Flame className="mx-auto h-8 w-8 mb-3 opacity-30" />
+                            <p>过去 {recentHours} 小时内没有新上市房源</p>
+                            <p className="text-xs mt-1">试试扩大时间范围</p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            {listings.map((item) => (
+                                <Card
+                                    key={item.listingKey}
+                                    className={`overflow-hidden cursor-pointer transition-all hover:shadow-md hover:border-primary/30 ${selectedListing?.listingKey === item.listingKey
+                                        ? "ring-2 ring-primary/40 border-primary/40"
+                                        : ""
+                                        }`}
+                                    onClick={() => setSelectedListing(item)}
+                                >
+                                    {/* Thumbnail */}
+                                    {item.thumbnailUrl ? (
+                                        <div className="relative">
+                                            <img
+                                                src={item.thumbnailUrl}
+                                                alt={displayAddress(item)}
+                                                className="h-36 w-full object-cover"
+                                            />
+                                            <Badge className="absolute top-2 left-2 gap-1 bg-orange-500/90 text-white border-0 text-[10px]">
+                                                <Flame className="h-3 w-3" />
+                                                New
+                                            </Badge>
+                                        </div>
+                                    ) : (
+                                        <div className="h-36 bg-gradient-to-br from-muted/60 to-muted/20 flex items-center justify-center">
+                                            <Badge className="gap-1 bg-orange-500/90 text-white border-0 text-[10px]">
+                                                <Flame className="h-3 w-3" />
+                                                New
+                                            </Badge>
+                                        </div>
+                                    )}
+
+                                    <CardContent className="p-3.5">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-sm truncate">
+                                                    {formatPrice(item.listPrice)}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                                    {displayAddress(item)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2.5 mt-2.5 text-xs text-muted-foreground">
+                                            {item.bedroomsTotal != null && (
+                                                <span className="inline-flex items-center gap-1">
+                                                    <BedDouble className="h-3 w-3" />
+                                                    {item.bedroomsTotal}
+                                                </span>
+                                            )}
+                                            {item.bathroomsTotalInteger != null && (
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Bath className="h-3 w-3" />
+                                                    {item.bathroomsTotalInteger}
+                                                </span>
+                                            )}
+                                            {item.livingArea && (
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Ruler className="h-3 w-3" />
+                                                    {Number(item.livingArea).toLocaleString()} ft²
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center justify-between mt-2.5">
+                                            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                                                <MapPin className="h-3 w-3" />
+                                                {item.city || "NYC"}
+                                            </span>
+                                            <span className="inline-flex items-center gap-1 text-[11px] text-orange-500">
+                                                <Clock className="h-3 w-3" />
+                                                {timeAgo(item.modificationTimestamp)}
+                                            </span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Detail panel */}
+                {selectedListing && (
+                    <div className="hidden lg:block w-[380px] shrink-0">
+                        <Card className="sticky top-4">
+                            <div className="flex items-center justify-between p-4 border-b">
+                                <h3 className="font-semibold text-sm">房源详情</h3>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => setSelectedListing(null)}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <ScrollArea className="h-[calc(100vh-200px)]">
+                                <div className="p-4 space-y-4">
+                                    {/* Thumbnail */}
+                                    {selectedListing.thumbnailUrl && (
+                                        <img
+                                            src={selectedListing.thumbnailUrl}
+                                            alt="Listing"
+                                            className="w-full rounded-lg object-cover"
+                                        />
+                                    )}
+
+                                    {/* Key stats */}
+                                    <div>
+                                        <p className="font-bold text-lg">{formatPrice(selectedListing.listPrice)}</p>
+                                        <p className="text-sm text-muted-foreground">{displayAddress(selectedListing)}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {[selectedListing.city, selectedListing.stateOrProvince, selectedListing.postalCode]
+                                                .filter(Boolean)
+                                                .join(", ")}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedListing.propertyType && (
+                                            <Badge variant="secondary">{selectedListing.propertyType}</Badge>
+                                        )}
+                                        {selectedListing.bedroomsTotal != null && (
+                                            <Badge variant="outline">
+                                                <BedDouble className="mr-1 h-3 w-3" />
+                                                {selectedListing.bedroomsTotal} bed
+                                            </Badge>
+                                        )}
+                                        {selectedListing.bathroomsTotalInteger != null && (
+                                            <Badge variant="outline">
+                                                <Bath className="mr-1 h-3 w-3" />
+                                                {selectedListing.bathroomsTotalInteger} bath
+                                            </Badge>
+                                        )}
+                                        {selectedListing.livingArea && (
+                                            <Badge variant="outline">
+                                                <Ruler className="mr-1 h-3 w-3" />
+                                                {Number(selectedListing.livingArea).toLocaleString()} ft²
+                                            </Badge>
+                                        )}
+                                    </div>
+
+                                    <Badge className="gap-1 bg-orange-500/90 text-white border-0">
+                                        <Clock className="h-3 w-3" />
+                                        Listed {timeAgo(selectedListing.modificationTimestamp)}
+                                    </Badge>
+
+                                    {/* Public remarks */}
+                                    {(detailQuery.data as any)?.publicRemarks && (
+                                        <div>
+                                            <p className="text-xs font-semibold text-muted-foreground mb-1">描述</p>
+                                            <p className="text-sm leading-relaxed">
+                                                {(detailQuery.data as any).publicRemarks}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <p className="text-[10px] text-muted-foreground pt-2 border-t">
+                                        Listing Key: {selectedListing.listingKey}
+                                        {selectedListing.listingId && ` · MLS #${selectedListing.listingId}`}
+                                    </p>
+                                </div>
+                            </ScrollArea>
+                        </Card>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

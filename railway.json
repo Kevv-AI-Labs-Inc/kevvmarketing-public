@@ -1,0 +1,13 @@
+{
+    "$schema": "https://railway.com/railway.schema.json",
+    "build": {
+        "builder": "NIXPACKS",
+        "nixpacksConfigPath": "nixpacks.toml",
+        "buildCommand": "cd next-app && npm ci && npm run build"
+    },
+    "deploy": {
+        "startCommand": "cd next-app && HOSTNAME=0.0.0.0 PORT=${PORT:-3000} npx next start -p ${PORT:-3000}",
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 3
+    }
+}

@@ -1,0 +1,4 @@
+# Tell NIXPACKS to skip auto-detected install phase.
+# We handle installation ourselves in the buildCommand (cd next-app && npm ci).
+[phases.install]
+cmds = ["echo 'Skipping root install — deps managed in next-app/'"]

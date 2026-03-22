@@ -1,0 +1,26 @@
+{
+  "name": "kevv-marketing-app",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.18.1"
+  },
+  "scripts": {
+    "dev": "cd next-app && npm run dev",
+    "build": "cd next-app && npm run build",
+    "start": "cd next-app && npm run start",
+    "check": "cd next-app && npx tsc --noEmit",
+    "format": "prettier --write .",
+    "db:push": "node scripts/db-push-if-configured.mjs"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.4",
+    "prettier": "^3.6.2"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "drizzle-orm": "^0.44.5",
+    "pg": "^8.13.0"
+  }
+}
