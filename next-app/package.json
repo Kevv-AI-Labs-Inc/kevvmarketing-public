@@ -10,8 +10,8 @@
     "lint": "npm run check:routes && eslint"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1008.0",
-    "@aws-sdk/s3-request-presigner": "^3.1008.0",
+    "@aws-sdk/client-s3": "^3.1014.0",
+    "@aws-sdk/s3-request-presigner": "^3.1014.0",
     "@google/generative-ai": "^0.24.1",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -41,9 +41,9 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.90.21",
-    "@trpc/client": "^11.0.0",
-    "@trpc/react-query": "^11.0.0",
-    "@trpc/server": "^11.0.0",
+    "@trpc/client": "^11.14.1",
+    "@trpc/react-query": "^11.14.1",
+    "@trpc/server": "^11.14.1",
     "axios": "^1.13.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -53,11 +53,11 @@
     "drizzle-orm": "^0.45.1",
     "embla-carousel-react": "^8.6.0",
     "geist": "^1.7.0",
-    "google-auth-library": "^10.6.1",
+    "google-auth-library": "^10.6.2",
     "input-otp": "^1.4.2",
     "jose": "^6.2.1",
     "lucide-react": "^0.577.0",
-    "next": "16.1.6",
+    "next": "16.2.1",
     "next-auth": "^5.0.0-beta.30",
     "next-themes": "^0.4.6",
     "openai": "^6.27.0",
@@ -83,10 +83,12 @@
     "@types/pg": "^8.18.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "drizzle-kit": "^0.31.9",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "flatted": "^3.4.2"
   }
 }

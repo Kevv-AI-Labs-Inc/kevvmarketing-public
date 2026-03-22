@@ -164,7 +164,7 @@ async function alignTableSchemas() {
 
 console.log("[db:push] Running drizzle generate + migrate...");
 
-const generateResult = run("pnpm", ["drizzle-kit", "generate"]);
+const generateResult = run("npm", ["exec", "--", "drizzle-kit", "generate"]);
 if (generateResult.status !== 0) {
   const message = `[db:push] drizzle generate failed with exit code ${generateResult.status}.`;
   if (strictMode) {
@@ -177,7 +177,7 @@ if (generateResult.status !== 0) {
   process.exit(0);
 }
 
-const migrateResult = run("pnpm", ["drizzle-kit", "migrate"]);
+const migrateResult = run("npm", ["exec", "--", "drizzle-kit", "migrate"]);
 if (migrateResult.status !== 0) {
   const benign = isBenignDrizzleError(migrateResult.output);
   if (benign) {
