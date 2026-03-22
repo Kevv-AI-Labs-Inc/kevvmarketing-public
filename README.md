@@ -1,5 +1,7 @@
 # Kevv Marketing
 
+[![CI](https://github.com/Kevv-AI-Labs-Inc/kevvmarketing-public/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Kevv-AI-Labs-Inc/kevvmarketing-public/actions/workflows/ci.yml)
+
 Kevv Marketing is the official open-source codebase for the marketing.kevv.ai product. It includes:
 
 - Next.js 16 app-router frontend
