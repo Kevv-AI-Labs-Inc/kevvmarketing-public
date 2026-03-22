@@ -58,12 +58,16 @@ This repository is intended to be readable, deployable, and forkable:
 - `.env.example` documents the required runtime configuration
 - route checks run during lint/build to prevent broken public paths
 - official branding remains the default, while forks can override it via env vars
+- Kevv trademarks, product names, domains, logos, and hosted services are not licensed as part of the source code license
+- internal developer agent skills are intentionally maintained outside the public repo; see [docs/agent-skills.md](./docs/agent-skills.md)
 
 Repository guidelines:
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
 - [SECURITY.md](./SECURITY.md)
+- [TRADEMARKS.md](./TRADEMARKS.md)
+- [NOTICE](./NOTICE)
 
 ## License
 
-MIT. See [LICENSE](./LICENSE).
+Apache-2.0. See [LICENSE](./LICENSE).

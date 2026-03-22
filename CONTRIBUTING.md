@@ -55,6 +55,8 @@ Include:
 
 Keep PRs scoped. If you want to rename internal compatibility fields, remove legacy env aliases, or make other breaking changes, split that into a separate PR.
 
+By submitting a contribution, you agree that your contribution will be licensed under the repository's Apache-2.0 license.
+
 ## Areas That Need Extra Care
 
 - authentication and session handling
@@ -79,3 +81,4 @@ Examples:
 For general product questions, open an issue.
 
 For security problems, do not open a public issue. Follow [SECURITY.md](./SECURITY.md).
+For trademark, logo, domain, or official-brand usage, follow [TRADEMARKS.md](./TRADEMARKS.md).
