@@ -16,6 +16,14 @@ Company site:
 
 - [kevv.ai](https://kevv.ai)
 
+## Status
+
+This is an active, early-stage product repository.
+
+- the hosted Kevv service continues to evolve quickly
+- public APIs, internal schemas, and feature boundaries may change
+- pull requests are welcome, but maintainers may defer broad refactors until product direction is more stable
+
 ## Positioning
 
 This repository is the official branded product codebase. It is open source, but it is also the same codebase used to run the hosted Kevv Marketing service. If you fork it, you can still override public branding through environment variables without changing the core app structure.
@@ -60,6 +68,7 @@ This repository is intended to be readable, deployable, and forkable:
 - official branding remains the default, while forks can override it via env vars
 - Kevv trademarks, product names, domains, logos, and hosted services are not licensed as part of the source code license
 - internal developer agent skills are intentionally maintained outside the public repo; see [docs/agent-skills.md](./docs/agent-skills.md)
+- CI runs on every push and pull request to keep `main` deployable
 
 Repository guidelines:
 
@@ -67,6 +76,12 @@ Repository guidelines:
 - [SECURITY.md](./SECURITY.md)
 - [TRADEMARKS.md](./TRADEMARKS.md)
 - [NOTICE](./NOTICE)
+
+## Public Maintenance Notes
+
+- maintainers prioritize security fixes, deployability, and product-critical bugs over broad cleanup PRs
+- feature scaffolds may exist ahead of full production rollout
+- if a contribution changes deploy behavior, auth, routing, or database shape, expect manual review
 
 ## License
 
