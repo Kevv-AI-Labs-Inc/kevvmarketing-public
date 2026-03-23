@@ -12,8 +12,10 @@ import {
   BedDouble,
   ChevronDown,
   ChevronUp,
+  Clock3,
   Copy,
   ExternalLink,
+  Eye,
   Loader2,
   MapPin,
   Plus,
@@ -92,8 +94,60 @@ function parsePrefillFromUrl() {
   };
 }
 
+function formatActivityTime(value: string | null) {
+  if (!value) return "暂无活动";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(parsed);
+}
+
+function describeFollowUpSignal(signal: string) {
+  switch (signal) {
+    case "hot":
+      return "高意向";
+    case "warm":
+      return "值得跟进";
+    case "new":
+      return "刚创建";
+    default:
+      return "待唤醒";
+  }
+}
+
+function followUpTone(signal: string) {
+  switch (signal) {
+    case "hot":
+      return "border-red-200 bg-red-50 text-red-700";
+    case "warm":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "new":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    default:
+      return "border-stone-200 bg-stone-50 text-stone-600";
+  }
+}
+
+function describeSessionStatus(status: string) {
+  switch (status) {
+    case "active":
+      return "可访问";
+    case "revoked":
+      return "已撤销";
+    case "expired":
+      return "已过期";
+    default:
+      return status;
+  }
+}
+
 export default function MagicShareStudio() {
   const { user } = useAuth();
+  const utils = trpc.useUtils();
   const prefill = useMemo(() => parsePrefillFromUrl(), []);
 
   const [search, setSearch] = useState("");
@@ -203,17 +257,32 @@ export default function MagicShareStudio() {
 
   const createShareMutation = trpc.share.createSession.useMutation({
     onSuccess: async (data) => {
-      const shareUrl = data.shareUrl ?? `${window.location.origin}${data.sharePath}`;
+      const shareUrl = data.shareUrl ?? window.location.origin + data.sharePath;
       setGeneratedShareUrl(shareUrl);
       try {
         await navigator.clipboard.writeText(shareUrl);
       } catch {
         // Ignore clipboard permission errors.
       }
+      await utils.share.listMine.invalidate();
       toast.success("分享链接已生成", { description: shareUrl });
     },
     onError: (error) => {
       toast.error("生成分享失败", { description: error.message });
+    },
+  });
+
+  const mySharesQuery = trpc.share.listMine.useQuery(undefined, {
+    refetchOnWindowFocus: false,
+  });
+
+  const revokeShareMutation = trpc.share.revokeSession.useMutation({
+    onSuccess: async () => {
+      await utils.share.listMine.invalidate();
+      toast.success("分享链接已撤销");
+    },
+    onError: (error) => {
+      toast.error("撤销失败", { description: error.message });
     },
   });
 
@@ -287,6 +356,20 @@ export default function MagicShareStudio() {
       agentBranding,
       externalListings: [],
     });
+  };
+
+  const handleCopyShareLink = async (sharePath: string) => {
+    const shareUrl = window.location.origin + sharePath;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("分享链接已复制", { description: shareUrl });
+    } catch {
+      toast.error("复制失败，请检查浏览器权限");
+    }
+  };
+
+  const handleOpenShare = (sharePath: string) => {
+    window.open(window.location.origin + sharePath, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -606,6 +689,124 @@ export default function MagicShareStudio() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle>My Shares</CardTitle>
+            <CardDescription>查看最近生成的分享链接、互动热度和撤销状态，优先跟进高意向客户。</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{mySharesQuery.data?.length ?? 0} 条</Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={mySharesQuery.isFetching}
+              onClick={() => mySharesQuery.refetch()}
+            >
+              {mySharesQuery.isFetching ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  刷新中
+                </>
+              ) : "刷新"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {mySharesQuery.isLoading ? (
+            <div className="flex items-center py-8 text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              正在读取历史分享...
+            </div>
+          ) : (mySharesQuery.data?.length ?? 0) === 0 ? (
+            <div className="rounded-2xl border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
+              还没有历史分享。先生成第一条 Magic Share，再回来查看互动表现。
+            </div>
+          ) : (
+            <div className="grid gap-4 xl:grid-cols-2">
+              {mySharesQuery.data?.map((share) => {
+                const engagementCount =
+                  share.eventCounts.contactClick +
+                  share.eventCounts.tourInterest +
+                  share.eventCounts.routeRequest +
+                  share.eventCounts.wechatCopy;
+
+                return (
+                  <div key={share.token} className="rounded-2xl border bg-muted/10 p-4 shadow-sm">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">{share.title || "未命名分享"}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {(share.clientName || "未指定客户") + " · " + share.sharePath}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant={share.status === "active" ? "default" : "secondary"}>
+                          {describeSessionStatus(share.status)}
+                        </Badge>
+                        <Badge variant="outline" className={followUpTone(share.followUpSignal)}>
+                          {describeFollowUpSignal(share.followUpSignal)}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                      <div className="rounded-xl border bg-background/70 p-3">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">浏览</p>
+                        <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                          {share.viewCount}
+                        </div>
+                      </div>
+                      <div className="rounded-xl border bg-background/70 p-3">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">房源</p>
+                        <p className="mt-2 text-lg font-semibold">{share.listingCount}</p>
+                      </div>
+                      <div className="rounded-xl border bg-background/70 p-3">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">详情打开</p>
+                        <p className="mt-2 text-lg font-semibold">{share.eventCounts.listingOpen}</p>
+                      </div>
+                      <div className="rounded-xl border bg-background/70 p-3">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">有效互动</p>
+                        <p className="mt-2 text-lg font-semibold">{engagementCount}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock3 className="h-3.5 w-3.5" />
+                      {share.lastActivityAt
+                        ? "最近活动 " + formatActivityTime(share.lastActivityAt)
+                        : "创建于 " + formatActivityTime(share.createdAt)}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleCopyShareLink(share.sharePath)}>
+                        <Copy className="mr-2 h-4 w-4" />
+                        复制链接
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleOpenShare(share.sharePath)}>
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        打开分享页
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        disabled={share.status !== "active" || revokeShareMutation.isPending}
+                        onClick={() => revokeShareMutation.mutate({ token: share.token })}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        撤销
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
