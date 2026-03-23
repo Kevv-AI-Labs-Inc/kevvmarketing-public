@@ -272,7 +272,7 @@ export default function MagicShareStudio() {
     },
   });
 
-  const mySharesQuery = trpc.share.listMine.useQuery(undefined, {
+  const mySharesQuery = trpc.share.listMine.useQuery({ sessionType: "listing_share" }, {
     refetchOnWindowFocus: false,
   });
 
