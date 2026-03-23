@@ -162,6 +162,7 @@ export const shareSessions = pgTable(
     createdByName: varchar("created_by_name", { length: 255 }),
     createdByEmail: varchar("created_by_email", { length: 320 }),
     agentBranding: jsonb("agent_branding").notNull(),
+    shareConfig: jsonb("share_config"),
     listingKeys: jsonb("listing_keys").notNull(), // string[]
     tourPlan: jsonb("tour_plan"), // { startTime, slotMinutes, travelMinutes, stops: [...] }
     externalListings: jsonb("external_listings"), // ExternalListing[]
