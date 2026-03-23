@@ -1,32 +1,29 @@
 // legacy page — incrementally migrated
-import { MarketingCapabilityBoard, MarketingExtensionGrid } from "@/components/marketing/MarketingCapabilityBoard";
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { pickText } from "@/i18n/copy";
+import { dashboardPageCopy } from "@/i18n/dashboard-pages";
 import { useT } from "@/i18n";
 import {
-  getCapabilitiesByCategory,
-  getCapabilityCounts,
-  getCapabilityStatusLabel,
+  dashboardMenuSections,
   getLocalizedText,
-  marketingCapabilities,
-  marketingCapabilityCategories,
+  ownerDashboardSection,
 } from "@/lib/marketing-capabilities";
 import { trpc } from "@/lib/trpc";
 import { siteConfig } from "@/lib/site";
 import {
+  ArrowRight,
+  ArrowUpRight,
+  BarChart3,
   Building2,
-  Database,
-  Eye,
-  Lightbulb,
-  Loader2,
-  RefreshCw,
-  TrendingUp,
-  Users,
-  Zap,
+  Clapperboard,
+  Share2,
+  Sparkles,
 } from "lucide-react";
-import { useState } from "react";
 
 function getGreetingKey(): string {
   const hour = new Date().getHours();
@@ -35,315 +32,342 @@ function getGreetingKey(): string {
   return "dashboard.greetingEvening";
 }
 
-function coverageBadgeClass(status: "ready" | "partial" | "planned") {
-  switch (status) {
-    case "ready":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    case "partial":
-      return "border-amber-200 bg-amber-50 text-amber-700";
-    case "planned":
-      return "border-slate-200 bg-slate-100 text-slate-700";
+function formatSyncStamp(locale: "zh" | "en", raw: string | null | undefined, fallback: string) {
+  if (!raw) return fallback;
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return fallback;
+
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function normalizeCount(raw: unknown): number | null {
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (typeof raw === "string") {
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : null;
   }
+  if (typeof raw === "bigint") return Number(raw);
+  return null;
 }
 
 export default function Home() {
   const { user } = useAuth();
   const { t, locale } = useT();
+  const copy = dashboardPageCopy.home;
+  const isOwner = user?.role === "admin";
 
-  const {
-    data: statsData,
-    refetch: refetchStats,
-    isLoading: isStatsLoading,
-    isError: isStatsError,
-  } = trpc.mls.getSyncStatus.useQuery(undefined, {
-    refetchOnWindowFocus: true,
-    refetchInterval: 60_000,
-  });
-
-  const [syncStatus, setSyncStatus] = useState<string | null>(null);
-  const triggerSync = trpc.mls.triggerSync.useMutation({
-    onMutate: () => setSyncStatus("syncing"),
-    onSuccess: (data) => {
-      if (!data.success) setSyncStatus("error");
-      else if (data.started) setSyncStatus("started");
-      else setSyncStatus("syncing");
-      if (data.success) refetchStats();
-      setTimeout(() => setSyncStatus(null), 4000);
-    },
-    onError: () => {
-      setSyncStatus("error");
-      setTimeout(() => setSyncStatus(null), 4000);
-    },
-  });
-
-  const normalizeCount = (raw: unknown): number | null => {
-    if (typeof raw === "number" && Number.isFinite(raw)) return raw;
-    if (typeof raw === "string") {
-      const parsed = Number(raw);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-    if (typeof raw === "bigint") return Number(raw);
-    return null;
-  };
+  const { data: statsData, isLoading: isStatsLoading, isError: isStatsError } =
+    trpc.mls.getSyncStatus.useQuery(undefined, {
+      refetchOnWindowFocus: true,
+      refetchInterval: 60_000,
+    });
 
   const propertyCountValue = normalizeCount(statsData?.totalProperties);
-  const propertyCount = isStatsLoading
-    ? "—"
-    : isStatsError
-      ? "—"
-      : (propertyCountValue ?? 0).toLocaleString();
-  const canTriggerSync = statsData?.canTriggerSync ?? false;
+  const propertyCount = isStatsLoading || isStatsError ? "—" : (propertyCountValue ?? 0).toLocaleString();
+  const lastSyncLabel = formatSyncStamp(
+    locale,
+    statsData?.lastSyncAt ?? null,
+    pickText(locale, copy.stats.syncUnknown),
+  );
 
-  const coverageCounts = getCapabilityCounts();
-  const focusItems = marketingCapabilities.filter((item) => item.status !== "ready").slice(0, 4);
+  const moduleSections = isOwner
+    ? [...dashboardMenuSections.filter((section) => section.id !== "overview"), ownerDashboardSection]
+    : dashboardMenuSections.filter((section) => section.id !== "overview");
+
+  const inventoryReachCount =
+    dashboardMenuSections.find((section) => section.id === "inventory-reach")?.items.length ?? 0;
+  const clientFlowCount =
+    dashboardMenuSections.find((section) => section.id === "client-flow")?.items.length ?? 0;
+  const contentCount = dashboardMenuSections.find((section) => section.id === "content")?.items.length ?? 0;
+
+  const statCards = [
+    {
+      id: "inventory",
+      icon: Building2,
+      value: propertyCount,
+      title: pickText(locale, copy.stats.inventoryTitle),
+      description: pickText(locale, copy.stats.inventoryDescription),
+      accent: "border-stone-200/80 bg-white/90",
+    },
+    {
+      id: "reach",
+      icon: Share2,
+      value: inventoryReachCount.toString(),
+      title: pickText(locale, copy.stats.reachTitle),
+      description: pickText(locale, copy.stats.reachDescription),
+      accent: "border-amber-200/70 bg-amber-50/80",
+    },
+    {
+      id: "presentation",
+      icon: Sparkles,
+      value: clientFlowCount.toString(),
+      title: pickText(locale, copy.stats.presentationTitle),
+      description: pickText(locale, copy.stats.presentationDescription),
+      accent: "border-sky-200/70 bg-sky-50/85",
+    },
+    {
+      id: "content",
+      icon: Clapperboard,
+      value: contentCount.toString(),
+      title: pickText(locale, copy.stats.contentTitle),
+      description: pickText(locale, copy.stats.contentDescription),
+      accent: "border-emerald-200/70 bg-emerald-50/80",
+    },
+  ] as const;
+
+  const workspaceCards = [
+    {
+      id: "inventory",
+      icon: Building2,
+      route: "/listings",
+      eyebrow: pickText(locale, copy.workspaces.inventory.eyebrow),
+      title: pickText(locale, copy.workspaces.inventory.title),
+      description: pickText(locale, copy.workspaces.inventory.description),
+      actionLabel: pickText(locale, copy.workspaces.inventory.actionLabel),
+      modules: copy.workspaces.inventory.modules.map((module) => pickText(locale, module)),
+      accent: "from-stone-100 via-white to-stone-50",
+    },
+    {
+      id: "reach",
+      icon: Share2,
+      route: "/magic-share",
+      eyebrow: pickText(locale, copy.workspaces.reach.eyebrow),
+      title: pickText(locale, copy.workspaces.reach.title),
+      description: pickText(locale, copy.workspaces.reach.description),
+      actionLabel: pickText(locale, copy.workspaces.reach.actionLabel),
+      modules: copy.workspaces.reach.modules.map((module) => pickText(locale, module)),
+      accent: "from-amber-100 via-white to-orange-50",
+    },
+    {
+      id: "presentation",
+      icon: BarChart3,
+      route: "/smart-match",
+      eyebrow: pickText(locale, copy.workspaces.presentation.eyebrow),
+      title: pickText(locale, copy.workspaces.presentation.title),
+      description: pickText(locale, copy.workspaces.presentation.description),
+      actionLabel: pickText(locale, copy.workspaces.presentation.actionLabel),
+      modules: copy.workspaces.presentation.modules.map((module) => pickText(locale, module)),
+      accent: "from-sky-100 via-white to-cyan-50",
+    },
+    {
+      id: "content",
+      icon: Clapperboard,
+      route: "/flyer-studio",
+      eyebrow: pickText(locale, copy.workspaces.content.eyebrow),
+      title: pickText(locale, copy.workspaces.content.title),
+      description: pickText(locale, copy.workspaces.content.description),
+      actionLabel: pickText(locale, copy.workspaces.content.actionLabel),
+      modules: copy.workspaces.content.modules.map((module) => pickText(locale, module)),
+      accent: "from-emerald-100 via-white to-teal-50",
+    },
+  ] as const;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 py-2">
-      <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/8 via-amber-500/4 to-transparent p-6 md:p-8">
-        <div className="absolute right-0 top-0 h-72 w-72 translate-x-1/3 -translate-y-1/2 rounded-full bg-primary/5 blur-3xl" />
-        <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
-              <Zap className="h-4 w-4" />
-              {siteConfig.name}
+      <section className="relative overflow-hidden rounded-[28px] border border-stone-200/80 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.18),_transparent_34%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(250,248,244,0.96))] p-6 shadow-sm md:p-8">
+        <div className="absolute -right-16 top-0 h-48 w-48 rounded-full bg-amber-200/20 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-32 w-32 rounded-full bg-sky-200/20 blur-3xl" />
+
+        <div className="relative grid gap-8 xl:grid-cols-[1.2fr_0.85fr]">
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="rounded-full border-stone-300/80 bg-white/80 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-stone-700">
+                {siteConfig.shortName} · {pickText(locale, copy.heroBadge)}
+              </Badge>
+              <Badge variant="outline" className="rounded-full border-stone-300/70 bg-white/60 px-3 py-1 text-[11px] text-stone-600">
+                {pickText(locale, copy.stats.syncLabel)} · {lastSyncLabel}
+              </Badge>
             </div>
-            <h1 className="text-2xl font-serif md:text-3xl">
-              {t(getGreetingKey())}，{user?.name || "Agent"}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {locale === "zh"
-                ? "我把 Marketing 工作台按你给的十大功能重新归类了：需求项、当前承载模块、覆盖状态和缺口现在都在一张视图里。"
-                : "The marketing workbench is now reorganized around your ten requested functions, with requirement mapping, current modules, coverage status, and gaps in one place."}
-            </p>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium uppercase tracking-[0.28em] text-stone-500">
+                {t(getGreetingKey())}，{user?.name || "Agent"}
+              </p>
+              <h1 className="max-w-4xl text-3xl font-serif tracking-tight text-stone-900 md:text-4xl">
+                {pickText(locale, copy.heroTitle)}
+              </h1>
+              <p className="max-w-3xl text-sm leading-7 text-stone-600 md:text-[15px]">
+                {pickText(locale, copy.heroDescription)}
+              </p>
+              <p className="max-w-3xl text-sm leading-6 text-stone-500">
+                {pickText(locale, copy.heroFootnote)}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Button asChild size="lg" className="rounded-full px-5 shadow-sm">
+                <Link href="/listings">
+                  {pickText(locale, copy.actions.openListings)}
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80 px-5">
+                <Link href="/magic-share">
+                  {pickText(locale, copy.actions.launchShare)}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="ghost" className="rounded-full px-5 text-stone-700 hover:bg-white/80">
+                <Link href="/flyer-studio">
+                  {pickText(locale, copy.actions.createFlyer)}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
-          <div className="grid min-w-[260px] grid-cols-3 gap-3 rounded-2xl border border-border/60 bg-background/80 p-4 backdrop-blur">
-            {(["ready", "partial", "planned"] as const).map((status) => (
-              <div key={status} className="rounded-xl bg-muted/50 p-3 text-center">
-                <p className="text-2xl font-semibold tabular-nums">
-                  {coverageCounts[status]}
+
+          <div className="rounded-[24px] border border-stone-200/80 bg-white/75 p-5 backdrop-blur">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                  {pickText(locale, copy.platformModelTitle)}
                 </p>
-                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                  {getCapabilityStatusLabel(locale, status)}
+                <p className="mt-2 text-sm leading-6 text-stone-600">
+                  {pickText(locale, copy.platformModelDescription)}
                 </p>
               </div>
-            ))}
+            </div>
+            <div className="space-y-3">
+              {copy.platformModel.map((item, index) => (
+                <div key={pickText(locale, item.title)} className="rounded-2xl border border-stone-200/70 bg-stone-50/80 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-900 text-xs font-semibold text-white">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium text-stone-900">{pickText(locale, item.title)}</p>
+                      <p className="mt-1 text-sm leading-6 text-stone-600">
+                        {pickText(locale, item.description)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {statCards.map((card) => (
+          <Card key={card.id} className={`rounded-[24px] border ${card.accent} shadow-sm`}>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+                    {card.title}
+                  </p>
+                  <p className="text-3xl font-semibold tracking-tight text-stone-900 tabular-nums">
+                    {card.value}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/80 p-3 text-stone-700 shadow-sm">
+                  <card.icon className="h-5 w-5" />
+                </div>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-stone-600">{card.description}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <Card className="rounded-[28px] border-stone-200/80 bg-white/95 shadow-sm">
           <CardHeader className="pb-4">
-            <div className="flex items-center gap-2">
-              <div className="rounded-lg bg-orange-100 p-2">
-                <Lightbulb className="h-4 w-4 text-orange-600" />
-              </div>
-              <div>
-                <CardTitle className="text-base">
-                  {locale === "zh" ? "需求对齐概览" : "Requirement Coverage"}
-                </CardTitle>
-                <CardDescription>
-                  {locale === "zh"
-                    ? "优先看当前未完全对齐的能力，避免继续堆功能但没有归口。"
-                    : "Focus on the functions that are still not fully aligned so the workbench does not drift again."}
-                </CardDescription>
-              </div>
-            </div>
+            <CardTitle className="text-xl text-stone-900">
+              {pickText(locale, copy.workspacesTitle)}
+            </CardTitle>
+            <CardDescription className="text-sm leading-6 text-stone-600">
+              {pickText(locale, copy.workspacesDescription)}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {focusItems.map((item) => (
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            {workspaceCards.map((card) => (
               <div
-                key={item.id}
-                className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/25 p-4"
+                key={card.id}
+                className={`rounded-[24px] border border-stone-200/70 bg-gradient-to-br ${card.accent} p-5 shadow-sm`}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/8 text-primary">
-                  <item.icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium text-foreground">
-                      {item.order}. {getLocalizedText(locale, item.label)}
-                    </p>
-                    <Badge variant="outline" className={`border ${coverageBadgeClass(item.status)}`}>
-                      {getCapabilityStatusLabel(locale, item.status)}
-                    </Badge>
+                <div className="flex items-center justify-between gap-3">
+                  <Badge variant="outline" className="rounded-full border-stone-300 bg-white/70 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-stone-600">
+                    {card.eyebrow}
+                  </Badge>
+                  <div className="rounded-2xl bg-white/80 p-2.5 text-stone-700 shadow-sm">
+                    <card.icon className="h-4 w-4" />
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {getLocalizedText(locale, item.compareNote)}
-                  </p>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <h3 className="text-lg font-semibold tracking-tight text-stone-900">{card.title}</h3>
+                  <p className="text-sm leading-6 text-stone-600">{card.description}</p>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {card.modules.map((module) => (
+                    <span
+                      key={module}
+                      className="rounded-full border border-stone-300/70 bg-white/80 px-3 py-1 text-xs text-stone-700"
+                    >
+                      {module}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-5">
+                  <Button asChild variant="ghost" className="h-auto rounded-full px-0 text-stone-900 hover:bg-transparent">
+                    <Link href={card.route}>
+                      {card.actionLabel}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
                 </div>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="border-indigo-100 bg-gradient-to-br from-indigo-50/50 to-violet-50/30">
+        <Card className="rounded-[28px] border-stone-200/80 bg-stone-950 text-stone-50 shadow-sm">
           <CardHeader className="pb-4">
-            <CardTitle className="text-base">
-              {locale === "zh" ? "能力归类" : "Capability Split"}
-            </CardTitle>
-            <CardDescription>
-              {locale === "zh"
-                ? "按需求视角把核心功能拆成三组，首页和侧边栏现在共用同一份定义。"
-                : "The core workbench is now grouped into three requirement-oriented domains, shared by both home and sidebar."}
+            <CardTitle className="text-xl text-white">{pickText(locale, copy.moduleGroupsTitle)}</CardTitle>
+            <CardDescription className="text-sm leading-6 text-stone-300">
+              {pickText(locale, copy.moduleGroupsDescription)}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {marketingCapabilityCategories.map((category) => {
-              const count = getCapabilitiesByCategory(category.id).length;
-              return (
-                <div
-                  key={category.id}
-                  className="rounded-xl border border-border/60 bg-background/70 p-4"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium">
-                      {getLocalizedText(locale, category.label)}
+            {moduleSections.map((section) => (
+              <div key={section.id} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      {getLocalizedText(locale, section.label)}
                     </p>
-                    <Badge variant="outline">{count}</Badge>
+                    <p className="mt-1 text-xs uppercase tracking-[0.24em] text-stone-400">
+                      {section.items.length} {locale === "zh" ? "个模块" : "modules"}
+                    </p>
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {getLocalizedText(locale, category.description)}
-                  </p>
                 </div>
-              );
-            })}
+                <div className="space-y-2">
+                  {section.items.map((item) => (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/15 px-3 py-2.5 text-sm text-stone-100 transition-colors hover:bg-black/30"
+                    >
+                      <span className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4 text-stone-300" />
+                        {getLocalizedText(locale, item.label)}
+                      </span>
+                      <ArrowUpRight className="h-4 w-4 text-stone-400" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Card className="border-primary/15 bg-gradient-to-br from-primary/8 to-primary/3">
-          <CardContent className="p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              <span className="text-[10px] font-medium uppercase tracking-wider text-primary">
-                {locale === "zh" ? "房源池" : "Listings"}
-              </span>
-            </div>
-            <p className="text-2xl font-bold tabular-nums text-primary">{propertyCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                {locale === "zh" ? "已到位能力" : "Ready"}
-              </span>
-            </div>
-            <p className="text-2xl font-bold tabular-nums">{coverageCounts.ready}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Eye className="h-4 w-4 text-muted-foreground" />
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                {locale === "zh" ? "适配中" : "Adapted"}
-              </span>
-            </div>
-            <p className="text-2xl font-bold tabular-nums">{coverageCounts.partial}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                {locale === "zh" ? "待补齐" : "Planned"}
-              </span>
-            </div>
-            <p className="text-2xl font-bold tabular-nums">{coverageCounts.planned}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card
-        className={`transition-all duration-300 ${syncStatus === "started"
-          ? "bg-emerald-50/50 ring-2 ring-emerald-500/30"
-          : syncStatus === "syncing"
-            ? "ring-2 ring-primary/30"
-            : syncStatus === "error"
-              ? "bg-red-50/50 ring-2 ring-red-500/30"
-              : ""
-          }`}
-      >
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-muted p-2">
-                <Database className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">MLS Grid · OneKey</p>
-                <p className="text-xs text-muted-foreground">
-                  {propertyCount} {locale === "zh" ? "套房源已同步" : "listings synced"}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant={syncStatus === "syncing" ? "default" : "outline"}
-              size="sm"
-              className={`h-8 px-3 ${syncStatus === "syncing" || !canTriggerSync ? "pointer-events-none" : ""}`}
-              disabled={syncStatus === "syncing" || !canTriggerSync}
-              onClick={() => {
-                if (!canTriggerSync) return;
-                triggerSync.mutate();
-              }}
-            >
-              {syncStatus === "syncing" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
-              <span className="ml-1.5 text-xs">
-                {syncStatus === "syncing"
-                  ? locale === "zh"
-                    ? "同步中..."
-                    : "Syncing..."
-                  : locale === "zh"
-                    ? "立即同步"
-                    : "Sync"}
-              </span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <section className="space-y-3">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">
-              {locale === "zh" ? "十大核心功能对齐" : "Core Capability Alignment"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {locale === "zh"
-                ? "按你给的十项需求，逐项标出当前承载模块、完成度和缺口。"
-                : "Each requested function is mapped to its current module, delivery status, and remaining gap."}
-            </p>
-          </div>
-          <Badge variant="outline">
-            {coverageCounts.ready}/{coverageCounts.total}{" "}
-            {locale === "zh" ? "项已基本到位" : "core functions mostly covered"}
-          </Badge>
-        </div>
-        <MarketingCapabilityBoard locale={locale} />
-      </section>
-
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-xl font-semibold">
-            {locale === "zh" ? "扩展模块" : "Extension Modules"}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {locale === "zh"
-              ? "这些是现有代码里已经存在、但不在十项核心需求内的补充模块。"
-              : "These modules already exist in the codebase and complement the ten primary functions."}
-          </p>
-        </div>
-        <MarketingExtensionGrid locale={locale} />
-      </section>
     </div>
   );
 }
