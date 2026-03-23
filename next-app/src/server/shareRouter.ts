@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   shareSessionEvents,
@@ -1021,6 +1021,165 @@ async function generateUniqueToken(db: Database): Promise<string> {
   });
 }
 
+type SessionListRow = {
+  id: number;
+  token: string;
+  status: string;
+  title: string | null;
+  clientName: string | null;
+  listingKeys: unknown;
+  tourPlan: unknown;
+  viewCount: number;
+  lastViewedAt: Date | null;
+  createdAt: Date;
+  expiresAt: Date | null;
+};
+
+type SessionActivitySummary = {
+  totalEvents: number;
+  listingOpenCount: number;
+  contactClickCount: number;
+  wechatCopyCount: number;
+  tourInterestCount: number;
+  routeRequestCount: number;
+  lastActivityAt: Date | null;
+  followUpSignal: "new" | "warm" | "hot" | "quiet";
+};
+
+function deriveFollowUpSignal(
+  row: SessionListRow,
+  summary: Omit<SessionActivitySummary, "followUpSignal">
+): SessionActivitySummary["followUpSignal"] {
+  const now = Date.now();
+  const hoursSinceCreated = (now - row.createdAt.getTime()) / 36e5;
+  const lastActivityAt = summary.lastActivityAt ?? row.lastViewedAt ?? row.createdAt;
+  const hoursSinceActivity = (now - lastActivityAt.getTime()) / 36e5;
+
+  if (summary.contactClickCount > 0 || summary.tourInterestCount > 0 || summary.routeRequestCount > 0) {
+    return "hot";
+  }
+
+  if (row.viewCount >= 4 || summary.listingOpenCount >= 3 || summary.wechatCopyCount > 0) {
+    return "warm";
+  }
+
+  if (hoursSinceCreated <= 24 && row.viewCount <= 1 && summary.totalEvents <= 1) {
+    return "new";
+  }
+
+  if (hoursSinceActivity <= 24 && (row.viewCount > 0 || summary.totalEvents > 0)) {
+    return "warm";
+  }
+
+  return "quiet";
+}
+
+async function buildSessionActivityMap(db: Database, rows: SessionListRow[]) {
+  const bySession = new Map<number, SessionActivitySummary>();
+  if (rows.length === 0) return bySession;
+
+  for (const row of rows) {
+    const base = {
+      totalEvents: 0,
+      listingOpenCount: 0,
+      contactClickCount: 0,
+      wechatCopyCount: 0,
+      tourInterestCount: 0,
+      routeRequestCount: 0,
+      lastActivityAt: row.lastViewedAt ?? row.createdAt,
+    };
+
+    bySession.set(row.id, {
+      ...base,
+      followUpSignal: deriveFollowUpSignal(row, base),
+    });
+  }
+
+  const eventRows = await db
+    .select({
+      shareSessionId: shareSessionEvents.shareSessionId,
+      eventType: shareSessionEvents.eventType,
+      createdAt: shareSessionEvents.createdAt,
+    })
+    .from(shareSessionEvents)
+    .where(inArray(shareSessionEvents.shareSessionId, rows.map((row) => row.id)))
+    .orderBy(desc(shareSessionEvents.createdAt));
+
+  for (const event of eventRows) {
+    const current = bySession.get(event.shareSessionId);
+    if (!current) continue;
+
+    current.totalEvents += 1;
+
+    switch (event.eventType) {
+      case "listing_open":
+        current.listingOpenCount += 1;
+        break;
+      case "contact_click":
+        current.contactClickCount += 1;
+        break;
+      case "wechat_copy":
+        current.wechatCopyCount += 1;
+        break;
+      case "tour_interest":
+        current.tourInterestCount += 1;
+        break;
+      case "route_request":
+        current.routeRequestCount += 1;
+        break;
+      default:
+        break;
+    }
+
+    if (!current.lastActivityAt || event.createdAt.getTime() > current.lastActivityAt.getTime()) {
+      current.lastActivityAt = event.createdAt;
+    }
+  }
+
+  for (const row of rows) {
+    const current = bySession.get(row.id);
+    if (!current) continue;
+    current.followUpSignal = deriveFollowUpSignal(row, current);
+  }
+
+  return bySession;
+}
+
+function serializeSessionRow(
+  row: SessionListRow,
+  summary?: SessionActivitySummary
+) {
+  const keys = asStringArray(row.listingKeys);
+  const tourRecord = asRecord(row.tourPlan);
+  const tourStops = Array.isArray(tourRecord?.stops)
+    ? tourRecord.stops.length
+    : 0;
+
+  return {
+    token: row.token,
+    sharePath: `/s/${row.token}`,
+    status: row.status,
+    title: row.title,
+    clientName: row.clientName,
+    listingCount: keys.length,
+    tourStops,
+    viewCount: row.viewCount,
+    lastViewedAt: row.lastViewedAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+    expiresAt: row.expiresAt?.toISOString() ?? null,
+    lastActivityAt: summary?.lastActivityAt?.toISOString() ?? row.lastViewedAt?.toISOString() ?? null,
+    followUpSignal: summary?.followUpSignal ?? (Date.now() - row.createdAt.getTime() <= 24 * 60 * 60 * 1000 ? "new" : "quiet"),
+    eventCounts: {
+      total: summary?.totalEvents ?? 0,
+      listingOpen: summary?.listingOpenCount ?? 0,
+      contactClick: summary?.contactClickCount ?? 0,
+      wechatCopy: summary?.wechatCopyCount ?? 0,
+      tourInterest: summary?.tourInterestCount ?? 0,
+      routeRequest: summary?.routeRequestCount ?? 0,
+    },
+  };
+}
+
 export const shareRouter = router({
   createSession: protectedProcedure
     .input(createSessionInputSchema)
@@ -1122,6 +1281,7 @@ export const shareRouter = router({
 
     const rows = await db
       .select({
+        id: shareSessions.id,
         token: shareSessions.token,
         status: shareSessions.status,
         title: shareSessions.title,
@@ -1138,26 +1298,8 @@ export const shareRouter = router({
       .orderBy(desc(shareSessions.createdAt))
       .limit(100);
 
-    return rows.map((row) => {
-      const keys = asStringArray(row.listingKeys);
-      const tourRecord = asRecord(row.tourPlan);
-      const tourStops = Array.isArray(tourRecord?.stops)
-        ? tourRecord.stops.length
-        : 0;
-
-      return {
-        token: row.token,
-        status: row.status,
-        title: row.title,
-        clientName: row.clientName,
-        listingCount: keys.length,
-        tourStops,
-        viewCount: row.viewCount,
-        lastViewedAt: row.lastViewedAt?.toISOString() ?? null,
-        createdAt: row.createdAt.toISOString(),
-        expiresAt: row.expiresAt?.toISOString() ?? null,
-      };
-    });
+    const activityBySession = await buildSessionActivityMap(db, rows);
+    return rows.map((row) => serializeSessionRow(row, activityBySession.get(row.id)));
   }),
 
   revokeSession: protectedProcedure
@@ -1414,6 +1556,7 @@ export const shareRouter = router({
 
         const rows = await db
           .select({
+            id: shareSessions.id,
             token: shareSessions.token,
             status: shareSessions.status,
             title: shareSessions.title,
@@ -1430,6 +1573,8 @@ export const shareRouter = router({
           .orderBy(desc(shareSessions.createdAt))
           .limit(input?.limit ?? 100);
 
+        const activityBySession = await buildSessionActivityMap(db, rows);
+
         await recordUsage({
           apiKeyId: apiKey.apiKeyId,
           companyId: apiKey.companyId ?? undefined,
@@ -1439,26 +1584,7 @@ export const shareRouter = router({
           success: true,
         });
 
-        return rows.map((row) => {
-          const keys = asStringArray(row.listingKeys);
-          const tourRecord = asRecord(row.tourPlan);
-          const tourStops = Array.isArray(tourRecord?.stops)
-            ? tourRecord.stops.length
-            : 0;
-
-          return {
-            token: row.token,
-            status: row.status,
-            title: row.title,
-            clientName: row.clientName,
-            listingCount: keys.length,
-            tourStops,
-            viewCount: row.viewCount,
-            lastViewedAt: row.lastViewedAt?.toISOString() ?? null,
-            createdAt: row.createdAt.toISOString(),
-            expiresAt: row.expiresAt?.toISOString() ?? null,
-          };
-        });
+        return rows.map((row) => serializeSessionRow(row, activityBySession.get(row.id)));
       } catch (error) {
         await recordUsage({
           apiKeyId: apiKey.apiKeyId,

@@ -7,6 +7,7 @@ import {
   BedDouble,
   CalendarClock,
   Clock3,
+  Copy,
   ExternalLink,
   Eye,
   Loader2,
@@ -27,6 +28,7 @@ import { pickText } from "@/i18n/copy";
 import { sharePageCopy } from "@/i18n/share-pages";
 import { trpc } from "@/lib/trpc";
 import type { AppRouter } from "@/routers";
+import { toast } from "sonner";
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type SharePayload = RouterOutput["share"]["getSessionByToken"];
@@ -139,6 +141,15 @@ export default function ListingShare({ token }: ListingShareProps) {
     { token },
     { retry: 1, staleTime: 60_000 }
   );
+  const trackEventMutation = trpc.share.trackEvent.useMutation({
+    onError: () => {
+      // Public share interactions should not interrupt the browsing flow.
+    },
+  });
+
+  const trackEvent = (eventType: string, eventData?: Record<string, unknown>) => {
+    trackEventMutation.mutate({ token, eventType, eventData });
+  };
 
   const displayListings = useMemo<DisplayListing[]>(() => {
     if (!data) return [];
@@ -176,6 +187,72 @@ export default function ListingShare({ token }: ListingShareProps) {
 
   const tourStops = useMemo(() => getTourStops(data?.tourPlan), [data?.tourPlan]);
 
+  const agentBranding = (data?.agentBranding ?? {}) as Record<string, unknown>;
+  const shareConfig = (data?.shareConfig ?? {}) as Record<string, unknown>;
+  const strategyPoints = getStringArray(shareConfig.strategyPoints);
+  const accentColor = getString(agentBranding.accentColor) || "#1F5A4A";
+  const agentName = getString(agentBranding.agentName) || "Kevv Marketing";
+  const agentTitle = getString(agentBranding.agentTitle);
+  const brokerageName = getString(agentBranding.brokerageName);
+  const phone = getString(agentBranding.phone);
+  const email = getString(agentBranding.email);
+  const wechatId = getString(agentBranding.wechatId);
+  const avatarUrl = getString(agentBranding.avatarUrl);
+  const clientName = data?.session.clientName || "";
+
+  const handleContact = (channel: "phone" | "email") => {
+    if (channel === "phone") {
+      if (!phone) {
+        toast.error(pick(copy.noContactInfo));
+        return;
+      }
+      trackEvent("contact_click", { channel, source: "contact_card" });
+      window.location.href =         "tel:" + phone;
+      return;
+    }
+
+    if (!email) {
+      toast.error(pick(copy.noContactInfo));
+      return;
+    }
+
+    trackEvent("contact_click", { channel, source: "contact_card" });
+    const subject = encodeURIComponent(data?.session.title || "Listing share");
+    window.location.href = "mailto:" + email + "?subject=" + subject;
+  };
+
+  const handleCopyWechat = async () => {
+    if (!wechatId) {
+      toast.error(pick(copy.noContactInfo));
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(wechatId);
+      trackEvent("wechat_copy", { source: "contact_card" });
+      toast.success(pick(copy.wechatCopied));
+    } catch {
+      toast.error(pick(copy.copyFailed));
+    }
+  };
+
+  const handleRequestTour = (listing?: DisplayListing) => {
+    trackEvent("tour_interest", {
+      source: listing ? "listing_card" : "route_plan",
+      listingId: listing?.id ?? null,
+      listingKind: listing?.kind ?? null,
+    });
+    toast.success(pick(copy.interestLogged));
+  };
+
+  const handleOpenListing = (listing: DisplayListing, source: "details" | "external_link") => {
+    trackEvent("listing_open", {
+      listingId: listing.id,
+      listingKind: listing.kind,
+      source,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#101412] px-6 text-stone-100">
@@ -200,19 +277,6 @@ export default function ListingShare({ token }: ListingShareProps) {
       </div>
     );
   }
-
-  const agentBranding = data.agentBranding as Record<string, unknown>;
-  const shareConfig = data.shareConfig as Record<string, unknown>;
-  const strategyPoints = getStringArray(shareConfig.strategyPoints);
-  const accentColor = getString(agentBranding.accentColor) || "#1F5A4A";
-  const agentName = getString(agentBranding.agentName) || "Kevv Marketing";
-  const agentTitle = getString(agentBranding.agentTitle);
-  const brokerageName = getString(agentBranding.brokerageName);
-  const phone = getString(agentBranding.phone);
-  const email = getString(agentBranding.email);
-  const wechatId = getString(agentBranding.wechatId);
-  const avatarUrl = getString(agentBranding.avatarUrl);
-  const clientName = data.session.clientName || "";
 
   return (
     <div className="min-h-screen bg-[#0f1412] text-stone-100">
@@ -307,14 +371,26 @@ export default function ListingShare({ token }: ListingShareProps) {
 
             {tourStops.length > 0 ? (
               <section className="rounded-[30px] border border-white/10 bg-[#151a18]/90 p-6 shadow-[0_20px_64px_rgba(0,0,0,0.24)] md:p-8">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-emerald-300">
-                    <Route className="h-5 w-5" />
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5 text-emerald-300">
+                      <Route className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.28em] text-stone-400">Tour</p>
+                      <h2 className="text-2xl font-serif text-white">{pick(copy.timelineTitle)}</h2>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.28em] text-stone-400">Tour</p>
-                    <h2 className="text-2xl font-serif text-white">{pick(copy.timelineTitle)}</h2>
-                  </div>
+                  <Button
+                    className="rounded-full px-5"
+                    style={{ backgroundColor: accentColor }}
+                    onClick={() => {
+                      trackEvent("route_request", { source: "route_section" });
+                      toast.success(pick(copy.interestLogged));
+                    }}
+                  >
+                    {pick(copy.requestTour)}
+                  </Button>
                 </div>
                 <p className="mt-4 text-sm leading-7 text-stone-300">{pick(copy.timelineFallback)}</p>
                 <div className="mt-6 space-y-3">
@@ -393,9 +469,21 @@ export default function ListingShare({ token }: ListingShareProps) {
 
                         <div className="flex flex-wrap gap-2">
                           <Button
+                            className="rounded-full px-5"
+                            style={{ backgroundColor: accentColor }}
+                            onClick={() => handleRequestTour(listing)}
+                          >
+                            {pick(copy.interestedHome)}
+                          </Button>
+                          <Button
                             variant="outline"
                             className="rounded-full border-white/15 bg-transparent text-stone-100 hover:bg-white/10"
-                            onClick={() => setExpandedById((prev) => ({ ...prev, [listing.id]: !expanded }))}
+                            onClick={() => {
+                              if (!expanded) {
+                                handleOpenListing(listing, "details");
+                              }
+                              setExpandedById((prev) => ({ ...prev, [listing.id]: !expanded }));
+                            }}
                           >
                             {expanded ? pick(copy.hideDetails) : pick(copy.showDetails)}
                           </Button>
@@ -403,7 +491,10 @@ export default function ListingShare({ token }: ListingShareProps) {
                             <Button
                               variant="outline"
                               className="rounded-full border-white/15 bg-transparent text-stone-100 hover:bg-white/10"
-                              onClick={() => window.open(listing.externalUrl as string, "_blank", "noopener,noreferrer")}
+                              onClick={() => {
+                                handleOpenListing(listing, "external_link");
+                                window.open(listing.externalUrl as string, "_blank", "noopener,noreferrer");
+                              }}
                             >
                               <ExternalLink className="mr-2 h-4 w-4" />
                               {pick(copy.openSource)}
@@ -449,7 +540,7 @@ export default function ListingShare({ token }: ListingShareProps) {
                   <Button
                     className="w-full justify-start rounded-2xl text-left"
                     style={{ backgroundColor: accentColor }}
-                    onClick={() => { window.location.href = `tel:${phone}`; }}
+                    onClick={() => handleContact("phone")}
                   >
                     <Phone className="mr-2 h-4 w-4" />
                     {pick(copy.callAgent)}
@@ -459,10 +550,7 @@ export default function ListingShare({ token }: ListingShareProps) {
                   <Button
                     variant="outline"
                     className="w-full justify-start rounded-2xl border-white/15 bg-transparent text-stone-100 hover:bg-white/10"
-                    onClick={() => {
-                      const subject = encodeURIComponent(data.session.title || "Listing share");
-                      window.location.href = `mailto:${email}?subject=${subject}`;
-                    }}
+                    onClick={() => handleContact("email")}
                   >
                     <Mail className="mr-2 h-4 w-4" />
                     {pick(copy.emailAgent)}
@@ -470,8 +558,20 @@ export default function ListingShare({ token }: ListingShareProps) {
                 ) : null}
                 {wechatId ? (
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.24em] text-stone-500">{pick(copy.wechatLabel)}</p>
-                    <p className="mt-1 text-sm text-stone-100">{wechatId}</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.24em] text-stone-500">{pick(copy.wechatLabel)}</p>
+                        <p className="mt-1 text-sm text-stone-100">{wechatId}</p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="rounded-full border-white/15 bg-transparent text-stone-100 hover:bg-white/10"
+                        onClick={handleCopyWechat}
+                      >
+                        <Copy className="mr-2 h-4 w-4" />
+                        {pick(copy.copyWechat)}
+                      </Button>
+                    </div>
                   </div>
                 ) : null}
                 {!phone && !email && !wechatId ? (
