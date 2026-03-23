@@ -15,7 +15,6 @@ import {
   Search,
   Share2,
   Sparkles,
-  Star,
   Users,
 } from "lucide-react";
 
@@ -74,26 +73,26 @@ export const marketingCapabilityCategories: Array<{
 }> = [
   {
     id: "search-distribution",
-    label: { zh: "搜索与触达", en: "Search & Reach" },
+    label: { zh: "房源与触达", en: "Inventory & Reach" },
     description: {
-      zh: "围绕房源发现、分享分发与订阅跟进。",
-      en: "Discovery, outbound sharing, and subscription follow-up.",
+      zh: "围绕房源发现、订阅提醒与客户触达的日常动作。",
+      en: "Daily listing discovery, saved alerts, and outbound client reach.",
     },
   },
   {
     id: "content-production",
-    label: { zh: "内容生产", en: "Content Production" },
+    label: { zh: "展示与内容", en: "Presentation & Content" },
     description: {
-      zh: "围绕海报、视频和平台化内容生成。",
-      en: "Flyers, video workflows, and platform-native content generation.",
+      zh: "围绕客户展示、品牌内容和多渠道素材生成。",
+      en: "Client-ready presentations, branded assets, and cross-channel content creation.",
     },
   },
   {
     id: "growth-community",
-    label: { zh: "增长与社区", en: "Growth & Community" },
+    label: { zh: "团队与洞察", en: "Team & Insight" },
     description: {
-      zh: "围绕专家 IP、访客洞察和经纪人网络。",
-      en: "Expert branding, visitor insight, and agent network operations.",
+      zh: "围绕访客信号、团队目录和后台洞察。",
+      en: "Visitor signals, team directory, and operating insight for the brokerage.",
     },
   },
 ];
@@ -220,26 +219,8 @@ export const marketingCapabilities: MarketingCapability[] = [
     alignment: "adapted",
   },
   {
-    id: "expert-ip",
-    order: 7,
-    label: { zh: "房大咖", en: "Expert IP" },
-    category: "growth-community",
-    icon: Star,
-    description: {
-      zh: "打造经纪人专家 IP、栏目或主题输出。",
-      en: "Build an agent expert brand with recurring themes and authority content.",
-    },
-    currentModule: { zh: "暂无对应模块", en: "No mapped module yet" },
-    compareNote: {
-      zh: "当前代码库没有与“房大咖”对应的独立模块，需要单独设计。",
-      en: "There is no dedicated expert-IP module in the current codebase yet.",
-    },
-    status: "planned",
-    alignment: "gap",
-  },
-  {
     id: "visitor-insights",
-    order: 8,
+    order: 7,
     label: { zh: "访客", en: "Visitors" },
     category: "growth-community",
     icon: Eye,
@@ -257,18 +238,18 @@ export const marketingCapabilities: MarketingCapability[] = [
   },
   {
     id: "agent-community",
-    order: 9,
-    label: { zh: "经纪人社区", en: "Agent Community" },
+    order: 8,
+    label: { zh: "经纪人目录", en: "Agent Directory" },
     category: "growth-community",
     icon: Users,
     description: {
-      zh: "围绕经纪人网络、协作和资源连接形成社区能力。",
-      en: "Enable a community layer around agent collaboration and network visibility.",
+      zh: "查看经纪人网络、团队成员和基础资源连接。",
+      en: "Manage the agent directory, team coverage, and brokerage network visibility.",
     },
     currentModule: { zh: "Agent Directory", en: "Agent Directory" },
     compareNote: {
-      zh: "目前更像目录/后台，不是完整社区，但可以作为第一阶段承载。",
-      en: "Today it behaves more like a directory/admin panel than a community, but it can serve as phase one.",
+      zh: "当前更像目录和后台，不是完整协作社区，但作为团队工作台是合理的。",
+      en: "It behaves more like a directory and admin panel than a community, which is appropriate for the current workbench stage.",
     },
     route: "/agent-directory",
     routeLabel: { zh: "打开经纪人目录", en: "Open Agent Directory" },
@@ -277,7 +258,7 @@ export const marketingCapabilities: MarketingCapability[] = [
   },
   {
     id: "xhs-notes",
-    order: 10,
+    order: 9,
     label: { zh: "小红书笔记", en: "Xiaohongshu Notes" },
     category: "content-production",
     icon: BookImage,
@@ -354,8 +335,8 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
     ],
   },
   {
-    id: "search-reach",
-    label: { zh: "搜索与触达", en: "Search & Reach" },
+    id: "inventory-reach",
+    label: { zh: "房源与触达", en: "Inventory & Reach" },
     items: [
       {
         id: "listings",
@@ -375,18 +356,18 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
         label: { zh: "房源订阅", en: "Subscriptions" },
         path: "/subscriptions",
       },
+    ],
+  },
+  {
+    id: "client-flow",
+    label: { zh: "客户转化", en: "Client Flow" },
+    items: [
       {
         id: "magic-share",
         icon: Share2,
         label: { zh: "批量分享", en: "Magic Share" },
         path: "/magic-share",
       },
-    ],
-  },
-  {
-    id: "conversion",
-    label: { zh: "匹配与成交", en: "Match & Conversion" },
-    items: [
       {
         id: "smart-match",
         icon: Sparkles,
@@ -434,8 +415,8 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
 ];
 
 export const ownerDashboardSection: MarketingMenuSection = {
-  id: "network",
-  label: { zh: "社区与管理", en: "Community & Admin" },
+  id: "team-admin",
+  label: { zh: "团队与管理", en: "Team & Admin" },
   items: [
     {
       id: "agent-directory",

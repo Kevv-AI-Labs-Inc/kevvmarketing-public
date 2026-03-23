@@ -1,6 +1,141 @@
 import { text } from "./copy";
 
 export const dashboardPageCopy = {
+  home: {
+    heroBadge: text("营销工作台", "Marketing Platform"),
+    heroTitle: text(
+      "一个地方完成房源营销、客户触达和成交准备。",
+      "One place for listing marketing, client follow-up, and presentation prep.",
+    ),
+    heroDescription: text(
+      "正常的经纪人 dashboard 不应该先展示内部能力对齐，而应该先帮助你找房、发出去、持续跟进，并把客户展示材料准备好。",
+      "A healthy real estate dashboard should not lead with internal capability mapping. It should help agents find inventory, send it out, stay in follow-up, and prepare client-ready presentations.",
+    ),
+    heroFootnote: text(
+      "这版首页按库存、触达、演示和内容生产四条主线重排，更接近真实营销工作台。",
+      "This homepage is now organized around four operating lanes: inventory, outreach, presentations, and content production.",
+    ),
+    actions: {
+      openListings: text("打开 Listings", "Open Listings"),
+      launchShare: text("发起分享", "Launch share"),
+      createFlyer: text("制作海报", "Create flyer"),
+    },
+    stats: {
+      inventoryTitle: text("房源库存", "Inventory"),
+      inventoryDescription: text("当前可用房源总量", "Total listings currently available"),
+      reachTitle: text("触达流程", "Reach workflows"),
+      reachDescription: text("找房、订阅和客户触达", "Search, saved alerts, and outbound sharing"),
+      presentationTitle: text("成交准备", "Presentation stack"),
+      presentationDescription: text("匹配、带看与 CMA", "Matching, showings, and CMA"),
+      contentTitle: text("内容生产", "Content studio"),
+      contentDescription: text("海报、视频和平台内容", "Flyers, video, and platform-native content"),
+      syncLabel: text("最近同步", "Last sync"),
+      syncUnknown: text("未记录", "Not recorded"),
+    },
+    workspacesTitle: text("今天要推进什么", "What should move today"),
+    workspacesDescription: text(
+      "把首页变成操作入口，而不是功能清单。",
+      "Use the homepage as an operating surface instead of a feature inventory.",
+    ),
+    workspaces: {
+      inventory: {
+        eyebrow: text("库存", "Inventory"),
+        title: text("找房与订阅", "Search and subscribe"),
+        description: text(
+          "先确认库存，再把合适房源持续推给客户。",
+          "Start from inventory, then keep qualified listings flowing to clients.",
+        ),
+        actionLabel: text("进入房源搜索", "Open listings"),
+        modules: [
+          text("房源搜索", "Listings"),
+          text("新房源", "New Listings"),
+          text("房源订阅", "Subscriptions"),
+        ],
+      },
+      reach: {
+        eyebrow: text("触达", "Outreach"),
+        title: text("分享与跟进", "Share and follow up"),
+        description: text(
+          "把房源打包成客户能立即理解和转发的分享页。",
+          "Package listings into client-ready share flows that can be understood and forwarded immediately.",
+        ),
+        actionLabel: text("打开 Magic Share", "Open Magic Share"),
+        modules: [
+          text("Magic Share", "Magic Share"),
+          text("复制摘要", "Summary Copy"),
+          text("房源订阅", "Subscriptions"),
+        ],
+      },
+      presentation: {
+        eyebrow: text("演示", "Presentation"),
+        title: text("客户演示与成交准备", "Prepare the client presentation"),
+        description: text(
+          "让推荐、带看和 CMA 串成一条成交前链路。",
+          "Turn recommendations, showing routes, and CMA into one pre-close workflow.",
+        ),
+        actionLabel: text("打开 Smart Match", "Open Smart Match"),
+        modules: [
+          text("Smart Match", "Smart Match"),
+          text("带看路线", "Showing Tour"),
+          text("CMA Studio", "CMA Studio"),
+        ],
+      },
+      content: {
+        eyebrow: text("内容", "Content"),
+        title: text("品牌化内容产出", "Produce branded content"),
+        description: text(
+          "同一套房源素材，生成海报、视频和中文平台内容。",
+          "Turn the same listing record into flyers, video, and channel-specific content.",
+        ),
+        actionLabel: text("打开海报工坊", "Open Flyer Studio"),
+        modules: [
+          text("制作海报", "Flyer Studio"),
+          text("制作视频", "Video Studio"),
+          text("小红书笔记", "XHS Notes"),
+        ],
+      },
+    },
+    platformModelTitle: text("一个正常的营销平台应该覆盖什么", "What a normal marketing platform should cover"),
+    platformModelDescription: text(
+      "参考 MoxiWorks 这类平台的产品结构，核心不是堆功能，而是让营销动作形成闭环。",
+      "Using platforms like MoxiWorks as a benchmark, the core job is not feature sprawl; it is closing the loop on agent follow-through.",
+    ),
+    platformModel: [
+      {
+        title: text("房源营销", "Listing marketing"),
+        description: text(
+          "海报、分享页和平台内容都应该从同一套房源数据出发。",
+          "Flyers, share pages, and channel content should all start from the same listing record.",
+        ),
+      },
+      {
+        title: text("客户触达", "Client follow-up"),
+        description: text(
+          "客户收到的不只是链接，而是持续有节奏的订阅和跟进。",
+          "Clients should not just get links. They should get consistent alerts and follow-through.",
+        ),
+      },
+      {
+        title: text("成交准备", "Presentation prep"),
+        description: text(
+          "推荐、带看、CMA 和分享页要能自然接力。",
+          "Recommendations, showings, CMA, and presentation pages should hand off naturally.",
+        ),
+      },
+      {
+        title: text("单一工作台", "One operating surface"),
+        description: text(
+          "首页应该先告诉经纪人下一步该做什么，而不是系统内部怎么组织。",
+          "The homepage should tell agents what to do next, not how the system is internally organized.",
+        ),
+      },
+    ],
+    moduleGroupsTitle: text("当前工作台模块", "Current workspace modules"),
+    moduleGroupsDescription: text(
+      "保留现在真正能打开和使用的模块，把信息架构收成更合理的三组。",
+      "Keep the modules that are actually usable today and group them into a more coherent workspace architecture.",
+    ),
+  },
   subscriptions: {
     propertyTypes: [
       { value: "Residential", label: text("住宅", "Residential") },
