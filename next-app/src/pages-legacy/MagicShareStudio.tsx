@@ -201,16 +201,16 @@ export default function MagicShareStudio() {
     });
   };
 
-  const createShareMutation = trpc.smartMatch.createShare.useMutation({
+  const createShareMutation = trpc.share.createSession.useMutation({
     onSuccess: async (data) => {
-      const shareUrl = `${window.location.origin}${data.sharePath}`;
+      const shareUrl = data.shareUrl ?? `${window.location.origin}${data.sharePath}`;
       setGeneratedShareUrl(shareUrl);
       try {
         await navigator.clipboard.writeText(shareUrl);
       } catch {
         // Ignore clipboard permission errors.
       }
-      toast.success("Magic Share 链接已生成", { description: shareUrl });
+      toast.success("分享链接已生成", { description: shareUrl });
     },
     onError: (error) => {
       toast.error("生成分享失败", { description: error.message });
@@ -264,45 +264,27 @@ export default function MagicShareStudio() {
       .filter((item) => item.length > 0)
       .slice(0, 10);
 
-    const agentProfile =
-      agentTitle || agentPhone || agentEmail || agentWechatId || agentAvatarUrl
+    const agentBranding =
+      agentTitle || agentPhone || agentEmail || agentWechatId || agentAvatarUrl || agentCompany
         ? {
-          title: agentTitle.trim() || undefined,
+          agentTitle: agentTitle.trim() || undefined,
           phone: agentPhone.trim() || undefined,
           email: agentEmail.trim() || undefined,
           wechatId: agentWechatId.trim() || undefined,
           avatarUrl: agentAvatarUrl.trim() || undefined,
+          brokerageName: agentCompany.trim() || undefined,
         }
-        : undefined;
+        : {};
 
     createShareMutation.mutate({
-      experienceMode: "story",
+      title: headerTitle.trim(),
+      introMessage: headerDescription.trim() || undefined,
       clientName: clientName.trim() || undefined,
-      clientNeeds: clientNeeds.trim() || undefined,
       shareConfig: {
-        headerTitle: headerTitle.trim(),
-        headerDescription: headerDescription.trim() || undefined,
         strategyPoints: strategyPoints.length > 0 ? strategyPoints : undefined,
       },
-      mlsListings: selectedListings.map((item) => ({
-        listingKey: item.listingKey,
-        address: displayAddress(item),
-        city: item.city ?? undefined,
-        state: item.stateOrProvince ?? undefined,
-        price: item.listPrice ?? undefined,
-        beds: item.bedroomsTotal != null ? String(item.bedroomsTotal) : undefined,
-        baths:
-          item.bathroomsTotalInteger != null
-            ? String(item.bathroomsTotalInteger)
-            : undefined,
-        sqft: item.livingArea ?? undefined,
-        propertyType: item.propertyType ?? undefined,
-        publicRemarks: item.publicRemarks ?? undefined,
-        images: item.thumbnailUrl ? [item.thumbnailUrl] : undefined,
-        latitude: item.latitude ?? undefined,
-        longitude: item.longitude ?? undefined,
-      })),
-      agentProfile,
+      listingKeys: selectedKeys,
+      agentBranding,
       externalListings: [],
     });
   };
@@ -316,7 +298,7 @@ export default function MagicShareStudio() {
         </div>
         <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">Magic Share</h1>
         <p className="mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">
-          专注房源分享：选择 MLS 房源，编辑经纪人文案，一键生成客户可访问链接。
+          专注房源分享服务：统一创建 share session，生成可追踪、可撤销、可复用的客户分享链接。
         </p>
       </div>
 

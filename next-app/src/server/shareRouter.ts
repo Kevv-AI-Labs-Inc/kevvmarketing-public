@@ -58,6 +58,7 @@ const agentBrandingSchema = z
     brokerageName: z.string().trim().max(160).optional(),
     phone: z.string().trim().max(50).optional(),
     email: z.string().trim().email().optional(),
+    wechatId: z.string().trim().max(100).optional(),
     avatarUrl: z.string().trim().max(1000).optional(),
     companyLogoUrl: z.string().trim().max(1000).optional(),
     accentColor: z.string().trim().max(20).optional(),
@@ -87,12 +88,17 @@ const externalListingSchema = z.object({
   notes: z.string().trim().max(1000).optional(),
 });
 
+const shareConfigSchema = z.object({
+  strategyPoints: z.array(z.string().trim().min(1).max(200)).max(10).optional(),
+});
+
 type ExternalListingInput = z.infer<typeof externalListingSchema>;
 
 const createSessionInputSchema = z.object({
   title: z.string().trim().min(1).max(255),
   introMessage: z.string().trim().max(3000).optional(),
   clientName: z.string().trim().max(255).optional(),
+  shareConfig: shareConfigSchema.optional(),
   listingKeys: z.array(z.string().trim().min(1)).max(30),
   externalListings: z.array(externalListingSchema).max(15).optional(),
   expiresInDays: z.number().int().min(1).max(90).optional(),
@@ -249,6 +255,7 @@ function normalizeBranding(
     brokerageName: branding.brokerageName?.trim() || "",
     phone: branding.phone?.trim() || "",
     email: branding.email?.trim() || defaults.email || "",
+    wechatId: branding.wechatId?.trim() || "",
     avatarUrl: branding.avatarUrl?.trim() || "",
     companyLogoUrl: branding.companyLogoUrl?.trim() || "",
     accentColor: normalizeAccentColor(branding.accentColor),
@@ -855,6 +862,7 @@ async function ensureShareTables(db: Database): Promise<void> {
           "created_by_name" varchar(255),
           "created_by_email" varchar(320),
           "agent_branding" jsonb NOT NULL,
+          "share_config" jsonb,
           "listing_keys" jsonb NOT NULL,
           "tour_plan" jsonb,
           "expires_at" timestamp,
@@ -873,6 +881,11 @@ async function ensureShareTables(db: Database): Promise<void> {
       await db.execute(sql`
         ALTER TABLE "share_sessions"
           ADD COLUMN IF NOT EXISTS "created_by_api_key_id" integer;
+      `);
+
+      await db.execute(sql`
+        ALTER TABLE "share_sessions"
+          ADD COLUMN IF NOT EXISTS "share_config" jsonb;
       `);
 
       await db.execute(sql`
@@ -1073,6 +1086,7 @@ export const shareRouter = router({
         createdByName: ctx.user.name ?? null,
         createdByEmail: ctx.user.email ?? null,
         agentBranding: normalizedBranding,
+        shareConfig: input.shareConfig ?? null,
         listingKeys: validListingKeys,
         tourPlan,
         expiresAt,
@@ -1327,6 +1341,7 @@ export const shareRouter = router({
               ? normalizedBranding.email
               : null,
           agentBranding: normalizedBranding,
+          shareConfig: input.shareConfig ?? null,
           listingKeys: validListingKeys,
           tourPlan,
           expiresAt,
@@ -1778,6 +1793,7 @@ export const shareRouter = router({
       }));
 
       const agentBranding = asRecord(session.agentBranding) ?? {};
+      const shareConfig = asRecord(session.shareConfig) ?? {};
       const tourPlan = asRecord(session.tourPlan);
       const externalListings = Array.isArray(session.externalListings)
         ? session.externalListings
@@ -1812,6 +1828,7 @@ export const shareRouter = router({
           expiresAt: session.expiresAt?.toISOString() ?? null,
         },
         agentBranding,
+        shareConfig,
         tourPlan,
         externalListings,
         listings: enrichedListings,
