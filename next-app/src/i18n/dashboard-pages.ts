@@ -17,7 +17,7 @@ export const dashboardPageCopy = {
     ),
     actions: {
       openListings: text("打开 Listings", "Open Listings"),
-      launchShare: text("发起分享", "Launch share"),
+      launchShare: text("生成区域诱饵", "Create area magnet"),
       createFlyer: text("制作海报", "Create flyer"),
     },
     stats: {
@@ -54,15 +54,15 @@ export const dashboardPageCopy = {
       },
       reach: {
         eyebrow: text("触达", "Outreach"),
-        title: text("分享与跟进", "Share and follow up"),
+        title: text("分享、诱饵与跟进", "Share, magnets, and follow-up"),
         description: text(
-          "把房源打包成客户能立即理解和转发的分享页。",
-          "Package listings into client-ready share flows that can be understood and forwarded immediately.",
+          "让房源分享和区域诱饵都能直接产出可转发、可留资、可跟进的客户入口。",
+          "Turn both listing shares and area magnets into client-ready entry points that can be forwarded, captured, and followed up.",
         ),
-        actionLabel: text("打开 Magic Share", "Open Magic Share"),
+        actionLabel: text("打开 Area Magnet", "Open Area Magnet"),
         modules: [
+          text("Area Magnet", "Area Magnet"),
           text("Magic Share", "Magic Share"),
-          text("复制摘要", "Summary Copy"),
           text("房源订阅", "Subscriptions"),
         ],
       },

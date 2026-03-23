@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
+  shareLeads,
   shareSessionEvents,
   shareSessions,
 } from "../drizzle/schema";
@@ -19,6 +20,7 @@ import { recordUsage, type ApiKeyContext, validateApiKey } from "./apiKeyAuth";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { generateAreaMagnetReport } from "./share/areaMagnetService";
 // TODO: image URLs will come from listing-data-service API
 
 type Database = NonNullable<Awaited<ReturnType<typeof getDb>>>;
@@ -92,6 +94,56 @@ const shareConfigSchema = z.object({
   strategyPoints: z.array(z.string().trim().min(1).max(200)).max(10).optional(),
 });
 
+const shareSessionTypeSchema = z.enum(["listing_share", "area_magnet"]);
+const areaMagnetScopeTypeSchema = z.enum(["zip", "neighborhood", "building"]);
+const areaMagnetTypeSchema = z.enum([
+  "spring_market",
+  "school_move_up",
+  "off_market_brief",
+  "renovation_roi",
+]);
+const areaMagnetAudienceSchema = z.enum(["seller", "buyer", "investor", "move_up"]);
+const areaMagnetToneSchema = z.enum(["advisory", "urgent", "luxury"]);
+const captureFieldSchema = z.enum(["email", "phone"]);
+
+const createAreaMagnetInputSchema = z.object({
+  scopeType: areaMagnetScopeTypeSchema,
+  query: z.string().trim().min(2).max(120),
+  magnetType: areaMagnetTypeSchema,
+  audience: areaMagnetAudienceSchema,
+  captureFields: z.array(captureFieldSchema).min(1).max(2).default(["email"]),
+  tone: areaMagnetToneSchema.default("advisory"),
+  expiresInDays: z.number().int().min(1).max(90).optional(),
+  agentBranding: agentBrandingSchema,
+});
+
+const submitLeadInputSchema = z
+  .object({
+    token: z.string().trim().min(8).max(128),
+    name: z.string().trim().max(255).optional(),
+    email: z.string().trim().max(320).optional(),
+    phone: z.string().trim().max(64).optional(),
+    intent: z.string().trim().max(120).optional(),
+    notes: z.string().trim().max(1000).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.email && !value.phone) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Email or phone is required.",
+        path: ["email"],
+      });
+    }
+
+    if (value.email && !z.string().email().safeParse(value.email).success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Email is invalid.",
+        path: ["email"],
+      });
+    }
+  });
+
 type ExternalListingInput = z.infer<typeof externalListingSchema>;
 
 const createSessionInputSchema = z.object({
@@ -159,6 +211,11 @@ function toNumber(value: string | number | null | undefined): number | null {
     if (Number.isFinite(parsed)) return parsed;
   }
   return null;
+}
+
+function normalizeOptionalString(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : null;
 }
 
 function haversineKm(
@@ -853,6 +910,7 @@ async function ensureShareTables(db: Database): Promise<void> {
           "id" serial PRIMARY KEY NOT NULL,
           "token" varchar(64) NOT NULL,
           "status" varchar(20) DEFAULT 'active' NOT NULL,
+          "session_type" varchar(32) DEFAULT 'listing_share' NOT NULL,
           "title" varchar(255),
           "intro_message" text,
           "client_name" varchar(255),
@@ -863,8 +921,12 @@ async function ensureShareTables(db: Database): Promise<void> {
           "created_by_email" varchar(320),
           "agent_branding" jsonb NOT NULL,
           "share_config" jsonb,
+          "magnet_scope" jsonb,
+          "magnet_payload" jsonb,
           "listing_keys" jsonb NOT NULL,
           "tour_plan" jsonb,
+          "external_listings" jsonb,
+          "wechat_share_config" jsonb,
           "expires_at" timestamp,
           "view_count" integer DEFAULT 0 NOT NULL,
           "last_viewed_at" timestamp,
@@ -873,20 +935,14 @@ async function ensureShareTables(db: Database): Promise<void> {
         );
       `);
 
-      await db.execute(sql`
-        ALTER TABLE "share_sessions"
-          ADD COLUMN IF NOT EXISTS "created_by_company_id" integer;
-      `);
-
-      await db.execute(sql`
-        ALTER TABLE "share_sessions"
-          ADD COLUMN IF NOT EXISTS "created_by_api_key_id" integer;
-      `);
-
-      await db.execute(sql`
-        ALTER TABLE "share_sessions"
-          ADD COLUMN IF NOT EXISTS "share_config" jsonb;
-      `);
+      await db.execute(sql`ALTER TABLE "share_sessions" ADD COLUMN IF NOT EXISTS "created_by_company_id" integer;`);
+      await db.execute(sql`ALTER TABLE "share_sessions" ADD COLUMN IF NOT EXISTS "created_by_api_key_id" integer;`);
+      await db.execute(sql`ALTER TABLE "share_sessions" ADD COLUMN IF NOT EXISTS "share_config" jsonb;`);
+      await db.execute(sql`ALTER TABLE "share_sessions" ADD COLUMN IF NOT EXISTS "session_type" varchar(32) DEFAULT 'listing_share';`);
+      await db.execute(sql`ALTER TABLE "share_sessions" ADD COLUMN IF NOT EXISTS "magnet_scope" jsonb;`);
+      await db.execute(sql`ALTER TABLE "share_sessions" ADD COLUMN IF NOT EXISTS "magnet_payload" jsonb;`);
+      await db.execute(sql`ALTER TABLE "share_sessions" ADD COLUMN IF NOT EXISTS "external_listings" jsonb;`);
+      await db.execute(sql`ALTER TABLE "share_sessions" ADD COLUMN IF NOT EXISTS "wechat_share_config" jsonb;`);
 
       await db.execute(sql`
         CREATE TABLE IF NOT EXISTS "share_session_events" (
@@ -899,34 +955,24 @@ async function ensureShareTables(db: Database): Promise<void> {
       `);
 
       await db.execute(sql`
-        CREATE UNIQUE INDEX IF NOT EXISTS "share_sessions_token_unique"
-          ON "share_sessions" ("token");
+        CREATE TABLE IF NOT EXISTS "share_leads" (
+          "id" serial PRIMARY KEY NOT NULL,
+          "share_session_id" integer NOT NULL,
+          "name" varchar(255),
+          "email" varchar(320),
+          "phone" varchar(64),
+          "intent" varchar(120),
+          "notes" text,
+          "created_at" timestamp DEFAULT now() NOT NULL
+        );
       `);
 
-      await db.execute(sql`
-        CREATE INDEX IF NOT EXISTS "share_sessions_creator_idx"
-          ON "share_sessions" ("created_by_open_id", "created_at" DESC);
-      `);
-
-      await db.execute(sql`
-        CREATE INDEX IF NOT EXISTS "share_sessions_company_idx"
-          ON "share_sessions" ("created_by_company_id", "created_at" DESC);
-      `);
-
-      await db.execute(sql`
-        CREATE INDEX IF NOT EXISTS "share_sessions_api_key_idx"
-          ON "share_sessions" ("created_by_api_key_id", "created_at" DESC);
-      `);
-
-      await db.execute(sql`
-        CREATE INDEX IF NOT EXISTS "share_session_events_session_idx"
-          ON "share_session_events" ("share_session_id", "created_at" DESC);
-      `);
-
-      await db.execute(sql`
-        ALTER TABLE "share_sessions"
-          ADD COLUMN IF NOT EXISTS "external_listings" jsonb;
-      `);
+      await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS "share_sessions_token_unique" ON "share_sessions" ("token");`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS "share_sessions_creator_idx" ON "share_sessions" ("created_by_open_id", "created_at" DESC);`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS "share_sessions_company_idx" ON "share_sessions" ("created_by_company_id", "created_at" DESC);`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS "share_sessions_api_key_idx" ON "share_sessions" ("created_by_api_key_id", "created_at" DESC);`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS "share_session_events_session_idx" ON "share_session_events" ("share_session_id", "created_at" DESC);`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS "share_leads_session_idx" ON "share_leads" ("share_session_id", "created_at" DESC);`);
     })().catch((error) => {
       ensureShareTablesPromise = null;
       throw error;
@@ -1025,9 +1071,11 @@ type SessionListRow = {
   id: number;
   token: string;
   status: string;
+  sessionType: string;
   title: string | null;
   clientName: string | null;
   listingKeys: unknown;
+  magnetScope: unknown;
   tourPlan: unknown;
   viewCount: number;
   lastViewedAt: Date | null;
@@ -1042,6 +1090,7 @@ type SessionActivitySummary = {
   wechatCopyCount: number;
   tourInterestCount: number;
   routeRequestCount: number;
+  leadCount: number;
   lastActivityAt: Date | null;
   followUpSignal: "new" | "warm" | "hot" | "quiet";
 };
@@ -1055,7 +1104,12 @@ function deriveFollowUpSignal(
   const lastActivityAt = summary.lastActivityAt ?? row.lastViewedAt ?? row.createdAt;
   const hoursSinceActivity = (now - lastActivityAt.getTime()) / 36e5;
 
-  if (summary.contactClickCount > 0 || summary.tourInterestCount > 0 || summary.routeRequestCount > 0) {
+  if (
+    summary.leadCount > 0 ||
+    summary.contactClickCount > 0 ||
+    summary.tourInterestCount > 0 ||
+    summary.routeRequestCount > 0
+  ) {
     return "hot";
   }
 
@@ -1074,6 +1128,15 @@ function deriveFollowUpSignal(
   return "quiet";
 }
 
+function getScopeLabel(magnetScope: unknown) {
+  const record = asRecord(magnetScope);
+  const label = record?.normalizedLabel;
+  const query = record?.query;
+  if (typeof label === "string" && label.trim().length > 0) return label.trim();
+  if (typeof query === "string" && query.trim().length > 0) return query.trim();
+  return null;
+}
+
 async function buildSessionActivityMap(db: Database, rows: SessionListRow[]) {
   const bySession = new Map<number, SessionActivitySummary>();
   if (rows.length === 0) return bySession;
@@ -1086,6 +1149,7 @@ async function buildSessionActivityMap(db: Database, rows: SessionListRow[]) {
       wechatCopyCount: 0,
       tourInterestCount: 0,
       routeRequestCount: 0,
+      leadCount: 0,
       lastActivityAt: row.lastViewedAt ?? row.createdAt,
     };
 
@@ -1093,6 +1157,25 @@ async function buildSessionActivityMap(db: Database, rows: SessionListRow[]) {
       ...base,
       followUpSignal: deriveFollowUpSignal(row, base),
     });
+  }
+
+  const leadRows = await db
+    .select({
+      shareSessionId: shareLeads.shareSessionId,
+      leadCount: sql<number>`count(*)`,
+      lastLeadAt: sql<Date | null>`max(${shareLeads.createdAt})`,
+    })
+    .from(shareLeads)
+    .where(inArray(shareLeads.shareSessionId, rows.map((row) => row.id)))
+    .groupBy(shareLeads.shareSessionId);
+
+  for (const lead of leadRows) {
+    const current = bySession.get(lead.shareSessionId);
+    if (!current) continue;
+    current.leadCount = Number(lead.leadCount) || 0;
+    if (lead.lastLeadAt && (!current.lastActivityAt || lead.lastLeadAt.getTime() > current.lastActivityAt.getTime())) {
+      current.lastActivityAt = lead.lastLeadAt;
+    }
   }
 
   const eventRows = await db
@@ -1154,16 +1237,20 @@ function serializeSessionRow(
   const tourStops = Array.isArray(tourRecord?.stops)
     ? tourRecord.stops.length
     : 0;
+  const leadCount = summary?.leadCount ?? 0;
 
   return {
     token: row.token,
     sharePath: `/s/${row.token}`,
     status: row.status,
+    sessionType: row.sessionType,
     title: row.title,
     clientName: row.clientName,
+    scopeLabel: getScopeLabel(row.magnetScope),
     listingCount: keys.length,
     tourStops,
     viewCount: row.viewCount,
+    leadCount,
     lastViewedAt: row.lastViewedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     expiresAt: row.expiresAt?.toISOString() ?? null,
@@ -1176,6 +1263,7 @@ function serializeSessionRow(
       wechatCopy: summary?.wechatCopyCount ?? 0,
       tourInterest: summary?.tourInterestCount ?? 0,
       routeRequest: summary?.routeRequestCount ?? 0,
+      leadSubmit: leadCount,
     },
   };
 }
@@ -1236,6 +1324,7 @@ export const shareRouter = router({
       await db.insert(shareSessions).values({
         token,
         status: "active",
+        sessionType: "listing_share",
         title: input.title.trim(),
         introMessage: input.introMessage?.trim() || null,
         clientName: input.clientName?.trim() || null,
@@ -1246,6 +1335,8 @@ export const shareRouter = router({
         createdByEmail: ctx.user.email ?? null,
         agentBranding: normalizedBranding,
         shareConfig: input.shareConfig ?? null,
+        magnetScope: null,
+        magnetPayload: null,
         listingKeys: validListingKeys,
         tourPlan,
         expiresAt,
@@ -1268,39 +1359,132 @@ export const shareRouter = router({
       };
     }),
 
-  listMine: protectedProcedure.query(async ({ ctx }) => {
-    const db = await getDb();
-    if (!db) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Database not available",
+  createAreaMagnet: protectedProcedure
+    .input(createAreaMagnetInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+      }
+
+      await ensureShareTables(db);
+
+      let generated: Awaited<ReturnType<typeof generateAreaMagnetReport>>;
+      try {
+        generated = await generateAreaMagnetReport(input);
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Area magnet generation failed.",
+        });
+      }
+
+      const token = await generateUniqueToken(db);
+      const now = new Date();
+      const expiresAt =
+        input.expiresInDays !== undefined
+          ? new Date(now.getTime() + input.expiresInDays * 24 * 60 * 60 * 1000)
+          : null;
+
+      const normalizedBranding = normalizeBranding(input.agentBranding, {
+        name: ctx.user.name || "Agent",
+        title: "Local Market Advisor",
+        email: ctx.user.email,
       });
-    }
 
-    await ensureShareTables(db);
+      await db.insert(shareSessions).values({
+        token,
+        status: "active",
+        sessionType: "area_magnet",
+        title: generated.title,
+        introMessage: generated.introMessage,
+        clientName: null,
+        createdByOpenId: ctx.user.openId,
+        createdByCompanyId: null,
+        createdByApiKeyId: null,
+        createdByName: ctx.user.name ?? null,
+        createdByEmail: ctx.user.email ?? null,
+        agentBranding: normalizedBranding,
+        shareConfig: generated.shareConfig,
+        magnetScope: generated.magnetScope,
+        magnetPayload: generated.magnetPayload,
+        listingKeys: generated.listingKeys,
+        tourPlan: null,
+        expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      });
 
-    const rows = await db
-      .select({
-        id: shareSessions.id,
-        token: shareSessions.token,
-        status: shareSessions.status,
-        title: shareSessions.title,
-        clientName: shareSessions.clientName,
-        listingKeys: shareSessions.listingKeys,
-        tourPlan: shareSessions.tourPlan,
-        viewCount: shareSessions.viewCount,
-        lastViewedAt: shareSessions.lastViewedAt,
-        createdAt: shareSessions.createdAt,
-        expiresAt: shareSessions.expiresAt,
-      })
-      .from(shareSessions)
-      .where(eq(shareSessions.createdByOpenId, ctx.user.openId))
-      .orderBy(desc(shareSessions.createdAt))
-      .limit(100);
+      const origin = inferOrigin(ctx.headers);
+      const sharePath = `/s/${token}`;
+      const payloadRecord = asRecord(generated.magnetPayload);
 
-    const activityBySession = await buildSessionActivityMap(db, rows);
-    return rows.map((row) => serializeSessionRow(row, activityBySession.get(row.id)));
-  }),
+      return {
+        token,
+        sharePath,
+        shareUrl: origin ? `${origin}${sharePath}` : null,
+        sessionType: "area_magnet",
+        title: generated.title,
+        scopeLabel: generated.magnetScope.normalizedLabel,
+        listingCount: generated.listingKeys.length,
+        generatedBy: generated.generatedBy,
+        preview: {
+          summary: generated.introMessage,
+          strategyPoints: generated.strategyPoints,
+          metrics: Array.isArray(payloadRecord?.metrics) ? payloadRecord.metrics : [],
+        },
+      };
+    }),
+
+  listMine: protectedProcedure
+    .input(z.object({ sessionType: shareSessionTypeSchema.optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+      }
+
+      await ensureShareTables(db);
+
+      const conditions = [eq(shareSessions.createdByOpenId, ctx.user.openId)];
+      if (input?.sessionType) {
+        conditions.push(eq(shareSessions.sessionType, input.sessionType));
+      }
+      const predicate = conditions.length === 1 ? conditions[0] : and(...conditions);
+
+      const rows = await db
+        .select({
+          id: shareSessions.id,
+          token: shareSessions.token,
+          status: shareSessions.status,
+          sessionType: shareSessions.sessionType,
+          title: shareSessions.title,
+          clientName: shareSessions.clientName,
+          listingKeys: shareSessions.listingKeys,
+          magnetScope: shareSessions.magnetScope,
+          tourPlan: shareSessions.tourPlan,
+          viewCount: shareSessions.viewCount,
+          lastViewedAt: shareSessions.lastViewedAt,
+          createdAt: shareSessions.createdAt,
+          expiresAt: shareSessions.expiresAt,
+        })
+        .from(shareSessions)
+        .where(predicate)
+        .orderBy(desc(shareSessions.createdAt))
+        .limit(100);
+
+      const activityBySession = await buildSessionActivityMap(db, rows);
+      return rows.map((row) => serializeSessionRow(row, activityBySession.get(row.id)));
+    }),
 
   revokeSession: protectedProcedure
     .input(z.object({ token: z.string().trim().min(8).max(128) }))
@@ -1471,6 +1655,7 @@ export const shareRouter = router({
         await db.insert(shareSessions).values({
           token,
           status: "active",
+          sessionType: "listing_share",
           title: input.title.trim(),
           introMessage: input.introMessage?.trim() || null,
           clientName: input.clientName?.trim() || null,
@@ -1484,6 +1669,8 @@ export const shareRouter = router({
               : null,
           agentBranding: normalizedBranding,
           shareConfig: input.shareConfig ?? null,
+          magnetScope: null,
+          magnetPayload: null,
           listingKeys: validListingKeys,
           tourPlan,
           expiresAt,
@@ -1559,9 +1746,11 @@ export const shareRouter = router({
             id: shareSessions.id,
             token: shareSessions.token,
             status: shareSessions.status,
+            sessionType: shareSessions.sessionType,
             title: shareSessions.title,
             clientName: shareSessions.clientName,
             listingKeys: shareSessions.listingKeys,
+            magnetScope: shareSessions.magnetScope,
             tourPlan: shareSessions.tourPlan,
             viewCount: shareSessions.viewCount,
             lastViewedAt: shareSessions.lastViewedAt,
@@ -1946,6 +2135,7 @@ export const shareRouter = router({
       return {
         session: {
           token: session.token,
+          sessionType: session.sessionType,
           title: session.title,
           introMessage: session.introMessage,
           clientName: session.clientName,
@@ -1955,10 +2145,98 @@ export const shareRouter = router({
         },
         agentBranding,
         shareConfig,
+        magnetScope: asRecord(session.magnetScope),
+        magnetPayload: asRecord(session.magnetPayload),
         tourPlan,
         externalListings,
         listings: enrichedListings,
       };
+    }),
+
+  submitLead: publicProcedure
+    .input(submitLeadInputSchema)
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+      }
+
+      await ensureShareTables(db);
+
+      const rows = await db
+        .select({
+          id: shareSessions.id,
+          status: shareSessions.status,
+          expiresAt: shareSessions.expiresAt,
+          sessionType: shareSessions.sessionType,
+          magnetPayload: shareSessions.magnetPayload,
+        })
+        .from(shareSessions)
+        .where(eq(shareSessions.token, input.token))
+        .limit(1);
+
+      const session = rows[0];
+      if (!session || session.status !== "active") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Share link not found." });
+      }
+
+      if (session.expiresAt && session.expiresAt.getTime() <= Date.now()) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Share link has expired." });
+      }
+
+      if (session.sessionType !== "area_magnet") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Lead capture is only enabled for area magnet sessions.",
+        });
+      }
+
+      const magnetPayload = asRecord(session.magnetPayload) ?? {};
+      const capture = asRecord(magnetPayload.capture) ?? {};
+      const captureFields = asStringArray(capture.fields).filter(
+        (field): field is "email" | "phone" => field === "email" || field === "phone"
+      );
+      const requiredFields = captureFields.length > 0 ? captureFields : ["email"];
+
+      const name = normalizeOptionalString(input.name);
+      const email = normalizeOptionalString(input.email);
+      const phone = normalizeOptionalString(input.phone);
+      const intent = normalizeOptionalString(input.intent);
+      const notes = normalizeOptionalString(input.notes);
+
+      if (requiredFields.includes("email") && !email) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Email is required." });
+      }
+      if (requiredFields.includes("phone") && !phone) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Phone is required." });
+      }
+      if (!email && !phone) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Email or phone is required." });
+      }
+
+      await db.insert(shareLeads).values({
+        shareSessionId: session.id,
+        name,
+        email,
+        phone,
+        intent,
+        notes,
+      });
+
+      await db.insert(shareSessionEvents).values({
+        shareSessionId: session.id,
+        eventType: "lead_submit",
+        eventData: {
+          hasEmail: Boolean(email),
+          hasPhone: Boolean(phone),
+          intent,
+        },
+      });
+
+      return { success: true };
     }),
 
   trackEvent: publicProcedure

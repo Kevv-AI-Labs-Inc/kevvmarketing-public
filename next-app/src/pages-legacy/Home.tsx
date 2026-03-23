@@ -136,7 +136,7 @@ export default function Home() {
     {
       id: "reach",
       icon: Share2,
-      route: "/magic-share",
+      route: "/area-magnet",
       eyebrow: pickText(locale, copy.workspaces.reach.eyebrow),
       title: pickText(locale, copy.workspaces.reach.title),
       description: pickText(locale, copy.workspaces.reach.description),
@@ -208,7 +208,7 @@ export default function Home() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80 px-5">
-                <Link href="/magic-share">
+                <Link href="/area-magnet">
                   {pickText(locale, copy.actions.launchShare)}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
