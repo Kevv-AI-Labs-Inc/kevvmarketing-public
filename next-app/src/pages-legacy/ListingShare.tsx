@@ -26,6 +26,7 @@ import { Separator } from "@/components/ui/separator";
 import { useT } from "@/i18n";
 import { pickText } from "@/i18n/copy";
 import { sharePageCopy } from "@/i18n/share-pages";
+import AreaMagnetShare from "@/pages-legacy/AreaMagnetShare";
 import { trpc } from "@/lib/trpc";
 import type { AppRouter } from "@/routers";
 import { toast } from "sonner";
@@ -276,6 +277,10 @@ export default function ListingShare({ token }: ListingShareProps) {
         </div>
       </div>
     );
+  }
+
+  if (data.session.sessionType === "area_magnet") {
+    return <AreaMagnetShare token={token} data={data} trackEvent={trackEvent} />;
   }
 
   return (

@@ -12,6 +12,7 @@ import {
   Flame,
   LayoutDashboard,
   Navigation,
+  MapPin,
   Search,
   Share2,
   Sparkles,
@@ -139,8 +140,28 @@ export const marketingCapabilities: MarketingCapability[] = [
     alignment: "matched",
   },
   {
-    id: "listing-subscription",
+    id: "area-magnet",
     order: 3,
+    label: { zh: "地区诱饵", en: "Area Magnet" },
+    category: "search-distribution",
+    icon: MapPin,
+    description: {
+      zh: "按邮编、社区或楼盘生成可留资的区域报告分享页。",
+      en: "Generate lead-capture share pages by ZIP, neighborhood, or building.",
+    },
+    currentModule: { zh: "Area Magnet", en: "Area Magnet" },
+    compareNote: {
+      zh: "和 Magic Share 平行，但底层复用同一套 share session、公开页和互动追踪。",
+      en: "Runs parallel to Magic Share while reusing the same share session, public route, and engagement tracking stack.",
+    },
+    route: "/area-magnet",
+    routeLabel: { zh: "打开 Area Magnet", en: "Open Area Magnet" },
+    status: "ready",
+    alignment: "matched",
+  },
+  {
+    id: "listing-subscription",
+    order: 4,
     label: { zh: "房源订阅", en: "Listing Subscription" },
     category: "search-distribution",
     icon: Bell,
@@ -160,7 +181,7 @@ export const marketingCapabilities: MarketingCapability[] = [
   },
   {
     id: "summary-copy",
-    order: 4,
+    order: 5,
     label: { zh: "复制摘要", en: "Summary Copy" },
     category: "search-distribution",
     icon: Copy,
@@ -180,7 +201,7 @@ export const marketingCapabilities: MarketingCapability[] = [
   },
   {
     id: "flyer-studio",
-    order: 5,
+    order: 6,
     label: { zh: "制作海报", en: "Flyer Creation" },
     category: "content-production",
     icon: FileText,
@@ -200,7 +221,7 @@ export const marketingCapabilities: MarketingCapability[] = [
   },
   {
     id: "video-studio",
-    order: 6,
+    order: 7,
     label: { zh: "制作视频", en: "Video Creation" },
     category: "content-production",
     icon: Clapperboard,
@@ -220,7 +241,7 @@ export const marketingCapabilities: MarketingCapability[] = [
   },
   {
     id: "visitor-insights",
-    order: 7,
+    order: 8,
     label: { zh: "访客", en: "Visitors" },
     category: "growth-community",
     icon: Eye,
@@ -238,7 +259,7 @@ export const marketingCapabilities: MarketingCapability[] = [
   },
   {
     id: "agent-community",
-    order: 8,
+    order: 9,
     label: { zh: "经纪人目录", en: "Agent Directory" },
     category: "growth-community",
     icon: Users,
@@ -258,7 +279,7 @@ export const marketingCapabilities: MarketingCapability[] = [
   },
   {
     id: "xhs-notes",
-    order: 9,
+    order: 10,
     label: { zh: "小红书笔记", en: "Xiaohongshu Notes" },
     category: "content-production",
     icon: BookImage,
@@ -367,6 +388,12 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
         icon: Share2,
         label: { zh: "批量分享", en: "Magic Share" },
         path: "/magic-share",
+      },
+      {
+        id: "area-magnet",
+        icon: MapPin,
+        label: { zh: "地区诱饵", en: "Area Magnet" },
+        path: "/area-magnet",
       },
       {
         id: "smart-match",

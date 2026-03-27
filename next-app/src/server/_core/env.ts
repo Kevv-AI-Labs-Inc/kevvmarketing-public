@@ -30,6 +30,7 @@ export const ENV = {
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
   openaiBaseUrl: process.env.OPENAI_BASE_URL ?? "https://api.openai.com",
   openaiModel: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+  openaiAreaMagnetModel: process.env.OPENAI_AREA_MAGNET_MODEL ?? "gpt-5-pro",
   openaiSearchModel: process.env.OPENAI_SEARCH_MODEL ?? "gpt-4o-search-preview",
   openaiEmbeddingModel: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small",
   openaiBatchEndpoint: process.env.OPENAI_BATCH_ENDPOINT ?? "/v1/embeddings",

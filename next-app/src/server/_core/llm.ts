@@ -69,6 +69,8 @@ export type ToolChoice =
   | ToolChoiceExplicit;
 
 export type InvokeParams = {
+  provider?: "gemini" | "openai";
+  model?: string;
   messages: Message[];
   tools?: Tool[];
   toolChoice?: ToolChoice;
@@ -146,7 +148,7 @@ async function invokeGemini(params: InvokeParams): Promise<InvokeResult> {
   }
 
   const genAI = new GoogleGenerativeAI(ENV.geminiApiKey);
-  const modelName = ENV.geminiModel;
+  const modelName = params.model ?? ENV.geminiModel;
 
   // Extract system instruction
   const systemMessages = params.messages.filter((m) => m.role === "system");
@@ -285,7 +287,7 @@ async function invokeOpenAI(params: InvokeParams): Promise<InvokeResult> {
   }
 
   const apiUrl = buildOpenAiApiUrl("chat/completions", { scope: "chat" });
-  const modelName = ENV.openaiModel;
+  const modelName = params.model ?? ENV.openaiModel;
 
   const payload: Record<string, unknown> = {
     model: modelName,
@@ -333,7 +335,8 @@ async function invokeOpenAI(params: InvokeParams): Promise<InvokeResult> {
  * Uses AI_PROVIDER env var ("gemini" or "openai").
  */
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  if (ENV.aiProvider === "openai") {
+  const provider = params.provider ?? ENV.aiProvider;
+  if (provider === "openai") {
     return invokeOpenAI(params);
   }
   return invokeGemini(params);
