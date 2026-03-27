@@ -31,7 +31,28 @@ export function useAuth(options?: UseAuthOptions) {
         router.push("/login");
     }, [router]);
 
+    const isDevBypass =
+        process.env.NODE_ENV !== "production" && status === "unauthenticated";
+
     const state = useMemo(() => {
+        // Dev-mode bypass: provide a fake demo user when not logged in
+        if (isDevBypass) {
+            return {
+                user: {
+                    id: 0,
+                    openId: "dev-demo-user",
+                    name: "Demo User",
+                    email: "demo@kevv.ai",
+                    role: "admin" as const,
+                    picture: null,
+                    authProvider: "dev-bypass",
+                },
+                loading: false,
+                error: null as Error | null,
+                isAuthenticated: true,
+            };
+        }
+
         type SessionUser = {
             userId?: number;
             role?: "user" | "admin";
@@ -57,7 +78,7 @@ export function useAuth(options?: UseAuthOptions) {
             error: null as Error | null,
             isAuthenticated: status === "authenticated",
         };
-    }, [session, status]);
+    }, [session, status, isDevBypass]);
 
     return {
         ...state,

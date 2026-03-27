@@ -53,6 +53,25 @@ export async function createContext(
     user = null;
   }
 
+  // Dev-mode bypass: provide a fake demo user when not authenticated
+  if (!user && process.env.NODE_ENV !== "production") {
+    const now = new Date();
+    user = {
+      id: 0,
+      openId: "dev-demo-user",
+      name: "Demo User",
+      email: "demo@kevv.ai",
+      loginMethod: "dev-bypass",
+      role: "admin",
+      createdAt: now,
+      updatedAt: now,
+      lastSignedIn: now,
+      picture: null,
+      googleId: null,
+      microsoftEntraId: null,
+    } as User;
+  }
+
   return {
     user,
     headers,
