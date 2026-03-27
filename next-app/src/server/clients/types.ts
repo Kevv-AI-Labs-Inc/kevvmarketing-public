@@ -85,6 +85,7 @@ export interface SyncStatusResponse {
 // ─── Request Types ─────────────────────────────────────────
 
 export interface SearchFilters {
+  search?: string;
   status?: string;
   city?: string;
   stateOrProvince?: string;

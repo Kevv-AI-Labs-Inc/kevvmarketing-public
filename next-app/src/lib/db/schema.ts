@@ -153,6 +153,7 @@ export const shareSessions = pgTable(
     id: serial("id").primaryKey(),
     token: varchar("token", { length: 64 }).notNull(),
     status: varchar("status", { length: 20 }).default("active").notNull(), // active | revoked | expired
+    sessionType: varchar("session_type", { length: 32 }).default("listing_share").notNull(),
     title: varchar("title", { length: 255 }),
     introMessage: text("intro_message"),
     clientName: varchar("client_name", { length: 255 }),
@@ -163,6 +164,8 @@ export const shareSessions = pgTable(
     createdByEmail: varchar("created_by_email", { length: 320 }),
     agentBranding: jsonb("agent_branding").notNull(),
     shareConfig: jsonb("share_config"),
+    magnetScope: jsonb("magnet_scope"),
+    magnetPayload: jsonb("magnet_payload"),
     listingKeys: jsonb("listing_keys").notNull(), // string[]
     tourPlan: jsonb("tour_plan"), // { startTime, slotMinutes, travelMinutes, stops: [...] }
     externalListings: jsonb("external_listings"), // ExternalListing[]
@@ -185,6 +188,17 @@ export const shareSessionEvents = pgTable("share_session_events", {
   shareSessionId: integer("share_session_id").notNull(),
   eventType: varchar("event_type", { length: 50 }).notNull(),
   eventData: jsonb("event_data"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const shareLeads = pgTable("share_leads", {
+  id: serial("id").primaryKey(),
+  shareSessionId: integer("share_session_id").notNull(),
+  name: varchar("name", { length: 255 }),
+  email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 64 }),
+  intent: varchar("intent", { length: 120 }),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -262,6 +276,8 @@ export type ShareSession = typeof shareSessions.$inferSelect;
 export type InsertShareSession = typeof shareSessions.$inferInsert;
 export type ShareSessionEvent = typeof shareSessionEvents.$inferSelect;
 export type InsertShareSessionEvent = typeof shareSessionEvents.$inferInsert;
+export type ShareLead = typeof shareLeads.$inferSelect;
+export type InsertShareLead = typeof shareLeads.$inferInsert;
 export type DealStory = typeof dealStories.$inferSelect;
 export type InsertDealStory = typeof dealStories.$inferInsert;
 export type ShowingFeedback = typeof showingFeedback.$inferSelect;
