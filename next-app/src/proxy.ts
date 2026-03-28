@@ -11,6 +11,11 @@ const EXACT_PUBLIC_PATHS = ["/", "/privacy", "/terms"];
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Dev-mode bypass: skip auth check entirely for local demo
+  if (process.env.NODE_ENV !== "production") {
+    return NextResponse.next();
+  }
+
   // Allow public paths
   if (
     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
