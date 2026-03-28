@@ -5,7 +5,6 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
-import { ENV } from "./_core/env";
 
 const UNAUTHED_ERR_MSG = "Please login (10001)";
 const NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";

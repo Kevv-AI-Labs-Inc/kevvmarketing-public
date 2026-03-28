@@ -184,7 +184,7 @@ export default function ListingShare({ token }: ListingShareProps) {
     }));
 
     return [...mlsItems, ...externalItems];
-  }, [copy.pricePending, data, pick]);
+  }, [copy.externalListingFallback, copy.pricePending, data, pick]);
 
   const tourStops = useMemo(() => getTourStops(data?.tourPlan), [data?.tourPlan]);
 
