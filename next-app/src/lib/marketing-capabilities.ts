@@ -434,6 +434,12 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
         label: { zh: "明信片", en: "Postcards" },
         path: "/postcards",
       },
+      {
+        id: "leads",
+        icon: Users,
+        label: { zh: "线索工作台", en: "Leads" },
+        path: "/leads",
+      },
     ],
   },
   {

@@ -100,3 +100,71 @@ export async function triggerLeadAutomation(
     enrollmentCount,
   };
 }
+
+export async function enrollContactsInDripCampaign(
+  params: {
+    agentId: number;
+    campaignId: number;
+    contactIds: number[];
+    source: string;
+  },
+  db: Db = getDb()
+) {
+  const [campaign] = await db
+    .select()
+    .from(dripCampaigns)
+    .where(
+      and(
+        eq(dripCampaigns.id, params.campaignId),
+        eq(dripCampaigns.agentId, params.agentId)
+      )
+    )
+    .limit(1);
+
+  if (!campaign) {
+    throw new Error("Drip campaign not found");
+  }
+
+  let enrolled = 0;
+
+  for (const contactId of params.contactIds) {
+    const [existingEnrollment] = await db
+      .select({ id: dripEnrollments.id })
+      .from(dripEnrollments)
+      .where(
+        and(
+          eq(dripEnrollments.campaignId, campaign.id),
+          eq(dripEnrollments.contactId, contactId)
+        )
+      )
+      .limit(1);
+
+    if (existingEnrollment) continue;
+
+    await db.insert(dripEnrollments).values({
+      campaignId: campaign.id,
+      contactId,
+      currentStep: 0,
+      status: "active",
+      metadata: {
+        source: params.source,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    enrolled += 1;
+  }
+
+  if (enrolled > 0) {
+    await db
+      .update(dripCampaigns)
+      .set({
+        totalEnrollments: sql`${dripCampaigns.totalEnrollments} + ${enrolled}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(dripCampaigns.id, campaign.id));
+  }
+
+  return { enrolled };
+}
