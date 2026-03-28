@@ -9,6 +9,7 @@ import { createValuationRun } from "@/server/homeValue/valuationRunService";
 import { generateHomeValueEstimate } from "@/server/homeValue/valuationEngine";
 import { captureLead, recordClientEvent } from "@/server/leads/leadCaptureService";
 import { triggerLeadAutomation } from "@/server/leads/leadAutomationService";
+import { recalculateScore } from "@/server/tracking/engagementScorer";
 
 const slugSchema = z.object({
   slug: z.string().trim().min(2).max(64),
@@ -292,6 +293,8 @@ export const homeValueRouter = router({
         },
         db
       );
+
+      await recalculateScore(lead.id, profile.userId ?? undefined);
 
       return {
         ok: true,

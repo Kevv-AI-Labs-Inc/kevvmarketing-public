@@ -19,8 +19,10 @@ import {
   updateConversationSummary,
 } from "@/server/conversations/conversationService";
 import { buildDemoAgentProfile } from "@/server/demo/factories";
+import { triggerLeadAutomation } from "@/server/leads/leadAutomationService";
 import { captureLead, recordClientEvent } from "@/server/leads/leadCaptureService";
 import { generateAgentSiteChatReply } from "@/server/agentSite/chatService";
+import { recalculateScore } from "@/server/tracking/engagementScorer";
 import {
   agentSiteTemplateIds,
   buildAgentSlug,
@@ -325,34 +327,56 @@ export const profileRouter = router({
   submitInquiry: publicProcedure
     .input(submitInquiryInputSchema)
     .mutation(async ({ ctx, input }) => {
+      const db = getDb();
       const profile = await requirePublicProfile(input.slug);
       const firstName = input.senderName.split(" ")[0] ?? input.senderName;
 
-      const contact = await captureLead({
-        agentId: profile.userId ?? undefined,
-        agentProfileId: profile.id,
-        source: "agent_site_form",
-        sourceRef: profile.slug,
-        name: input.senderName,
-        firstName,
-        email: input.senderEmail,
-        phone: input.senderPhone,
-        area: input.area,
-        timeline: input.timeline,
-        summary: `${input.subject}: ${input.message}`,
-        notes: input.message,
-        intent: /sell|selling|seller|估值|卖房/i.test(input.message) ? "selling" : "buying",
-        score: /call|showing|tour|schedule|book|ready|尽快|联系/i.test(input.message) ? "hot" : "warm",
-        tags: ["agent-site", "contact-form"],
-        preferredLanguage: /[\u4e00-\u9fff]/.test(input.message) ? "zh" : "en",
-        eventType: "agent_site_inquiry",
-        eventData: {
-          subject: input.subject,
-          message: input.message,
+      const contact = await captureLead(
+        {
+          agentId: profile.userId ?? undefined,
+          agentProfileId: profile.id,
+          source: "agent_site_form",
+          sourceRef: profile.slug,
+          name: input.senderName,
+          firstName,
+          email: input.senderEmail,
+          phone: input.senderPhone,
+          area: input.area,
+          timeline: input.timeline,
+          summary: `${input.subject}: ${input.message}`,
+          notes: input.message,
+          intent: /sell|selling|seller|估值|卖房/i.test(input.message) ? "selling" : "buying",
+          score: /call|showing|tour|schedule|book|ready|尽快|联系/i.test(input.message) ? "hot" : "warm",
+          tags: ["agent-site", "contact-form"],
+          preferredLanguage: /[\u4e00-\u9fff]/.test(input.message) ? "zh" : "en",
+          eventType: "agent_site_inquiry",
+          eventData: {
+            subject: input.subject,
+            message: input.message,
+          },
+          ipAddress: ctx.ip ?? undefined,
+          userAgent: ctx.userAgent ?? undefined,
         },
-        ipAddress: ctx.ip ?? undefined,
-        userAgent: ctx.userAgent ?? undefined,
-      });
+        db
+      );
+
+      await triggerLeadAutomation(
+        {
+          agentId: profile.userId,
+          contactId: contact.id,
+          source: "agent_site_form",
+          title: `${contact.name || "New lead"} submitted an agent-site inquiry`,
+          description: `${input.subject} came in through the public profile form for ${profile.slug}.`,
+          priority: contact.score === "hot" ? "high" : "medium",
+          suggestedAction: "contact_now",
+          actionData: {
+            subject: input.subject,
+          },
+        },
+        db
+      );
+
+      await recalculateScore(contact.id, profile.userId ?? undefined);
 
       return {
         ok: true,
@@ -487,6 +511,22 @@ export const profileRouter = router({
         );
 
         await linkContactToConversationSession(session.id, contact.id, db);
+        await triggerLeadAutomation(
+          {
+            agentId: profile.userId,
+            contactId: contact.id,
+            source: "agent_site_chat",
+            title: `${contact.name || "New lead"} shared contact info in chat`,
+            description: `Visitor contact details were captured from the AI chat on ${profile.slug}.`,
+            priority: reply.score === "hot" ? "high" : "medium",
+            suggestedAction: "contact_now",
+            actionData: {
+              sessionKey: session.sessionKey,
+            },
+          },
+          db
+        );
+        await recalculateScore(contact.id, profile.userId ?? undefined);
       }
 
       return {
@@ -576,6 +616,23 @@ export const profileRouter = router({
           })
           .where(eq(conversationSessions.id, session.id));
       }
+
+      await triggerLeadAutomation(
+        {
+          agentId: profile.userId,
+          contactId: contact.id,
+          source: "agent_site_chat",
+          title: `${contact.name || "New lead"} completed the chat lead gate`,
+          description: `The public profile chat on ${profile.slug} produced a captured lead.`,
+          priority: contact.score === "hot" ? "high" : "medium",
+          suggestedAction: "contact_now",
+          actionData: {
+            sessionKey: session?.sessionKey ?? null,
+          },
+        },
+        db
+      );
+      await recalculateScore(contact.id, profile.userId ?? undefined);
 
       return {
         ok: true,

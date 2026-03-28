@@ -513,11 +513,15 @@ export async function createDraftPostcardCampaign(params: {
     .from(contacts)
     .where(and(eq(contacts.agentId, params.agentId), inArray(contacts.id, params.contactIds)));
 
-  if (audience.length === 0) {
+  const deliverableAudience = audience.filter(
+    (contact) => contact.addressLine1 && contact.city && contact.state && contact.postalCode
+  );
+
+  if (deliverableAudience.length === 0) {
     throw new Error("Select at least one contact before creating a campaign.");
   }
 
-  const quote = quotePostcardCampaign(template.sizeCode, audience.length);
+  const quote = quotePostcardCampaign(template.sizeCode, deliverableAudience.length);
 
   const [campaign] = await db
     .insert(postcardCampaigns)
@@ -532,14 +536,14 @@ export async function createDraftPostcardCampaign(params: {
       serviceFeeCents: quote.serviceFeeCents,
       totalCents: quote.totalCents,
       audienceSnapshot: {
-        contactIds: audience.map((contact) => contact.id),
+        contactIds: deliverableAudience.map((contact) => contact.id),
       },
       createdAt: new Date(),
       updatedAt: new Date(),
     })
     .returning();
 
-  const mailingRows: InsertPostcardMailing[] = audience.map((contact) => ({
+  const mailingRows: InsertPostcardMailing[] = deliverableAudience.map((contact) => ({
     campaignId: campaign.id,
     contactId: contact.id,
     provider: "lob_mock",
