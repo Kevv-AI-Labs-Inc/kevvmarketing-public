@@ -25,7 +25,6 @@ import { useT } from "@/i18n";
 import {
   dashboardMenuSections,
   getLocalizedText,
-  ownerDashboardSection,
 } from "@/lib/marketing-capabilities";
 import { LocaleToggleButton } from "./LocaleToggleButton";
 import {
@@ -128,11 +127,7 @@ function DashboardLayoutContent({
   const isPathActive = (path: string) =>
     currentPath === path || (path !== "/" && currentPath.startsWith(`${path}/`));
 
-  // TODO: Owner status check — use session role instead once admin role is fully wired
-  const isOwner = user?.role === "admin";
-  const menuSections = isOwner
-    ? [...dashboardMenuSections, ownerDashboardSection]
-    : dashboardMenuSections;
+  const menuSections = dashboardMenuSections;
 
   // Find active label for mobile header
   const allItems = menuSections.flatMap((group) => group.items);

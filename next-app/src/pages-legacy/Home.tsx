@@ -12,7 +12,6 @@ import { getDashboardPageCopy } from "@/i18n/dashboard-pages";
 import {
   dashboardMenuSections,
   getLocalizedText,
-  ownerDashboardSection,
 } from "@/lib/marketing-capabilities";
 import { trpc } from "@/lib/trpc";
 import { siteConfig } from "@/lib/site";
@@ -65,8 +64,6 @@ export default function Home() {
   const { user } = useAuth();
   const { t, locale } = useT();
   const copy = getDashboardPageCopy(locale).home;
-  const isOwner = user?.role === "admin";
-
   const { data: statsData, isLoading: isStatsLoading, isError: isStatsError } =
     trpc.mls.getSyncStatus.useQuery(undefined, {
       refetchOnWindowFocus: true,
@@ -81,9 +78,7 @@ export default function Home() {
     copy.stats.syncUnknown,
   );
 
-  const moduleSections = isOwner
-    ? [...dashboardMenuSections.filter((section) => section.id !== "overview"), ownerDashboardSection]
-    : dashboardMenuSections.filter((section) => section.id !== "overview");
+  const moduleSections = dashboardMenuSections.filter((section) => section.id !== "overview");
 
   const funnelCount =
     dashboardMenuSections.find((section) => section.id === "funnels")?.items.length ?? 0;

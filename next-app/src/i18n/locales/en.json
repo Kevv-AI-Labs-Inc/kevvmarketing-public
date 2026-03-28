@@ -837,53 +837,6 @@
         "approved": "Good recommendation",
         "rejected": "Not helpful"
       }
-    },
-    "agentDirectory": {
-      "accessDeniedTitle": "Access denied",
-      "accessDeniedDescription": "Only platform owners can access Agent Directory.",
-      "loadFailedTitle": "Agent Directory failed to load",
-      "loadFailedDescription": "This usually means the database query is still too slow or the background stats pipeline is not ready yet. Retry once and let the refresh keep running in the background.",
-      "reload": "Reload",
-      "title": "Agent Directory",
-      "totalAgents": "{{count}} agents",
-      "loadingTotal": "Loading…",
-      "syncAgents": "Sync agents",
-      "syncingAgents": "Syncing…",
-      "refreshStats": "Refresh deal stats",
-      "buildStats": "Build deal stats",
-      "exportCsv": "Export CSV",
-      "statsStatusTitle": "Agent Directory deal-stat status",
-      "statsMessages": {
-        "refreshingReady": "Deal stats are refreshing in the background. The table is still showing the last completed snapshot.",
-        "refreshingCold": "The initial deal-stat build is still running, so deal columns may temporarily show zero.",
-        "notReady": "Deal stats are not ready yet. The background worker will backfill them automatically.",
-        "stale": "Deal stats are stale and a refresh is being prepared."
-      },
-      "lastUpdatedPrefix": "Last completed at: ",
-      "noStatsSnapshot": "No completed deal-stat snapshot is available yet",
-      "searchPlaceholder": "Search agent name, email, or brokerage…",
-      "pageSizeSuffix": "rows/page",
-      "emptySearch": "No matching agents found",
-      "emptySync": "No data yet. Run MLS sync first.",
-      "columns": {
-        "agent": "Agent",
-        "email": "Email",
-        "phone": "Phone",
-        "company": "Company",
-        "companyContact": "Office contact",
-        "status": "Status",
-        "listingDeals": "Listing deals",
-        "buyingDeals": "Buying deals",
-        "totalDeals": "Total deals",
-        "license": "License",
-        "mlsId": "MLS ID",
-        "preferred": "Preferred",
-        "mobile": "Mobile",
-        "direct": "Direct"
-      },
-      "pagination": {
-        "summary": "Page {{page}} / {{totalPages}} · {{total}} total"
-      }
     }
   },
   "sharePages": {
