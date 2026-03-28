@@ -5,7 +5,7 @@
  * Used to prioritize leads and trigger drip campaigns.
  */
 
-import { getDb } from "../db";
+import { getDb, type Db } from "../db";
 import { clientEvents, engagementScores } from "../../drizzle/schema";
 import { eq, and, sql, gte } from "drizzle-orm";
 import { EVENT_SCORE_WEIGHTS } from "./eventTracker";
@@ -19,8 +19,9 @@ import { EVENT_SCORE_WEIGHTS } from "./eventTracker";
 export async function recalculateScore(
   contactId: number,
   agentId?: number,
+  injectedDb?: Db,
 ): Promise<{ score: number; factors: Record<string, number> }> {
-  const db = await getDb();
+  const db = injectedDb ?? (await getDb());
   if (!db) return { score: 0, factors: {} };
 
   const thirtyDaysAgo = new Date();
@@ -85,10 +86,10 @@ export async function recalculateScore(
  * Recalculate scores for all contacts with recent activity.
  * Intended to be called periodically (e.g., hourly cron).
  */
-export async function recalculateAllScores(): Promise<{
+export async function recalculateAllScores(injectedDb?: Db): Promise<{
   processed: number;
 }> {
-  const db = await getDb();
+  const db = injectedDb ?? (await getDb());
   if (!db) return { processed: 0 };
 
   const thirtyDaysAgo = new Date();
@@ -108,7 +109,7 @@ export async function recalculateAllScores(): Promise<{
   let processed = 0;
   for (const row of activeContacts) {
     if (row.contactId) {
-      await recalculateScore(row.contactId);
+      await recalculateScore(row.contactId, undefined, db);
       processed++;
     }
   }

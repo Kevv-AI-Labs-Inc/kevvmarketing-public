@@ -12,6 +12,9 @@
     "start": "cd next-app && npm run start",
     "check": "node next-app/scripts/check-i18n.mjs && cd next-app && npm run typecheck",
     "check:i18n": "node next-app/scripts/check-i18n.mjs",
+    "test": "cd next-app && npm run test",
+    "test:harness": "cd next-app && npm run test:harness",
+    "test:e2e:smoke": "cd next-app && npm run test:e2e:smoke",
     "format": "prettier --write .",
     "db:push": "node scripts/db-push-if-configured.mjs"
   },
