@@ -8,7 +8,12 @@
     "typecheck": "npm run check:routes && next typegen && tsc --noEmit",
     "build": "npm run check:routes && next build --webpack",
     "start": "next start",
-    "lint": "npm run check:routes && eslint"
+    "lint": "npm run check:routes && eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:harness": "vitest run tests/harness",
+    "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --project=chromium --grep @smoke"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1014.0",
@@ -79,6 +84,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.4.2",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
@@ -87,7 +94,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.2"
   },
   "overrides": {
     "flatted": "^3.4.2"

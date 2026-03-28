@@ -1,19 +1,17 @@
-name: CI
+name: Nightly Quality
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: "17 5 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  validate:
+  nightly:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
@@ -34,9 +32,9 @@ jobs:
       - name: Install next-app dependencies
         run: npm --prefix next-app ci
 
-      - name: Install Playwright Chromium
+      - name: Install Playwright browsers
         working-directory: next-app
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Lint
         run: npm --prefix next-app run lint
@@ -47,17 +45,20 @@ jobs:
       - name: Unit, integration, and harness tests
         run: npm --prefix next-app run test
 
+      - name: Nightly harness suite
+        run: npm --prefix next-app run test:harness
+
       - name: Build
         run: npm --prefix next-app run build
 
-      - name: Playwright smoke tests
-        run: npm --prefix next-app run test:e2e:smoke
+      - name: Full Playwright suite
+        run: npm --prefix next-app run test:e2e
 
       - name: Upload Playwright artifacts
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts
+          name: nightly-playwright-artifacts
           path: |
             next-app/playwright-report
             next-app/test-results
