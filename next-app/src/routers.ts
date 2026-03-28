@@ -21,6 +21,7 @@ import { subscriptionRouter } from "./server/subscriptionRouter";
 import { leadCaptureRouter } from "./server/leadCaptureRouter";
 import { profileRouter } from "./server/profileRouter";
 import { homeValueRouter } from "./server/homeValueRouter";
+import { postcardRouter } from "./server/postcardRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -41,6 +42,7 @@ export const appRouter = router({
   leads: leadCaptureRouter,
   profile: profileRouter,
   homeValue: homeValueRouter,
+  postcard: postcardRouter,
   // Auth is handled by NextAuth — no tRPC auth routes needed
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
