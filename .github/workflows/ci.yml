@@ -200,3 +200,41 @@ jobs:
             next-app/playwright-report
             next-app/test-results
           if-no-files-found: ignore
+
+  validate:
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - typecheck
+      - test
+      - build
+      - e2e-smoke
+      - e2e-critical
+    if: ${{ always() }}
+
+    steps:
+      - name: Fail if any required job failed
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          E2E_SMOKE_RESULT: ${{ needs.e2e-smoke.result }}
+          E2E_CRITICAL_RESULT: ${{ needs.e2e-critical.result }}
+        run: |
+          for result in \
+            "$LINT_RESULT" \
+            "$TYPECHECK_RESULT" \
+            "$TEST_RESULT" \
+            "$BUILD_RESULT" \
+            "$E2E_SMOKE_RESULT" \
+            "$E2E_CRITICAL_RESULT"
+          do
+            if [ "$result" != "success" ]; then
+              echo "Required CI job failed with result: $result"
+              exit 1
+            fi
+          done
+
+      - name: Report aggregate success
+        run: echo "validate passed"
