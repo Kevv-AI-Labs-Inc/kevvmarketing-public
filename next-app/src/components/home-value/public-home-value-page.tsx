@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -114,12 +114,11 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
   const c = copy[locale];
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
 
-  const shareText = useMemo(() => {
-    if (!valuation?.result) return "";
-    return locale === "zh"
+  const shareText = valuation?.result
+    ? locale === "zh"
       ? `我刚拿到一个 AI 房价估值，区间是 ${formatMoney(valuation.result.estimatedValueLow)} - ${formatMoney(valuation.result.estimatedValueHigh)}。`
-      : `I just ran an AI home valuation and got a range of ${formatMoney(valuation.result.estimatedValueLow)} - ${formatMoney(valuation.result.estimatedValueHigh)}.`;
-  }, [locale, valuation?.result]);
+      : `I just ran an AI home valuation and got a range of ${formatMoney(valuation.result.estimatedValueLow)} - ${formatMoney(valuation.result.estimatedValueHigh)}.`
+    : "";
 
   const handleGenerate = async () => {
     if (address.trim().length < 5) {

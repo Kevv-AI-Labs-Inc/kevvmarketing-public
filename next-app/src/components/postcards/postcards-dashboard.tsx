@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Mailbox, Send, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,29 +36,21 @@ export function PostcardsDashboard() {
   });
   const [campaignName, setCampaignName] = useState("Spring Seller Reactivation");
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
-  const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
+  const [selectedContactIds, setSelectedContactIds] = useState<number[] | null>(null);
   const [sendStrategy, setSendStrategy] = useState<"send_now" | "scheduled">("send_now");
   const [scheduledAt, setScheduledAt] = useState("");
   const [copyPrompt, setCopyPrompt] = useState("seller valuation postcard for nearby homeowners");
-
-  useEffect(() => {
-    if (!workspaceQuery.data) return;
-    if (!selectedTemplateId && workspaceQuery.data.templates[0]) {
-      setSelectedTemplateId(workspaceQuery.data.templates[0].id);
-    }
-    if (selectedContactIds.length === 0) {
-      setSelectedContactIds(
-        workspaceQuery.data.contacts
-          .filter((contact) => contact.addressVerified)
-          .map((contact) => contact.id)
-      );
-    }
-  }, [selectedContactIds.length, selectedTemplateId, workspaceQuery.data]);
 
   const verifiedContacts = useMemo(
     () => workspaceQuery.data?.contacts.filter((contact) => contact.addressVerified) ?? [],
     [workspaceQuery.data?.contacts]
   );
+  const verifiedContactIds = useMemo(
+    () => verifiedContacts.map((contact) => contact.id),
+    [verifiedContacts]
+  );
+  const activeSelectedTemplateId = selectedTemplateId ?? workspaceQuery.data?.templates[0]?.id ?? null;
+  const activeSelectedContactIds = selectedContactIds ?? verifiedContactIds;
 
   const refresh = async () => {
     await utils.postcard.getWorkspace.invalidate();
@@ -106,7 +98,7 @@ export function PostcardsDashboard() {
 
   const handleGenerateCopy = async () => {
     const activeTemplate = workspaceQuery.data?.templates.find(
-      (template) => template.id === selectedTemplateId
+      (template) => template.id === activeSelectedTemplateId
     );
 
     if (!activeTemplate) {
@@ -127,7 +119,7 @@ export function PostcardsDashboard() {
   };
 
   const handleCreateCampaign = async () => {
-    if (!selectedTemplateId) {
+    if (!activeSelectedTemplateId) {
       toast.error("Choose a template.");
       return;
     }
@@ -135,8 +127,8 @@ export function PostcardsDashboard() {
     try {
       await createCampaignMutation.mutateAsync({
         name: campaignName,
-        templateId: selectedTemplateId,
-        contactIds: selectedContactIds,
+        templateId: activeSelectedTemplateId,
+        contactIds: activeSelectedContactIds,
       });
       toast.success("Draft campaign created.");
       await refresh();
@@ -316,7 +308,7 @@ export function PostcardsDashboard() {
                 {workspaceQuery.data?.templates.map((template) => (
                   <button
                     className={`rounded-2xl border p-4 text-left transition ${
-                      selectedTemplateId === template.id
+                      activeSelectedTemplateId === template.id
                         ? "border-slate-900 bg-slate-900 text-white"
                         : "border-border bg-background hover:border-slate-500"
                     }`}
@@ -377,12 +369,12 @@ export function PostcardsDashboard() {
                 {verifiedContacts.map((contact) => (
                   <label className="flex items-start gap-3" key={contact.id}>
                     <input
-                      checked={selectedContactIds.includes(contact.id)}
+                      checked={activeSelectedContactIds.includes(contact.id)}
                       onChange={() =>
                         setSelectedContactIds((current) =>
-                          current.includes(contact.id)
-                            ? current.filter((id) => id !== contact.id)
-                            : [...current, contact.id]
+                          (current ?? verifiedContactIds).includes(contact.id)
+                            ? (current ?? verifiedContactIds).filter((id) => id !== contact.id)
+                            : [...(current ?? verifiedContactIds), contact.id]
                         )
                       }
                       type="checkbox"

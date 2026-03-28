@@ -30,7 +30,14 @@ export function AgentSiteChatWidget({
   const captureMutation = trpc.profile.captureChatLead.useMutation();
   const storageKey = `kevv-agent-chat:${agentSlug}`;
   const [open, setOpen] = useState(false);
-  const [sessionKey, setSessionKey] = useState<string | null>(null);
+  const [sessionKey, setSessionKey] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return window.sessionStorage.getItem(storageKey);
+    } catch {
+      return null;
+    }
+  });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([
@@ -45,13 +52,6 @@ export function AgentSiteChatWidget({
     phone: "",
     notes: "",
   });
-
-  useEffect(() => {
-    try {
-      const saved = window.sessionStorage.getItem(storageKey);
-      if (saved) setSessionKey(saved);
-    } catch {}
-  }, [storageKey]);
 
   useEffect(() => {
     if (!sessionKey) return;
