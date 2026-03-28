@@ -19,8 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useT } from "@/i18n";
-import { pickText } from "@/i18n/copy";
-import { sharePageCopy } from "@/i18n/share-pages";
+import { localeTag } from "@/i18n/copy";
+import { getSharePageCopy } from "@/i18n/share-pages";
 import { trpc } from "@/lib/trpc";
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
@@ -69,7 +69,7 @@ function formatDateTime(value: string | null, locale: "zh" | "en") {
   if (!value) return "-";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+  return new Intl.DateTimeFormat(localeTag(locale), {
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -95,8 +95,8 @@ function buildAddress(listing: SharePayload["listings"][number]) {
 
 export default function AreaMagnetShare({ token, data, trackEvent }: AreaMagnetShareProps) {
   const { locale } = useT();
-  const copy = sharePageCopy.areaMagnetShare;
-  const pick = (value: { zh: string; en: string }) => pickText(locale, value);
+  const copy = getSharePageCopy(locale).areaMagnetShare;
+  const pick = (value: string) => value;
   const [activeTab, setActiveTab] = useState("overview");
   const [leadName, setLeadName] = useState("");
   const [leadEmail, setLeadEmail] = useState("");
@@ -124,7 +124,7 @@ export default function AreaMagnetShare({ token, data, trackEvent }: AreaMagnetS
   const captureFields = getStringArray(capture.fields);
   const featuredListings = data.listings.slice(0, 4);
   const accentColor = getString(agentBranding.accentColor) || "#166534";
-  const agentName = getString(agentBranding.agentName) || "Kevv Marketing";
+  const agentName = getString(agentBranding.agentName) || copy.brandLabel;
   const agentTitle = getString(agentBranding.agentTitle);
   const brokerageName = getString(agentBranding.brokerageName);
   const email = getString(agentBranding.email);
@@ -190,7 +190,7 @@ export default function AreaMagnetShare({ token, data, trackEvent }: AreaMagnetS
                 </Badge>
               </div>
               <div className="space-y-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-stone-400">Kevv Marketing</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-stone-400">{copy.brandLabel}</p>
                 <h1 className="max-w-4xl text-4xl font-serif tracking-tight text-white md:text-5xl">
                   {data.session.title || pick(copy.defaultTitle)}
                 </h1>
@@ -283,7 +283,7 @@ export default function AreaMagnetShare({ token, data, trackEvent }: AreaMagnetS
                   {brokerageName ? <p>{brokerageName}</p> : null}
                   {email ? <p>{email}</p> : null}
                   {phone ? <p>{phone}</p> : null}
-                  {wechatId ? <p>WeChat: {wechatId}</p> : null}
+                  {wechatId ? <p>{copy.wechatLabel}: {wechatId}</p> : null}
                 </div>
               </div>
             </CardContent>

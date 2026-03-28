@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { createTranslator } from "@/i18n";
 import type { ValuationResult } from "@/lib/db/schema";
 import { trpc } from "@/lib/trpc";
 
@@ -36,43 +37,6 @@ type ValuationResponse = {
   result: ValuationResult;
   summary: string;
 };
-
-const copy = {
-  en: {
-    badge: "AI seller funnel",
-    title: "Know what your home could sell for",
-    subtitle:
-      "Get an instant AI valuation range, local positioning notes, and next-step seller strategy.",
-    inputLabel: "Property address",
-    inputPlaceholder: "123 Main St, Palo Alto, CA",
-    inputButton: "Generate valuation",
-    gateTitle: "Your valuation is ready",
-    gateSubtitle:
-      "Share your contact info to unlock the full report and let the agent follow up with a comp-backed strategy.",
-    reportTitle: "Your AI valuation report",
-    reportSubtitle: "A live seller funnel stitched into Kevv's unified lead system.",
-    share: "Share this funnel",
-    copy: "Copy link",
-    copied: "Copied",
-  },
-  zh: {
-    badge: "AI 卖房漏斗",
-    title: "先知道你的房子可能值多少钱",
-    subtitle:
-      "即时拿到 AI 估值区间、区域判断和下一步卖房策略建议。",
-    inputLabel: "房产地址",
-    inputPlaceholder: "123 Main St, Palo Alto, CA",
-    inputButton: "生成估值",
-    gateTitle: "你的估值结果已经准备好",
-    gateSubtitle:
-      "留下联系方式后即可查看完整报告，并让经纪人基于真实竞品继续跟进。",
-    reportTitle: "你的 AI 估值报告",
-    reportSubtitle: "这不是静态报告，而是接回 Kevv leads 主干的 seller funnel。",
-    share: "分享这个估值页",
-    copy: "复制链接",
-    copied: "已复制",
-  },
-} as const;
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -111,18 +75,80 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
     void trackView.mutateAsync({ slug: contextQuery.data.slug });
   }, [contextQuery.data?.slug, trackView]);
 
-  const c = copy[locale];
+  const t = createTranslator(locale);
+  const c = {
+    badge: t("homeValue.public.badge"),
+    title: t("homeValue.public.title"),
+    subtitle: t("homeValue.public.subtitle"),
+    inputLabel: t("homeValue.public.inputLabel"),
+    inputPlaceholder: t("homeValue.public.inputPlaceholder"),
+    inputButton: t("homeValue.public.inputButton"),
+    gateTitle: t("homeValue.public.gateTitle"),
+    gateSubtitle: t("homeValue.public.gateSubtitle"),
+    reportTitle: t("homeValue.public.reportTitle"),
+    reportSubtitle: t("homeValue.public.reportSubtitle"),
+    share: t("homeValue.public.share"),
+    copy: t("homeValue.public.copy"),
+    copied: t("homeValue.public.copied"),
+    loading: t("homeValue.public.loading"),
+    notFoundTitle: t("homeValue.public.notFoundTitle"),
+    notFoundDescription: t("homeValue.public.notFoundDescription"),
+    viewTags: {
+      marketRead: t("homeValue.public.viewTags.marketRead"),
+      comps: t("homeValue.public.viewTags.comps"),
+      neighborhood: t("homeValue.public.viewTags.neighborhood"),
+    },
+    errors: {
+      addressRequired: t("homeValue.public.errors.addressRequired"),
+      generateFailed: t("homeValue.public.errors.generateFailed"),
+      unlockSuccess: t("homeValue.public.errors.unlockSuccess"),
+      unlockFailed: t("homeValue.public.errors.unlockFailed"),
+      copyFailed: t("homeValue.public.errors.copyFailed"),
+    },
+    placeholders: {
+      name: t("homeValue.public.placeholders.name"),
+      email: t("homeValue.public.placeholders.email"),
+      phone: t("homeValue.public.placeholders.phone"),
+      timeline: t("homeValue.public.placeholders.timeline"),
+      notes: t("homeValue.public.placeholders.notes"),
+    },
+    actions: {
+      generating: t("homeValue.public.actions.generating"),
+      unlocking: t("homeValue.public.actions.unlocking"),
+      unlockReport: t("homeValue.public.actions.unlockReport"),
+      explainer: t("homeValue.public.actions.explainer"),
+      openAgentProfile: t("homeValue.public.actions.openAgentProfile"),
+      bookCall: t("homeValue.public.actions.bookCall"),
+    },
+    stats: {
+      range: t("homeValue.public.stats.range"),
+      layout: t("homeValue.public.stats.layout"),
+      sqft: t("homeValue.public.stats.sqft"),
+      schoolScore: t("homeValue.public.stats.schoolScore"),
+    },
+    sections: {
+      estimatedRange: t("homeValue.public.sections.estimatedRange"),
+      agentFollowUp: t("homeValue.public.sections.agentFollowUp"),
+      comparableSales: t("homeValue.public.sections.comparableSales"),
+      price: t("homeValue.public.sections.price"),
+      marketNotes: t("homeValue.public.sections.marketNotes"),
+      shareHelp: t("homeValue.public.sections.shareHelp"),
+    },
+    shareSummary: (low: string, high: string) =>
+      t("homeValue.public.shareSummary", { low, high }),
+  } as const;
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
 
   const shareText = valuation?.result
-    ? locale === "zh"
-      ? `我刚拿到一个 AI 房价估值，区间是 ${formatMoney(valuation.result.estimatedValueLow)} - ${formatMoney(valuation.result.estimatedValueHigh)}。`
-      : `I just ran an AI home valuation and got a range of ${formatMoney(valuation.result.estimatedValueLow)} - ${formatMoney(valuation.result.estimatedValueHigh)}.`
+    ? c.shareSummary(
+        formatMoney(valuation.result.estimatedValueLow),
+        formatMoney(valuation.result.estimatedValueHigh),
+      )
     : "";
 
   const handleGenerate = async () => {
     if (address.trim().length < 5) {
-      toast.error(locale === "zh" ? "请输入完整地址" : "Please enter a full property address.");
+      toast.error(c.errors.addressRequired);
       return;
     }
 
@@ -139,7 +165,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
       setStage("gate");
     } catch (error) {
       setStage("input");
-      toast.error(error instanceof Error ? error.message : "Failed to generate valuation.");
+      toast.error(error instanceof Error ? error.message : c.errors.generateFailed);
     }
   };
 
@@ -153,9 +179,9 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
         ...leadForm,
       });
       setStage("report");
-      toast.success(locale === "zh" ? "报告已解锁" : "Report unlocked.");
+      toast.success(c.errors.unlockSuccess);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to unlock report.");
+      toast.error(error instanceof Error ? error.message : c.errors.unlockFailed);
     }
   };
 
@@ -164,14 +190,14 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
       await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
       toast.success(c.copied);
     } catch {
-      toast.error(locale === "zh" ? "复制失败" : "Copy failed.");
+      toast.error(c.errors.copyFailed);
     }
   };
 
   if (contextQuery.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#08131d] text-white">
-        <div className="text-xs uppercase tracking-[0.36em] text-white/55">Loading Home Value</div>
+        <div className="text-xs uppercase tracking-[0.36em] text-white/55">{c.loading}</div>
       </div>
     );
   }
@@ -179,9 +205,9 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
   if (!contextQuery.data) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#08131d] px-6 text-center text-white">
-        <h1 className="text-4xl font-semibold tracking-tight">Home Value page not found</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">{c.notFoundTitle}</h1>
         <p className="max-w-xl text-white/65">
-          This valuation funnel is not live yet for the requested agent.
+          {c.notFoundDescription}
         </p>
       </div>
     );
@@ -202,20 +228,19 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
               <div className="mt-2 text-xl font-semibold">{profile.name}</div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setLocale("en")}
-                size="sm"
-                variant={locale === "en" ? "secondary" : "ghost"}
-              >
-                EN
-              </Button>
-              <Button
-                onClick={() => setLocale("zh")}
-                size="sm"
-                variant={locale === "zh" ? "secondary" : "ghost"}
-              >
-                中文
-              </Button>
+              {[
+                { value: "en" as const, label: "EN" },
+                { value: "zh" as const, label: "中文" },
+              ].map((option) => (
+                <Button
+                  key={option.value}
+                  onClick={() => setLocale(option.value)}
+                  size="sm"
+                  variant={locale === option.value ? "secondary" : "ghost"}
+                >
+                  {option.label}
+                </Button>
+              ))}
             </div>
           </div>
 
@@ -229,9 +254,9 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
 
               <div className="grid gap-3 sm:grid-cols-3">
                 {[
-                  { icon: BarChart3, label: "Market read" },
-                  { icon: Building2, label: "Comparable sales" },
-                  { icon: GraduationCap, label: "Neighborhood signal" },
+                  { icon: BarChart3, label: c.viewTags.marketRead },
+                  { icon: Building2, label: c.viewTags.comps },
+                  { icon: GraduationCap, label: c.viewTags.neighborhood },
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -264,7 +289,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                     {runValuation.isPending || stage === "loading" ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        {locale === "zh" ? "生成中..." : "Generating..."}
+                        {c.actions.generating}
                       </>
                     ) : (
                       <>
@@ -275,9 +300,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                   </Button>
                 </div>
                 <div className="mt-6 text-sm text-white/55">
-                  {locale === "zh"
-                    ? "输入地址后会先拿到估值，再通过留资 gate 进入完整报告。"
-                    : "The funnel first generates the valuation, then uses a lead gate before the full report."}
+                  {c.actions.explainer}
                 </div>
               </CardContent>
             </Card>
@@ -292,7 +315,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
               <CardContent className="space-y-5 p-8">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-[0.32em] text-slate-500">
                   <Home className="h-4 w-4 text-teal-600" />
-                  Estimated range
+                  {c.sections.estimatedRange}
                 </div>
                 <div className="space-y-2">
                   <div className="text-4xl font-semibold blur-[10px]">
@@ -321,14 +344,14 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <Input
-                    placeholder={locale === "zh" ? "姓名" : "Name"}
+                    placeholder={c.placeholders.name}
                     value={leadForm.name}
                     onChange={(event) =>
                       setLeadForm((current) => ({ ...current, name: event.target.value }))
                     }
                   />
                   <Input
-                    placeholder="Email"
+                    placeholder={c.placeholders.email}
                     type="email"
                     value={leadForm.email}
                     onChange={(event) =>
@@ -338,14 +361,14 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <Input
-                    placeholder={locale === "zh" ? "手机号" : "Phone"}
+                    placeholder={c.placeholders.phone}
                     value={leadForm.phone}
                     onChange={(event) =>
                       setLeadForm((current) => ({ ...current, phone: event.target.value }))
                     }
                   />
                   <Input
-                    placeholder={locale === "zh" ? "卖房时间线" : "Timeline"}
+                    placeholder={c.placeholders.timeline}
                     value={leadForm.timeline}
                     onChange={(event) =>
                       setLeadForm((current) => ({ ...current, timeline: event.target.value }))
@@ -354,11 +377,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                 </div>
                 <Textarea
                   rows={4}
-                  placeholder={
-                    locale === "zh"
-                      ? "你现在最关心的是定价、整备、时机还是税务？"
-                      : "What do you care about most right now: pricing, prep scope, timing, or taxes?"
-                  }
+                  placeholder={c.placeholders.notes}
                   value={leadForm.notes}
                   onChange={(event) =>
                     setLeadForm((current) => ({ ...current, notes: event.target.value }))
@@ -372,12 +391,12 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                   {captureLead.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      {locale === "zh" ? "解锁中..." : "Unlocking..."}
+                      {c.actions.unlocking}
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4" />
-                      {locale === "zh" ? "解锁完整报告" : "Unlock full report"}
+                      {c.actions.unlockReport}
                     </>
                   )}
                 </Button>
@@ -406,22 +425,22 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                     {[
                       {
                         icon: TrendingUp,
-                        label: locale === "zh" ? "估值区间" : "Range",
+                        label: c.stats.range,
                         value: `${formatMoney(valuation.result.estimatedValueLow)} - ${formatMoney(valuation.result.estimatedValueHigh)}`,
                       },
                       {
                         icon: Home,
-                        label: locale === "zh" ? "户型" : "Layout",
+                        label: c.stats.layout,
                         value: `${valuation.result.propertyDetails.beds} bd / ${valuation.result.propertyDetails.baths} ba`,
                       },
                       {
                         icon: MapPin,
-                        label: locale === "zh" ? "面积" : "Sqft",
+                        label: c.stats.sqft,
                         value: `${valuation.result.propertyDetails.sqft.toLocaleString()} sqft`,
                       },
                       {
                         icon: GraduationCap,
-                        label: locale === "zh" ? "学校评分" : "School score",
+                        label: c.stats.schoolScore,
                         value: `${valuation.result.schoolRating}/10`,
                       },
                     ].map((item) => (
@@ -440,7 +459,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
               <Card className="border-none bg-[#08131d] text-white shadow-sm">
                 <CardContent className="space-y-6 p-8">
                   <div className="text-xs uppercase tracking-[0.32em] text-white/45">
-                    Agent follow-up
+                    {c.sections.agentFollowUp}
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="h-16 w-16 overflow-hidden rounded-2xl bg-white/10">
@@ -475,12 +494,12 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                   </div>
                   <div className="flex flex-wrap gap-3">
                     <Button asChild className="bg-cyan-300 text-[#08131d] hover:bg-cyan-200">
-                      <Link href={`/agents/${slug}`}>Open full agent profile</Link>
+                      <Link href={`/agents/${slug}`}>{c.actions.openAgentProfile}</Link>
                     </Button>
                     {profile.bookingUrl ? (
                       <Button asChild variant="outline" className="border-white/20 bg-transparent text-white hover:bg-white/10">
                         <a href={profile.bookingUrl} rel="noreferrer" target="_blank">
-                          Book a call
+                          {c.actions.bookCall}
                         </a>
                       </Button>
                     ) : null}
@@ -494,7 +513,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                 <CardContent className="space-y-5 p-8">
                   <div className="flex items-center gap-2 text-xs uppercase tracking-[0.32em] text-slate-500">
                     <Building2 className="h-4 w-4 text-teal-600" />
-                    Comparable sales
+                    {c.sections.comparableSales}
                   </div>
                   <div className="space-y-4">
                     {valuation.result.comparableSales.map((comp: ValuationResult["comparableSales"][number]) => (
@@ -507,7 +526,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                           <div className="mt-1 text-sm text-slate-500">{comp.date}</div>
                         </div>
                         <div>
-                          <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Price</div>
+                          <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{c.sections.price}</div>
                           <div className="mt-2 font-medium">{formatMoney(comp.price)}</div>
                         </div>
                         <div>
@@ -532,9 +551,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                       {c.share}
                     </div>
                     <p className="text-sm leading-7 text-slate-500">
-                      {locale === "zh"
-                        ? "把这个 seller funnel 发给朋友或邻居，继续让估值页自己带来新 lead。"
-                        : "Share the same funnel with neighbors or past clients and let the valuation page keep generating seller leads."}
+                      {c.sections.shareHelp}
                     </p>
                     <div className="flex flex-wrap gap-3">
                       <Button onClick={() => void handleCopy()} variant="outline">
@@ -559,7 +576,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                   <CardContent className="space-y-4 p-8">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.32em] text-slate-500">
                       <Globe2 className="h-4 w-4 text-teal-600" />
-                      Market notes
+                      {c.sections.marketNotes}
                     </div>
                     <p className="text-sm leading-7 text-slate-500">
                       {valuation.result.marketSummary}

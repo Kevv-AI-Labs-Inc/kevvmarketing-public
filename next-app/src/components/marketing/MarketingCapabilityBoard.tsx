@@ -17,6 +17,17 @@ import {
 } from "@/lib/marketing-capabilities";
 import { cn } from "@/lib/utils";
 
+const boardCopy = {
+  capabilityCountSuffix: { zh: "项能力", en: "capabilities" },
+  functionPrefix: { zh: "功能", en: "Function" },
+  currentModule: { zh: "当前承载模块", en: "Current Module" },
+  openMappedModule: { zh: "点击进入现有模块", en: "Open the mapped module" },
+  noRoutedModule: { zh: "当前没有可直接打开的模块", en: "No routed module yet" },
+  openModule: { zh: "打开模块", en: "Open module" },
+  planned: { zh: "规划中", en: "Planned" },
+  openExtension: { zh: "进入模块", en: "Open module" },
+} as const;
+
 function statusClassName(status: MarketingCapabilityStatus) {
   switch (status) {
     case "ready":
@@ -56,7 +67,7 @@ export function MarketingCapabilityBoard({ locale }: { locale: Locale }) {
                 </p>
               </div>
               <Badge variant="outline" className="w-fit">
-                {items.length} {locale === "zh" ? "项能力" : "capabilities"}
+                {items.length} {getLocalizedText(locale, boardCopy.capabilityCountSuffix)}
               </Badge>
             </div>
 
@@ -74,7 +85,7 @@ export function MarketingCapabilityBoard({ locale }: { locale: Locale }) {
                         </div>
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                            {locale === "zh" ? `功能 ${item.order}` : `Function ${item.order}`}
+                            {getLocalizedText(locale, boardCopy.functionPrefix)} {item.order}
                           </p>
                           <CardTitle className="mt-1 text-lg">
                             {getLocalizedText(locale, item.label)}
@@ -103,7 +114,7 @@ export function MarketingCapabilityBoard({ locale }: { locale: Locale }) {
                   <CardContent className="space-y-4">
                     <div className="rounded-xl border border-border/60 bg-muted/35 p-3">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                        {locale === "zh" ? "当前承载模块" : "Current Module"}
+                        {getLocalizedText(locale, boardCopy.currentModule)}
                       </p>
                       <p className="mt-2 text-sm font-medium text-foreground">
                         {getLocalizedText(locale, item.currentModule)}
@@ -115,27 +126,21 @@ export function MarketingCapabilityBoard({ locale }: { locale: Locale }) {
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-xs text-muted-foreground">
                         {item.route
-                          ? locale === "zh"
-                            ? "点击进入现有模块"
-                            : "Open the mapped module"
-                          : locale === "zh"
-                            ? "当前没有可直接打开的模块"
-                            : "No routed module yet"}
+                          ? getLocalizedText(locale, boardCopy.openMappedModule)
+                          : getLocalizedText(locale, boardCopy.noRoutedModule)}
                       </span>
                       {item.route ? (
                         <Button asChild variant="outline" size="sm">
                           <Link href={item.route}>
                             {item.routeLabel
                               ? getLocalizedText(locale, item.routeLabel)
-                              : locale === "zh"
-                                ? "打开模块"
-                                : "Open module"}
+                              : getLocalizedText(locale, boardCopy.openModule)}
                             <ArrowRight className="h-4 w-4" />
                           </Link>
                         </Button>
                       ) : (
                         <Badge variant="outline">
-                          {locale === "zh" ? "规划中" : "Planned"}
+                          {getLocalizedText(locale, boardCopy.planned)}
                         </Badge>
                       )}
                     </div>
@@ -172,7 +177,7 @@ export function MarketingExtensionGrid({ locale }: { locale: Locale }) {
             <div className="mt-auto flex justify-end">
               <Button asChild variant="ghost" size="sm">
                 <Link href={module.path}>
-                  {locale === "zh" ? "进入模块" : "Open module"}
+                  {getLocalizedText(locale, boardCopy.openExtension)}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>

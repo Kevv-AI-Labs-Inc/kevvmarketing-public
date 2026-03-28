@@ -24,8 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useT } from "@/i18n";
-import { pickText } from "@/i18n/copy";
-import { sharePageCopy } from "@/i18n/share-pages";
+import { localeTag } from "@/i18n/copy";
+import { getSharePageCopy } from "@/i18n/share-pages";
 import AreaMagnetShare from "@/pages-legacy/AreaMagnetShare";
 import { trpc } from "@/lib/trpc";
 import type { AppRouter } from "@/routers";
@@ -114,7 +114,7 @@ function formatDateTime(value: string | null, locale: "zh" | "en") {
   if (!value) return "-";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+  return new Intl.DateTimeFormat(localeTag(locale), {
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -134,8 +134,8 @@ function buildListingAddress(listing: MlsListing) {
 
 export default function ListingShare({ token }: ListingShareProps) {
   const { locale } = useT();
-  const copy = sharePageCopy.listingShare;
-  const pick = (value: { zh: string; en: string }) => pickText(locale, value);
+  const copy = getSharePageCopy(locale).listingShare;
+  const pick = (value: string) => value;
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
   const { data, isLoading, error } = trpc.share.getSessionByToken.useQuery(
@@ -172,7 +172,7 @@ export default function ListingShare({ token }: ListingShareProps) {
     const externalItems = (data.externalListings as Array<Record<string, unknown>>).map((listing, index) => ({
       id: getString(listing.id) || `external-${index}`,
       kind: "external" as const,
-      address: getString(listing.address) || "External listing",
+      address: getString(listing.address) || copy.externalListingFallback,
       price: formatPrice(getString(listing.price) || null, pick(copy.pricePending)),
       beds: formatMetric(getString(listing.beds) || null),
       baths: formatMetric(getString(listing.baths) || null),
@@ -192,7 +192,7 @@ export default function ListingShare({ token }: ListingShareProps) {
   const shareConfig = (data?.shareConfig ?? {}) as Record<string, unknown>;
   const strategyPoints = getStringArray(shareConfig.strategyPoints);
   const accentColor = getString(agentBranding.accentColor) || "#1F5A4A";
-  const agentName = getString(agentBranding.agentName) || "Kevv Marketing";
+  const agentName = getString(agentBranding.agentName) || copy.brandLabel;
   const agentTitle = getString(agentBranding.agentTitle);
   const brokerageName = getString(agentBranding.brokerageName);
   const phone = getString(agentBranding.phone);
@@ -218,7 +218,7 @@ export default function ListingShare({ token }: ListingShareProps) {
     }
 
     trackEvent("contact_click", { channel, source: "contact_card" });
-    const subject = encodeURIComponent(data?.session.title || "Listing share");
+    const subject = encodeURIComponent(data?.session.title || copy.emailSubjectFallback);
     window.location.href = "mailto:" + email + "?subject=" + subject;
   };
 
@@ -308,7 +308,7 @@ export default function ListingShare({ token }: ListingShareProps) {
 
                 <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(260px,0.75fr)]">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-stone-400">Kevv Marketing</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-stone-400">{copy.brandLabel}</p>
                     <h1 className="mt-3 text-4xl font-serif tracking-tight text-white md:text-5xl">
                       {data.session.title || pick(copy.inventoryTitle)}
                     </h1>
@@ -320,14 +320,14 @@ export default function ListingShare({ token }: ListingShareProps) {
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                     <Card className="rounded-[24px] border-white/10 bg-white/5 text-stone-100">
                       <CardContent className="p-4">
-                        <p className="text-xs uppercase tracking-[0.24em] text-stone-400">Inventory</p>
+                        <p className="text-xs uppercase tracking-[0.24em] text-stone-400">{copy.statInventory}</p>
                         <p className="mt-3 text-2xl font-semibold">{displayListings.length}</p>
                         <p className="mt-1 text-xs text-stone-400">{pick(copy.listingCount(displayListings.length))}</p>
                       </CardContent>
                     </Card>
                     <Card className="rounded-[24px] border-white/10 bg-white/5 text-stone-100">
                       <CardContent className="p-4">
-                        <p className="text-xs uppercase tracking-[0.24em] text-stone-400">Views</p>
+                        <p className="text-xs uppercase tracking-[0.24em] text-stone-400">{copy.statViews}</p>
                         <p className="mt-3 text-2xl font-semibold">{data.session.viewCount}</p>
                         <p className="mt-1 text-xs text-stone-400">{pick(copy.viewCount(data.session.viewCount))}</p>
                       </CardContent>
@@ -341,7 +341,7 @@ export default function ListingShare({ token }: ListingShareProps) {
                     </Card>
                     <Card className="rounded-[24px] border-white/10 bg-white/5 text-stone-100">
                       <CardContent className="p-4">
-                        <p className="text-xs uppercase tracking-[0.24em] text-stone-400">Route</p>
+                        <p className="text-xs uppercase tracking-[0.24em] text-stone-400">{copy.statRoute}</p>
                         <p className="mt-3 text-2xl font-semibold">{tourStops.length}</p>
                         <p className="mt-1 text-xs text-stone-400">{pick(copy.routeCount(tourStops.length))}</p>
                       </CardContent>
@@ -357,7 +357,7 @@ export default function ListingShare({ token }: ListingShareProps) {
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-stone-400">Strategy</p>
+                  <p className="text-xs uppercase tracking-[0.28em] text-stone-400">{copy.strategyEyebrow}</p>
                   <h2 className="text-2xl font-serif text-white">{pick(copy.strategyTitle)}</h2>
                 </div>
               </div>
@@ -382,7 +382,7 @@ export default function ListingShare({ token }: ListingShareProps) {
                       <Route className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-[0.28em] text-stone-400">Tour</p>
+                      <p className="text-xs uppercase tracking-[0.28em] text-stone-400">{copy.tourEyebrow}</p>
                       <h2 className="text-2xl font-serif text-white">{pick(copy.timelineTitle)}</h2>
                     </div>
                   </div>
@@ -421,7 +421,7 @@ export default function ListingShare({ token }: ListingShareProps) {
             <section className="rounded-[30px] border border-white/10 bg-[#151a18]/90 p-6 shadow-[0_20px_64px_rgba(0,0,0,0.24)] md:p-8">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-stone-400">Inventory</p>
+                  <p className="text-xs uppercase tracking-[0.28em] text-stone-400">{copy.inventoryEyebrow}</p>
                   <h2 className="text-2xl font-serif text-white">{pick(copy.inventoryTitle)}</h2>
                 </div>
                 <Badge variant="outline" className="rounded-full border-white/15 bg-white/5 px-3 py-1 text-stone-300">
@@ -590,8 +590,8 @@ export default function ListingShare({ token }: ListingShareProps) {
             <section className="rounded-[30px] border border-white/10 bg-[#171d1a]/95 p-6 shadow-[0_20px_64px_rgba(0,0,0,0.28)]">
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-stone-400">Service</p>
-                  <h2 className="mt-1 text-2xl font-serif text-white">Kevv Listing Share</h2>
+                  <p className="text-xs uppercase tracking-[0.24em] text-stone-400">{copy.serviceEyebrow}</p>
+                  <h2 className="mt-1 text-2xl font-serif text-white">{copy.serviceTitle}</h2>
                 </div>
                 <div className="space-y-3 text-sm leading-7 text-stone-300">
                   <div className="flex items-start gap-3">

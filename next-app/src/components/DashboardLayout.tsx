@@ -49,7 +49,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { locale } = useT();
+  const { t } = useT();
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     if (typeof window === "undefined") return DEFAULT_WIDTH;
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
@@ -72,10 +72,10 @@ export default function DashboardLayout({
           <div className="flex flex-col items-center gap-6">
             <div className="flex flex-col items-center gap-2">
               <span className="font-serif text-3xl tracking-tight text-primary">{siteConfig.shortName}</span>
-              <span className="text-xs font-medium text-muted-foreground tracking-widest uppercase">Marketing</span>
+              <span className="text-xs font-medium text-muted-foreground tracking-widest uppercase">{t("shell.marketingWord")}</span>
             </div>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              {locale === "zh" ? "请先登录后继续使用" : "Please sign in to continue"}
+              {t("shell.unauthenticatedPrompt")}
             </p>
           </div>
           <Button
@@ -85,7 +85,7 @@ export default function DashboardLayout({
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
-            {locale === "zh" ? "登录" : "Sign In"}
+            {t("shell.signInCta")}
           </Button>
         </div>
       </div>
@@ -185,7 +185,7 @@ function DashboardLayoutContent({
               <button
                 onClick={toggleSidebar}
                 className="h-9 w-9 flex items-center justify-center hover:bg-sidebar-accent rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
-                aria-label="Toggle navigation"
+                aria-label={t("shell.toggleNavigation")}
               >
                 <PanelLeft className="h-4 w-4 text-sidebar-foreground/60" />
               </button>
@@ -195,7 +195,7 @@ function DashboardLayoutContent({
                     {siteConfig.shortName}
                   </span>
                   <span className="text-[10px] font-medium text-sidebar-foreground/50 tracking-widest uppercase -mt-0.5">
-                    Marketing
+                    {t("shell.marketingWord")}
                   </span>
                 </div>
               ) : null}
@@ -310,9 +310,9 @@ function DashboardLayoutContent({
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem ? getLocalizedText(locale, activeMenuItem.label) : locale === "zh" ? "菜单" : "Menu"}
+                  <div className="flex flex-col gap-1">
+                    <span className="tracking-tight text-foreground">
+                    {activeMenuItem ? getLocalizedText(locale, activeMenuItem.label) : t("shell.menuFallback")}
                   </span>
                 </div>
               </div>

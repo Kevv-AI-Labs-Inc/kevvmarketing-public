@@ -1,7 +1,7 @@
 // legacy page — incrementally migrated
 import { useT } from "@/i18n";
-import { localeTag, pickText } from "@/i18n/copy";
-import { dashboardPageCopy } from "@/i18n/dashboard-pages";
+import { localeTag } from "@/i18n/copy";
+import { getDashboardPageCopy } from "@/i18n/dashboard-pages";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,8 +65,7 @@ function SortButton({ field, sortBy, sortDir, onSort, children }: SortButtonProp
 
 export default function AgentDirectory() {
   const { locale } = useT();
-  const copy = dashboardPageCopy.agentDirectory;
-  const pick = (value: { zh: string; en: string }) => pickText(locale, value);
+  const copy = getDashboardPageCopy(locale).agentDirectory;
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -186,10 +185,10 @@ export default function AgentDirectory() {
   const statsLastUpdatedLabel = statsState?.lastUpdatedAt ? new Date(statsState.lastUpdatedAt).toLocaleString(localeTag(locale)) : null;
   const statsMessage = (() => {
     if (!statsState) return null;
-    if (statsState.refreshing && statsState.ready) return pick(copy.statsMessages.refreshingReady);
-    if (statsState.refreshing && !statsState.ready) return pick(copy.statsMessages.refreshingCold);
-    if (!statsState.ready) return pick(copy.statsMessages.notReady);
-    if (statsState.stale) return pick(copy.statsMessages.stale);
+    if (statsState.refreshing && statsState.ready) return copy.statsMessages.refreshingReady;
+    if (statsState.refreshing && !statsState.ready) return copy.statsMessages.refreshingCold;
+    if (!statsState.ready) return copy.statsMessages.notReady;
+    if (statsState.stale) return copy.statsMessages.stale;
     return null;
   })();
 
@@ -197,8 +196,8 @@ export default function AgentDirectory() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <ShieldAlert className="h-16 w-16 text-muted-foreground/40" />
-        <h2 className="text-xl font-medium text-muted-foreground">{pick(copy.accessDeniedTitle)}</h2>
-        <p className="text-sm text-muted-foreground/70">{pick(copy.accessDeniedDescription)}</p>
+        <h2 className="text-xl font-medium text-muted-foreground">{copy.accessDeniedTitle}</h2>
+        <p className="text-sm text-muted-foreground/70">{copy.accessDeniedDescription}</p>
       </div>
     );
   }
@@ -207,9 +206,9 @@ export default function AgentDirectory() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <ShieldAlert className="h-16 w-16 text-muted-foreground/40" />
-        <h2 className="text-xl font-medium text-foreground">{pick(copy.loadFailedTitle)}</h2>
-        <p className="max-w-md text-center text-sm text-muted-foreground/70">{pick(copy.loadFailedDescription)}</p>
-        <Button onClick={() => utils.agentDirectory.list.invalidate()}>{pick(copy.reload)}</Button>
+        <h2 className="text-xl font-medium text-foreground">{copy.loadFailedTitle}</h2>
+        <p className="max-w-md text-center text-sm text-muted-foreground/70">{copy.loadFailedDescription}</p>
+        <Button onClick={() => utils.agentDirectory.list.invalidate()}>{copy.reload}</Button>
       </div>
     );
   }
@@ -222,16 +221,16 @@ export default function AgentDirectory() {
             <Users className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{pick(copy.title)}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{copy.title}</h1>
             <p className="text-sm text-muted-foreground">
-              {data ? pick(copy.totalAgents(data.total.toLocaleString())) : pick(copy.loadingTotal)}
+              {data ? copy.totalAgents(data.total.toLocaleString()) : copy.loadingTotal}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={() => syncMutation.mutate()} disabled={isSyncing || syncMutation.isPending} variant="outline" className="gap-2">
             {isSyncing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            {isSyncing ? pick(copy.syncingAgents) : pick(copy.syncAgents)}
+            {isSyncing ? copy.syncingAgents : copy.syncAgents}
           </Button>
           <Button
             onClick={() => refreshStatsMutation.mutate()}
@@ -240,11 +239,11 @@ export default function AgentDirectory() {
             className="gap-2"
           >
             {statsState?.refreshing || refreshStatsMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
-            {statsState?.ready ? pick(copy.refreshStats) : pick(copy.buildStats)}
+            {statsState?.ready ? copy.refreshStats : copy.buildStats}
           </Button>
           <Button onClick={handleExport} disabled={exportCsvQuery.isFetching} variant="outline" className="gap-2">
             {exportCsvQuery.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            {pick(copy.exportCsv)}
+            {copy.exportCsv}
           </Button>
         </div>
       </div>
@@ -253,11 +252,11 @@ export default function AgentDirectory() {
         <Card className="border-amber-200/70 bg-amber-50/70 shadow-sm">
           <CardContent className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-amber-950">{pick(copy.statsStatusTitle)}</p>
+              <p className="text-sm font-medium text-amber-950">{copy.statsStatusTitle}</p>
               <p className="text-sm text-amber-900/80">{statsMessage}</p>
             </div>
             <div className="text-xs text-amber-900/70">
-              {statsLastUpdatedLabel ? `${pick(copy.lastUpdatedPrefix)}${statsLastUpdatedLabel}` : pick(copy.noStatsSnapshot)}
+              {statsLastUpdatedLabel ? `${copy.lastUpdatedPrefix}${statsLastUpdatedLabel}` : copy.noStatsSnapshot}
             </div>
           </CardContent>
         </Card>
@@ -266,7 +265,7 @@ export default function AgentDirectory() {
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={pick(copy.searchPlaceholder)} value={search} onChange={(e) => handleSearch(e.target.value)} className="pl-9" />
+          <Input placeholder={copy.searchPlaceholder} value={search} onChange={(e) => handleSearch(e.target.value)} className="pl-9" />
         </div>
         <select
           value={pageSize}
@@ -278,7 +277,7 @@ export default function AgentDirectory() {
         >
           {[25, 50, 100].map((size) => (
             <option key={size} value={size}>
-              {size} {pick(copy.pageSizeSuffix)}
+              {size} {copy.pageSizeSuffix}
             </option>
           ))}
         </select>
@@ -293,7 +292,7 @@ export default function AgentDirectory() {
           ) : !data?.rows.length ? (
             <div className="flex flex-col items-center justify-center gap-3 py-20">
               <Users className="h-12 w-12 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">{debouncedSearch ? pick(copy.emptySearch) : pick(copy.emptySync)}</p>
+              <p className="text-sm text-muted-foreground">{debouncedSearch ? copy.emptySearch : copy.emptySync}</p>
             </div>
           ) : (
             <Table>
@@ -301,44 +300,44 @@ export default function AgentDirectory() {
                 <TableRow className="bg-muted/30">
                   <TableHead>
                     <SortButton {...sortButtonProps} field="memberFullName">
-                      {pick(copy.columns.agent)}
+                      {copy.columns.agent}
                     </SortButton>
                   </TableHead>
                   <TableHead>
                     <SortButton {...sortButtonProps} field="memberEmail">
                       <Mail className="h-3.5 w-3.5" />
-                      {pick(copy.columns.email)}
+                      {copy.columns.email}
                     </SortButton>
                   </TableHead>
                   <TableHead>
                     <Phone className="mr-1 inline h-3.5 w-3.5" />
-                    {pick(copy.columns.phone)}
+                    {copy.columns.phone}
                   </TableHead>
                   <TableHead>
                     <SortButton {...sortButtonProps} field="officeName">
                       <Building2 className="h-3.5 w-3.5" />
-                      {pick(copy.columns.company)}
+                      {copy.columns.company}
                     </SortButton>
                   </TableHead>
-                  <TableHead>{pick(copy.columns.companyContact)}</TableHead>
+                  <TableHead>{copy.columns.companyContact}</TableHead>
                   <TableHead>
                     <SortButton {...sortButtonProps} field="memberStatus">
-                      {pick(copy.columns.status)}
+                      {copy.columns.status}
                     </SortButton>
                   </TableHead>
                   <TableHead className="text-right">
                     <SortButton {...sortButtonProps} field="closedDealsListing">
-                      {pick(copy.columns.listingDeals)}
+                      {copy.columns.listingDeals}
                     </SortButton>
                   </TableHead>
                   <TableHead className="text-right">
                     <SortButton {...sortButtonProps} field="closedDealsBuying">
-                      {pick(copy.columns.buyingDeals)}
+                      {copy.columns.buyingDeals}
                     </SortButton>
                   </TableHead>
                   <TableHead className="text-right">
                     <SortButton {...sortButtonProps} field="totalClosedDeals">
-                      {pick(copy.columns.totalDeals)}
+                      {copy.columns.totalDeals}
                     </SortButton>
                   </TableHead>
                 </TableRow>
@@ -349,8 +348,8 @@ export default function AgentDirectory() {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-medium text-foreground">{agent.memberFullName || "—"}</span>
-                        {agent.memberStateLicense && <span className="text-[11px] text-muted-foreground">{pick(copy.columns.license)}: {agent.memberStateLicense}</span>}
-                        {agent.memberMlsId && <span className="text-[11px] text-muted-foreground">{pick(copy.columns.mlsId)}: {agent.memberMlsId}</span>}
+                        {agent.memberStateLicense && <span className="text-[11px] text-muted-foreground">{copy.columns.license}: {agent.memberStateLicense}</span>}
+                        {agent.memberMlsId && <span className="text-[11px] text-muted-foreground">{copy.columns.mlsId}: {agent.memberMlsId}</span>}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -358,13 +357,13 @@ export default function AgentDirectory() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-0.5 text-sm text-foreground/80">
-                        {agent.memberPreferredPhone && <span title={pick(copy.columns.preferred)}>📞 {agent.memberPreferredPhone}</span>}
+                        {agent.memberPreferredPhone && <span title={copy.columns.preferred}>📞 {agent.memberPreferredPhone}</span>}
                         {agent.memberMobilePhone && agent.memberMobilePhone !== agent.memberPreferredPhone && (
-                          <span title={pick(copy.columns.mobile)}>📱 {agent.memberMobilePhone}</span>
+                          <span title={copy.columns.mobile}>📱 {agent.memberMobilePhone}</span>
                         )}
                         {agent.memberDirectPhone &&
                           agent.memberDirectPhone !== agent.memberPreferredPhone &&
-                          agent.memberDirectPhone !== agent.memberMobilePhone && <span title={pick(copy.columns.direct)}>☎️ {agent.memberDirectPhone}</span>}
+                          agent.memberDirectPhone !== agent.memberMobilePhone && <span title={copy.columns.direct}>☎️ {agent.memberDirectPhone}</span>}
                         {!agent.memberPreferredPhone && !agent.memberMobilePhone && !agent.memberDirectPhone && (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -407,7 +406,7 @@ export default function AgentDirectory() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            {pick(copy.pagination.summary(page, totalPages, data?.total.toLocaleString() || "0"))}
+            {copy.pagination.summary(page, totalPages, data?.total.toLocaleString() || "0")}
           </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>

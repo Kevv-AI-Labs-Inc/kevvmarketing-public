@@ -1,7 +1,6 @@
 // legacy page — incrementally migrated
 import { useT } from "@/i18n";
-import { pickText } from "@/i18n/copy";
-import { dashboardPageCopy } from "@/i18n/dashboard-pages";
+import { getDashboardPageCopy } from "@/i18n/dashboard-pages";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,8 +37,7 @@ function formatPrice(value: string | null | undefined) {
 
 export default function Subscriptions() {
   const { locale } = useT();
-  const copy = dashboardPageCopy.subscriptions;
-  const pick = (value: { zh: string; en: string }) => pickText(locale, value);
+  const copy = getDashboardPageCopy(locale).subscriptions;
   const propertyTypeOptions = copy.propertyTypes;
   const channelOptions = copy.channels;
   const frequencyOptions = copy.frequencies;
@@ -62,27 +60,27 @@ export default function Subscriptions() {
   const subsQuery = trpc.subscription.list.useQuery();
   const createMutation = trpc.subscription.create.useMutation({
     onSuccess: () => {
-      toast.success(pick(copy.toasts.created));
+      toast.success(copy.toasts.created);
       resetForm();
       utils.subscription.list.invalidate();
     },
-    onError: (err) => toast.error(pick(copy.toasts.createFailed), { description: err.message }),
+    onError: (err) => toast.error(copy.toasts.createFailed, { description: err.message }),
   });
   const updateMutation = trpc.subscription.update.useMutation({
     onSuccess: () => {
-      toast.success(pick(copy.toasts.updated));
+      toast.success(copy.toasts.updated);
       setEditingId(null);
       resetForm();
       utils.subscription.list.invalidate();
     },
-    onError: (err) => toast.error(pick(copy.toasts.updateFailed), { description: err.message }),
+    onError: (err) => toast.error(copy.toasts.updateFailed, { description: err.message }),
   });
   const deleteMutation = trpc.subscription.delete.useMutation({
     onSuccess: () => {
-      toast.success(pick(copy.toasts.deleted));
+      toast.success(copy.toasts.deleted);
       utils.subscription.list.invalidate();
     },
-    onError: (err) => toast.error(pick(copy.toasts.deleteFailed), { description: err.message }),
+    onError: (err) => toast.error(copy.toasts.deleteFailed, { description: err.message }),
   });
 
   const resetForm = useCallback(() => {
@@ -144,20 +142,20 @@ export default function Subscriptions() {
 
   const channelLabel = (value: string) => {
     const option = channelOptions.find((item) => item.value === value);
-    return option ? pick(option.label) : value;
+    return option ? option.label : value;
   };
 
   const frequencyLabel = (value: string) => {
     const option = frequencyOptions.find((item) => item.value === value);
-    return option ? pick(option.label) : value;
+    return option ? option.label : value;
   };
 
   const propertyTypeLabel = (value: string) => {
     const option = propertyTypeOptions.find((item) => item.value === value);
-    return option ? pick(option.label) : value;
+    return option ? option.label : value;
   };
 
-  const statusLabel = (status: "active" | "paused" | "expired") => pick(copy.status[status]);
+  const statusLabel = (status: "active" | "paused" | "expired") => copy.status[status];
   const subscriptions = subsQuery.data ?? [];
 
   return (
@@ -165,10 +163,10 @@ export default function Subscriptions() {
       <div className="rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/5 via-primary/2 to-transparent p-6 text-foreground shadow-sm md:p-8">
         <div className="flex items-center gap-2 text-sm text-primary">
           <Bell className="h-4 w-4" />
-          {pick(copy.heroBadge)}
+          {copy.heroBadge}
         </div>
-        <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">{pick(copy.heroTitle)}</h1>
-        <p className="mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">{pick(copy.heroDescription)}</p>
+        <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">{copy.heroTitle}</h1>
+        <p className="mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">{copy.heroDescription}</p>
       </div>
 
       {showCreateForm ? (
@@ -176,17 +174,17 @@ export default function Subscriptions() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               {editingId ? <Edit3 className="h-4 w-4" /> : <CirclePlus className="h-4 w-4" />}
-              {editingId ? pick(copy.editTitle) : pick(copy.createTitle)}
+              {editingId ? copy.editTitle : copy.createTitle}
             </CardTitle>
-            <CardDescription>{pick(copy.formDescription)}</CardDescription>
+            <CardDescription>{copy.formDescription}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label>{pick(copy.fields.name)}</Label>
+              <Label>{copy.fields.name}</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={pick(copy.fields.namePlaceholder)}
+                placeholder={copy.fields.namePlaceholder}
               />
             </div>
 
@@ -194,47 +192,47 @@ export default function Subscriptions() {
               <div className="space-y-1.5">
                 <Label>
                   <MapPin className="mr-1 inline h-3.5 w-3.5" />
-                  {pick(copy.fields.cities)}
+                  {copy.fields.cities}
                 </Label>
                 <Input
                   value={cities}
                   onChange={(e) => setCities(e.target.value)}
-                  placeholder={pick(copy.fields.citiesPlaceholder)}
+                  placeholder={copy.fields.citiesPlaceholder}
                 />
-                <p className="text-[11px] text-muted-foreground">{pick(copy.fields.citiesHint)}</p>
+                <p className="text-[11px] text-muted-foreground">{copy.fields.citiesHint}</p>
               </div>
               <div className="space-y-1.5">
-                <Label>{pick(copy.fields.keywords)}</Label>
+                <Label>{copy.fields.keywords}</Label>
                 <Textarea
                   value={keywords}
                   onChange={(e) => setKeywords(e.target.value)}
                   rows={2}
-                  placeholder={pick(copy.fields.keywordsPlaceholder)}
+                  placeholder={copy.fields.keywordsPlaceholder}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="space-y-1.5">
-                <Label>{pick(copy.fields.minPrice)}</Label>
+                <Label>{copy.fields.minPrice}</Label>
                 <Input value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="500000" />
               </div>
               <div className="space-y-1.5">
-                <Label>{pick(copy.fields.maxPrice)}</Label>
+                <Label>{copy.fields.maxPrice}</Label>
                 <Input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="1500000" />
               </div>
               <div className="space-y-1.5">
-                <Label>{pick(copy.fields.minBeds)}</Label>
+                <Label>{copy.fields.minBeds}</Label>
                 <Input type="number" value={minBeds} onChange={(e) => setMinBeds(e.target.value)} placeholder="3" />
               </div>
               <div className="space-y-1.5">
-                <Label>{pick(copy.fields.maxBeds)}</Label>
+                <Label>{copy.fields.maxBeds}</Label>
                 <Input type="number" value={maxBeds} onChange={(e) => setMaxBeds(e.target.value)} placeholder="5" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label>{pick(copy.fields.propertyTypes)}</Label>
+              <Label>{copy.fields.propertyTypes}</Label>
               <div className="flex flex-wrap gap-2">
                 {propertyTypeOptions.map((type) => {
                   const active = selectedTypes.includes(type.value);
@@ -248,7 +246,7 @@ export default function Subscriptions() {
                         setSelectedTypes((prev) => (active ? prev.filter((item) => item !== type.value) : [...prev, type.value]));
                       }}
                     >
-                      {pick(type.label)}
+                      {type.label}
                     </Button>
                   );
                 })}
@@ -257,7 +255,7 @@ export default function Subscriptions() {
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>{pick(copy.fields.channel)}</Label>
+                <Label>{copy.fields.channel}</Label>
                 <div className="flex flex-wrap gap-2">
                   {channelOptions.map((option) => (
                     <Button
@@ -267,13 +265,13 @@ export default function Subscriptions() {
                       variant={channel === option.value ? "default" : "outline"}
                       onClick={() => setChannel(option.value)}
                     >
-                      {pick(option.label)}
+                      {option.label}
                     </Button>
                   ))}
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>{pick(copy.fields.frequency)}</Label>
+                <Label>{copy.fields.frequency}</Label>
                 <div className="flex flex-wrap gap-2">
                   {frequencyOptions.map((option) => (
                     <Button
@@ -283,7 +281,7 @@ export default function Subscriptions() {
                       variant={frequency === option.value ? "default" : "outline"}
                       onClick={() => setFrequency(option.value)}
                     >
-                      {pick(option.label)}
+                      {option.label}
                     </Button>
                   ))}
                 </div>
@@ -293,10 +291,10 @@ export default function Subscriptions() {
             <div className="flex items-center gap-3 pt-2">
               <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
                 {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingId ? pick(copy.actions.saveChanges) : pick(copy.actions.create)}
+                {editingId ? copy.actions.saveChanges : copy.actions.create}
               </Button>
               <Button variant="ghost" onClick={resetForm}>
-                {pick(copy.actions.cancel)}
+                {copy.actions.cancel}
               </Button>
             </div>
           </CardContent>
@@ -304,7 +302,7 @@ export default function Subscriptions() {
       ) : (
         <Button onClick={() => setShowCreateForm(true)} className="gap-2">
           <CirclePlus className="h-4 w-4" />
-          {pick(copy.actions.createNew)}
+          {copy.actions.createNew}
         </Button>
       )}
 
@@ -312,21 +310,21 @@ export default function Subscriptions() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-4 w-4" />
-            {pick(copy.listTitle)}
+            {copy.listTitle}
             {subscriptions.length > 0 && <Badge variant="secondary">{subscriptions.length}</Badge>}
           </CardTitle>
-          <CardDescription>{pick(copy.listDescription)}</CardDescription>
+          <CardDescription>{copy.listDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           {subsQuery.isLoading ? (
             <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              {pick(copy.loading)}
+              {copy.loading}
             </div>
           ) : subscriptions.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               <Bell className="mx-auto mb-3 h-10 w-10 opacity-30" />
-              <p className="text-sm">{pick(copy.empty)}</p>
+              <p className="text-sm">{copy.empty}</p>
             </div>
           ) : (
             <ScrollArea className="max-h-[520px]">
@@ -352,7 +350,7 @@ export default function Subscriptions() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex items-center gap-2">
-                            <h3 className="truncate text-sm font-medium">{sub.name || `${pick(copy.defaultName)} #${sub.id}`}</h3>
+                            <h3 className="truncate text-sm font-medium">{sub.name || `${copy.defaultName} #${sub.id}`}</h3>
                             <Badge variant={isActive ? "default" : isPaused ? "secondary" : "outline"} className="shrink-0 text-[10px]">
                               {statusLabel(activeStatus)}
                             </Badge>
@@ -367,12 +365,12 @@ export default function Subscriptions() {
                             )}
                             {(sub.minPrice || sub.maxPrice) && (
                               <span className="rounded-md bg-muted px-1.5 py-0.5">
-                                {formatPrice(sub.minPrice) || "$0"} – {formatPrice(sub.maxPrice) || pick(copy.meta.unlimited)}
+                                {formatPrice(sub.minPrice) || "$0"} – {formatPrice(sub.maxPrice) || copy.meta.unlimited}
                               </span>
                             )}
                             {(sub.minBeds != null || sub.maxBeds != null) && (
                               <span className="rounded-md bg-muted px-1.5 py-0.5">
-                                {sub.minBeds ?? 0}–{sub.maxBeds ?? "∞"} {pick(copy.meta.bedroomUnit)}
+                                {sub.minBeds ?? 0}–{sub.maxBeds ?? "∞"} {copy.meta.bedroomUnit}
                               </span>
                             )}
                             {types.map((type) => (
@@ -384,14 +382,12 @@ export default function Subscriptions() {
 
                           <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
                             <span>
-                              {pick(copy.meta.channel)}: {channelLabel(sub.channel)}
+                              {copy.meta.channel}: {channelLabel(sub.channel)}
                             </span>
                             <span>
-                              {pick(copy.meta.frequency)}: {frequencyLabel(sub.frequency)}
+                              {copy.meta.frequency}: {frequencyLabel(sub.frequency)}
                             </span>
-                            <span>
-                              {locale === "zh" ? `${pick(copy.meta.matches)}: ${sub.matchCount} ${pick(copy.meta.times)}` : `${pick(copy.meta.matches)}: ${sub.matchCount}`}
-                            </span>
+                            <span>{copy.meta.matchCount(sub.matchCount)}</span>
                           </div>
                         </div>
 
@@ -402,7 +398,7 @@ export default function Subscriptions() {
                               size="icon"
                               className="h-8 w-8"
                               onClick={() => togglePause(sub)}
-                              title={isActive ? pick(copy.actions.pause) : pick(copy.actions.resume)}
+                              title={isActive ? copy.actions.pause : copy.actions.resume}
                             >
                               {isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                             </Button>
@@ -412,7 +408,7 @@ export default function Subscriptions() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => startEdit(sub)}
-                            title={pick(copy.actions.edit)}
+                            title={copy.actions.edit}
                           >
                             <Edit3 className="h-4 w-4" />
                           </Button>
@@ -421,9 +417,9 @@ export default function Subscriptions() {
                             size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => {
-                              if (confirm(pick(copy.actions.confirmDelete))) deleteMutation.mutate({ id: sub.id });
+                              if (confirm(copy.actions.confirmDelete)) deleteMutation.mutate({ id: sub.id });
                             }}
-                            title={pick(copy.actions.remove)}
+                            title={copy.actions.remove}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

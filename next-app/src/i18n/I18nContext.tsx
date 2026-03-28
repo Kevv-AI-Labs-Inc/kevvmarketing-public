@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * i18n — lightweight internationalization via React Context.
  *
@@ -22,7 +24,7 @@ import {
   LOCALE_STORAGE_KEY,
   type Locale,
 } from "./config";
-import { translateMessage } from "./messages";
+import { translateMessage, type MessageKey } from "./messages";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -31,7 +33,7 @@ import { translateMessage } from "./messages";
 interface I18nContextValue {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string, vars?: Record<string, string | number>) => string;
+  t: (key: MessageKey, vars?: Record<string, string | number>) => string;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -72,7 +74,7 @@ export function I18nProvider({
   }, [locale]);
 
   const t = useCallback(
-    (key: string, vars?: Record<string, string | number>): string => {
+    (key: MessageKey, vars?: Record<string, string | number>): string => {
       return translateMessage(locale, key, vars);
     },
     [locale],

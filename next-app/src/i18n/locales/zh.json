@@ -1,30 +1,64 @@
 {
   "app": {
     "name": "Kevv Marketing",
-    "tagline": "智能营销工作台"
+    "tagline": "AI 地产营销工作台"
+  },
+  "terminology": {
+    "funnels": "获客漏斗",
+    "leads": "线索",
+    "campaigns": "触达活动",
+    "dealTools": "成交工具",
+    "contentStudio": "内容工作台",
+    "agentSite": "个人主页",
+    "homeValue": "房价估值",
+    "areaMagnet": "区域获客页",
+    "magicShare": "智能分享页",
+    "smartMatch": "智能匹配",
+    "showingTour": "带看路线",
+    "subscriptions": "房源订阅",
+    "postcards": "明信片直邮"
+  },
+  "metadata": {
+    "rootTitle": "{{appName}}｜AI 地产营销工作台",
+    "rootDescription": "用 {{appName}} 在一个平台里完成海报、智能匹配、分享页、订阅、公开获客页和双语地产营销流程。"
+  },
+  "localeToggle": {
+    "switchLabel": "切换语言",
+    "targetLanguage": "English",
+    "currentEnglish": "English",
+    "currentChinese": "中文"
+  },
+  "shell": {
+    "marketingWord": "Marketing",
+    "unauthenticatedPrompt": "请先登录后继续使用",
+    "signInCta": "登录",
+    "menuFallback": "菜单",
+    "toggleNavigation": "切换导航",
+    "agentFallback": "经纪人",
+    "backHome": "返回首页"
   },
   "sidebar": {
     "overview": "概览",
-    "dashboard": "仪表板",
+    "dashboard": "指挥台",
     "insights": "AI 洞察",
     "listings": "房源",
     "newListings": "最新房源",
     "listingList": "房源列表",
     "neighborhood": "社区评分",
     "clients": "客户",
-    "smartMatch": "Smart Match",
-    "magicShare": "Magic Share",
-    "showingTour": "看房行程",
+    "smartMatch": "智能匹配",
+    "magicShare": "智能分享页",
+    "showingTour": "带看路线",
     "marketing": "营销",
     "contentFactory": "内容工厂",
-    "flyerStudio": "传单工作室",
+    "flyerStudio": "海报工坊",
     "ads": "广告投放",
-    "drip": "Drip 自动化",
+    "drip": "自动跟进",
     "cmaStudio": "CMA 分析",
-    "studios": "Studios",
-    "subscriptions": "订阅推送",
-    "xhsShare": "小红书发布",
-    "chinese": "华人特色",
+    "studios": "视频工坊",
+    "subscriptions": "房源订阅",
+    "xhsShare": "小红书笔记",
+    "chinese": "华语市场",
     "cultural": "风水 / 黄历",
     "wechat": "微信分享",
     "crossBorder": "跨境买家",
@@ -98,8 +132,8 @@
     "createCampaign": "创建广告"
   },
   "drip": {
-    "title": "Drip 自动化",
-    "campaigns": "自动化序列",
+    "title": "自动跟进",
+    "campaigns": "跟进序列",
     "active": "进行中",
     "paused": "已暂停",
     "enrollments": "已入组",
@@ -149,7 +183,7 @@
     "edit": "编辑",
     "create": "创建",
     "search": "搜索",
-    "loading": "加载中...",
+    "loading": "加载中…",
     "noData": "暂无数据",
     "confirm": "确认",
     "back": "返回",
@@ -157,5 +191,1024 @@
     "viewAll": "查看全部",
     "export": "导出",
     "refresh": "刷新"
+  },
+  "map": {
+    "providerDisabled": "地图服务已禁用。请把 NEXT_PUBLIC_MAP_UI_PROVIDER 设为 google。",
+    "missingApiKey": "缺少 Google Maps API Key。请配置 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY。",
+    "containerMissing": "地图容器不存在。",
+    "apiUnavailable": "Google Maps API 不可用。",
+    "initFailed": "地图初始化失败。",
+    "scriptLoadFailed": "Google Maps 脚本加载失败。",
+    "loading": "正在加载地图…",
+    "loadFailedPrefix": "地图加载失败："
+  },
+  "landing": {
+    "header": {
+      "signIn": "登录",
+      "getStartedShort": "免费开始"
+    },
+    "hero": {
+      "badge": "为地产经纪人打造的 AI 营销平台",
+      "line1": "一套房源。",
+      "line2": "全渠道触达。",
+      "line3": "双语同时推进。",
+      "body": "{{appName}} 可以把 MLS 房源转成 AI 海报、社媒营销、微信内容、CMA 报告和公开获客页，并同时支持中文与英文。专为服务华语客户与跨境买家的北美地产经纪人设计。",
+      "primaryCta": "免费开始",
+      "secondaryCta": "了解 Kevv AI"
+    },
+    "stats": {
+      "fasterContent": "内容生产更快",
+      "integratedTools": "集成营销工具",
+      "languages": "种语言，一套平台"
+    },
+    "whyKevv": {
+      "eyebrow": "为什么选 Kevv",
+      "title": "AI、自动化与跨境营销，在一个平台里打通"
+    },
+    "pillars": {
+      "aiEngine": {
+        "badge": "AI 引擎",
+        "title": "让内容自己生成",
+        "body": "一套房源，可以产出几十份可直接发布的素材。AI 会按平台生成房源描述、社媒内容、邮件文案和广告创意，并同时支持中英文。"
+      },
+      "crossBorder": {
+        "badge": "跨境营销",
+        "title": "跨洋触达华语买家",
+        "body": "内置微信能力、文化适配表达和双语内容生产，让你不必切换工具，也能把北美房源卖给华语买家。"
+      },
+      "intelligence": {
+        "badge": "智能分诊",
+        "title": "智能匹配，不靠人工翻找",
+        "body": "AI 买家匹配、自动带看路线和市场洞察，会自动把最值得推进的机会浮出来给每一个客户。"
+      }
+    },
+    "toolkit": {
+      "eyebrow": "全套能力",
+      "title": "不再来回切工具，经营链路在一处完成。",
+      "body": "从第一张房源照片到最后签约，地产经纪人需要的获客、触达、内容和成交支持都可以在一个工作台里完成。"
+    },
+    "tools": {
+      "contentFactory": {
+        "name": "内容工厂",
+        "desc": "AI 房源文案、社媒内容和邮件营销"
+      },
+      "flyerStudio": {
+        "name": "海报工坊",
+        "desc": "拖拽式印刷与数字海报制作"
+      },
+      "cmaStudio": {
+        "name": "CMA 分析",
+        "desc": "市场比较分析与估价报告"
+      },
+      "smartMatch": {
+        "name": "智能匹配",
+        "desc": "AI 买家与房源匹配引擎"
+      },
+      "magicShare": {
+        "name": "智能分享页",
+        "desc": "一键生成房源分享页"
+      },
+      "showingTour": {
+        "name": "带看路线",
+        "desc": "自动优化带看顺序"
+      },
+      "ads": {
+        "name": "广告投放",
+        "desc": "多平台付费广告管理"
+      },
+      "drip": {
+        "name": "自动跟进",
+        "desc": "自动邮件培育序列"
+      },
+      "neighborhood": {
+        "name": "社区洞察",
+        "desc": "本地市场数据与学校信息"
+      },
+      "listingManagement": {
+        "name": "房源管理",
+        "desc": "统一的 MLS 房源工作台"
+      },
+      "wechat": {
+        "name": "微信营销",
+        "desc": "原生微信内容与小程序能力"
+      },
+      "cultural": {
+        "name": "文化适配",
+        "desc": "文化语境友好的营销指南"
+      },
+      "crossBorderTools": {
+        "name": "跨境工具",
+        "desc": "服务国际买家的双语营销工具"
+      }
+    },
+    "crossBorder": {
+      "badge": "跨境营销",
+      "titlePrefix": "真正为",
+      "titleAccent": "中美地产场景",
+      "titleSuffix": "设计的平台",
+      "body": "{{shortName}} 不是后补的翻译层。我们从第一天起就把微信原生内容、文化适配表达和双语营销工具做进系统，因为你的市场本来就需要这些能力。"
+    },
+    "crossBorderChecklist": {
+      "wechat": "原生微信文章与小程序分享",
+      "descriptions": "面向华语买家的文化适配房源描述",
+      "bilingual": "双语海报、社媒内容和邮件营销",
+      "matching": "跨境买家匹配与带看路线"
+    },
+    "crossBorderCards": {
+      "wechat": {
+        "title": "微信营销",
+        "desc": "直接把房源发布到微信生态"
+      },
+      "cultural": {
+        "title": "文化适配",
+        "desc": "风水说明、幸运数字和文化语境友好的文案"
+      },
+      "campaigns": {
+        "title": "跨境营销活动",
+        "desc": "面向国际买家的地理定向广告"
+      },
+      "bilingualAi": {
+        "title": "双语 AI 内容",
+        "desc": "一键生成中英文内容"
+      }
+    },
+    "closing": {
+      "title": "别再切来切去，直接把交易推向成交。",
+      "body": "用一套工作台，跨所有渠道，用中英文更聪明地做营销。",
+      "primaryCta": "免费开始",
+      "secondaryCta": "联系团队"
+    },
+    "footer": {
+      "rights": "本产品代码已开源。",
+      "privacy": "隐私",
+      "terms": "条款"
+    }
+  },
+  "loginAuth": {
+    "securityBadge": "安全身份接入",
+    "heroTitleNewWorkspace": "直接使用团队已经信任的身份开始。",
+    "heroTitleDefault": "{{appName}} · AI 地产营销平台",
+    "heroDescription": "使用 Google、Microsoft 或一次性邮箱链接登录。{{appName}} 不会要求你设置密码。",
+    "authCardPromptNewWorkspace": "选择你已经在使用的身份提供商，我们会自动创建账户。",
+    "authCardPromptDefault": "选择 Google、Microsoft，或申请一次性邮箱登录链接。",
+    "noPasswordsTitle": "不存储密码",
+    "noPasswordsBody": "身份验证完全交给 Google、Microsoft 或一次性邮箱链接。",
+    "enterEmail": "请输入接收登录链接的邮箱地址。",
+    "magicLinkNotConfigured": "邮箱登录链接尚未配置。",
+    "magicLinkFailed": "登录链接发送失败。",
+    "magicLinkInbox": "请检查邮箱中的安全登录链接。",
+    "passwordlessDivider": "无密码备用方式",
+    "magicLinkTitle": "给我发送安全登录链接",
+    "magicLinkDescription": "适合暂时不想走 OAuth 的情况。链接有效期很短，并且只能使用一次。",
+    "sendingLink": "发送中",
+    "sendLink": "发送登录链接",
+    "sentPrefix": "如果邮箱 ",
+    "sentSuffix": " 可接收邮件，一次性登录链接正在发送。",
+    "helpTitle": "重试前请确认",
+    "needHelpPrefix": "需要帮助？联系 ",
+    "privacy": "隐私",
+    "terms": "条款",
+    "returnHome": "返回首页",
+    "featureCards": {
+      "identity": {
+        "title": "身份归属于外部提供商",
+        "body": "{{appName}} 保持无密码模式，身份来自 Google、Microsoft 或一次性邮箱链接。"
+      },
+      "providers": {
+        "title": "Google、Microsoft 或安全邮箱链接",
+        "body": "经纪人可以使用任一生态登录，也可以请求一次性链接。"
+      },
+      "tools": {
+        "title": "地产营销工具",
+        "body": "提供 AI 房源内容、CMA 报告、社媒营销以及面向华语市场的微信能力。"
+      }
+    },
+    "providerStatus": {
+      "live": "可用",
+      "notConfigured": "未配置"
+    },
+    "providerAction": {
+      "continueWith": "使用 {{provider}} 继续",
+      "notConfigured": "{{provider}} 登录暂未配置完成。",
+      "startFailed": "{{provider}} 登录无法启动。"
+    },
+    "helpChecklist": {
+      "provider": "请使用与你邮箱一致的 Google 或 Microsoft 账号。",
+      "magicLink": "一次性邮箱链接只用于系统登录，不需要密码。",
+      "microsoft": "如果使用 Microsoft 工作账号，首次使用前可能需要租户管理员授权。"
+    }
+  },
+  "authIssue": {
+    "accessDenied": {
+      "title": "{{provider}} 授权没有完成",
+      "description": "身份提供商没有完成登录请求。通常意味着用户取消了授权、应用仍在测试阶段，或者组织策略阻止了该请求。",
+      "checklist": {
+        "retry": "在新标签页里重试同一个登录方式。",
+        "google": "如果这是 Google 测试应用，确认你的邮箱已被加入测试用户。",
+        "microsoft": "如果这是 Microsoft 工作账号，请让租户管理员允许应用或授予同意。"
+      }
+    },
+    "missingEmail": {
+      "title": "{{provider}} 没有返回可用邮箱",
+      "description": "{{appName}} 依赖已验证邮箱来创建账户。OAuth 虽然完成了，但回调里没有返回可绑定工作区的稳定邮箱地址。",
+      "checklist": {
+        "mailbox": "请使用真实邮箱账户，而不是仅有别名的身份。",
+        "microsoft": "如果使用 Microsoft，优先使用主工作邮箱，而不是外部 guest 身份。",
+        "provider": "如果问题重复出现，可尝试换一个身份提供商对比结果。"
+      }
+    },
+    "accountSyncFailed": {
+      "title": "我们无法完成账户创建",
+      "description": "身份验证虽然成功了，但 {{appName}} 无法创建或更新本地工作区记录。这通常是数据库或回调配置的问题。",
+      "checklist": {
+        "retry": "先重试一次，排除瞬时回调失败。",
+        "logs": "如果持续失败，请检查登录回调相关的部署日志。",
+        "providers": "在回调错误修复前，不要反复切换不同登录方式。"
+      }
+    },
+    "oauthCallback": {
+      "title": "{{provider}} 无法完成回调",
+      "description": "身份提供商已经回跳，但 OAuth 回调在创建会话前失败了。",
+      "checklist": {
+        "redirect": "核对 Google Cloud 或 Microsoft Entra 里的 redirect URI 是否完全一致。",
+        "credentials": "确认生产环境已正确配置 provider client ID 和 secret。",
+        "logs": "查看失败时间点附近的回调路由部署日志。"
+      }
+    },
+    "configuration": {
+      "title": "认证配置不完整",
+      "description": "{{appName}} 收到了一个尚未完整配置的登录方式请求，通常缺少 credentials、redirect URI 或环境变量。",
+      "checklist": {
+        "railway": "确认 Railway 当前环境里已经配置好该 provider。",
+        "redirect": "确保生产环境 redirect URI 与当前域名完全一致。",
+        "disable": "未配置完成的登录按钮应直接禁用。"
+      }
+    },
+    "verification": {
+      "title": "这个登录链接已经失效",
+      "description": "一次性验证链接或回调 token 已过期，或者已经被使用过。",
+      "checklist": {
+        "restart": "请回到 {{appName}} 登录页重新发起登录。",
+        "history": "不要从浏览器历史中重新打开旧的登录链接。"
+      }
+    },
+    "defaultError": {
+      "title": "登录没有完成",
+      "description": "{{appName}} 收到了一个未预期的认证错误，请求在创建会话前被中断了。",
+      "checklist": {
+        "retry": "先重试同一个登录方式一次。",
+        "cookies": "如果只在某个浏览器里发生，清掉站点 cookie 后再试。",
+        "logs": "如果持续失败，请按准确失败时间检查 auth callback 日志。"
+      }
+    }
+  },
+  "legal": {
+    "privacy": {
+      "eyebrow": "法律信息",
+      "title": "隐私政策",
+      "summary": "本页说明 {{appName}} 如何处理登录信息、产品使用数据和支持沟通信息。",
+      "updatedAt": "更新于 2026 年 3 月 22 日",
+      "sections": {
+        "collect": {
+          "heading": "我们收集什么",
+          "paragraph1": "当你使用 Google、Microsoft 或邮箱登录链接登录时，我们会处理账户标识、邮箱地址、姓名和头像等最基本的身份信息。",
+          "paragraph2": "当你使用营销功能时，我们还会处理你创建的房源分享、订阅、内容生成请求和相关操作日志，用于提供功能、排查问题和防止滥用。"
+        },
+        "usage": {
+          "heading": "我们如何使用数据",
+          "paragraph1": "这些数据用于完成身份验证、保存你的工作区状态、生成营销内容、发送你主动请求的邮件通知，以及保障系统安全与稳定性。",
+          "paragraph2": "除非为了完成服务所必需，{{appName}} 不会把你的内容或客户线索出售给第三方。"
+        },
+        "vendors": {
+          "heading": "第三方服务",
+          "paragraph1": "平台依赖第三方服务完成 OAuth 登录、邮件发送、地图和部署托管。相关供应商会在其职责范围内处理必要的数据。",
+          "paragraph2": "你应同时审阅相应第三方提供商的隐私条款，尤其是在使用 Google、Microsoft 或地图能力时。"
+        },
+        "retention": {
+          "heading": "保留与联系",
+          "paragraph1": "我们只在业务需要和合规要求范围内保留数据。若你需要查询、导出或删除与你账户相关的数据，请联系 {{supportEmail}}。"
+        }
+      }
+    },
+    "terms": {
+      "eyebrow": "法律信息",
+      "title": "服务条款",
+      "summary": "本页说明你在使用 {{appName}} 时需要遵守的基本规则、责任边界和服务限制。",
+      "updatedAt": "更新于 2026 年 3 月 22 日",
+      "sections": {
+        "accounts": {
+          "heading": "账户与访问",
+          "paragraph1": "你必须使用合法授权的身份提供商账户访问本服务，并对该账户下发生的操作负责。",
+          "paragraph2": "如果我们发现异常登录、滥用行为或明显违反政策的使用方式，可以暂停或限制相关账户访问。"
+        },
+        "acceptableUse": {
+          "heading": "可接受使用",
+          "paragraph1": "你不得使用 {{appName}} 发送垃圾消息、冒充他人、抓取未授权数据，或发布违反适用法律与地产行业规范的内容。",
+          "paragraph2": "你应确保上传或输入到系统中的房源资料、媒体素材和客户信息具备合法使用权。"
+        },
+        "aiContent": {
+          "heading": "AI 生成内容",
+          "paragraph1": "平台中的文案、摘要、推荐和营销素材可能由 AI 自动生成。你有责任在对外发布前进行人工审核，确认其准确性、合规性和适用性。",
+          "paragraph2": "{{appName}} 不构成法律、税务、估价、经纪执业或公平住房合规建议。"
+        },
+        "liability": {
+          "heading": "服务可用性与责任限制",
+          "paragraph1": "我们会持续改进产品，但不承诺服务永不中断，也不保证所有第三方集成始终可用。",
+          "paragraph2": "在适用法律允许的最大范围内，{{appName}} 对因服务中断、第三方依赖故障或 AI 输出错误造成的间接损失不承担责任。"
+        },
+        "contact": {
+          "heading": "联系",
+          "paragraph1": "如果你对条款有疑问，或需要企业合同与合规支持，请联系 {{supportEmail}}。"
+        }
+      },
+      "homeLabel": "返回首页",
+      "loginLabel": "登录"
+    }
+  },
+  "dashboardPages": {
+    "home": {
+      "heroBadge": "AI 经纪人增长操作台",
+      "heroTitle": "先搭好获客漏斗，再把线索变成动作。",
+      "heroDescription": "这套系统的中心不再是散落的工具页，而是地产经纪人每天真正会走的链路：获客漏斗、线索、触达活动、成交工具和内容工作台。",
+      "heroFootnote": "公开主页、房价估值、区域获客页、分享页和直邮都会回收到同一条线索主干，再由 AI 帮你分诊、排序和触发后续动作。",
+      "actions": {
+        "openLeads": "打开线索工作台",
+        "openFunnels": "进入获客漏斗",
+        "openCampaigns": "进入触达活动"
+      },
+      "stats": {
+        "inventoryTitle": "房源库存",
+        "inventoryDescription": "当前可用房源总量",
+        "funnelsTitle": "获客漏斗",
+        "funnelsDescription": "公开入口与卖房线索磁铁",
+        "campaignsTitle": "触达活动",
+        "campaignsDescription": "主动触达与再激活渠道",
+        "dealToolsTitle": "成交工具",
+        "dealToolsDescription": "库存、匹配、带看与 CMA",
+        "contentTitle": "内容工作台",
+        "contentDescription": "海报、视频和平台内容",
+        "syncLabel": "最近同步",
+        "syncUnknown": "未记录"
+      },
+      "workspacesTitle": "今天要推进什么",
+      "workspacesDescription": "先按经营主线进入工作，而不是先选工具。",
+      "workspaces": {
+        "funnels": {
+          "eyebrow": "获客",
+          "title": "公开入口与卖房线索漏斗",
+          "description": "把个人主页、房价估值和区域获客页看成同一条 inbound funnel，而不是三个孤立工具。",
+          "actionLabel": "进入获客漏斗",
+          "modules": {
+            "agentSite": "个人主页",
+            "homeValue": "房价估值",
+            "areaMagnet": "区域获客页"
+          }
+        },
+        "leads": {
+          "eyebrow": "分诊",
+          "title": "统一线索工作台",
+          "description": "所有入口都回收到同一条 contacts 主干，再由 AI 摘要、评分、洞察和自动跟进接手。",
+          "actionLabel": "打开线索工作台",
+          "modules": {
+            "leads": "线索工作台",
+            "insight": "AI 洞察",
+            "score": "互动评分"
+          }
+        },
+        "campaigns": {
+          "eyebrow": "触达",
+          "title": "主动触达与再激活",
+          "description": "把智能分享页、明信片直邮和房源订阅放在一组，因为它们本质上都是继续触达现有或潜在线索。",
+          "actionLabel": "进入触达活动",
+          "modules": {
+            "magicShare": "智能分享页",
+            "postcards": "明信片直邮",
+            "subscriptions": "房源订阅"
+          }
+        },
+        "dealTools": {
+          "eyebrow": "成交",
+          "title": "库存、匹配和展示支持",
+          "description": "房源搜索、智能匹配、带看路线和 CMA 更适合放在成交支持区，而不是 marketing 主导航的中心。",
+          "actionLabel": "打开成交工具",
+          "modules": {
+            "listings": "房源搜索",
+            "smartMatch": "智能匹配",
+            "cmaStudio": "CMA 分析"
+          }
+        },
+        "content": {
+          "eyebrow": "内容",
+          "title": "品牌化内容生产",
+          "description": "内容工坊继续存在，但它应该服务漏斗和触达，而不是独立成为产品心智中心。",
+          "actionLabel": "打开内容工作台",
+          "modules": {
+            "flyerStudio": "海报工坊",
+            "videoStudio": "视频工坊",
+            "xhs": "小红书笔记"
+          }
+        }
+      },
+      "platformModelTitle": "推荐的经营模型",
+      "platformModelDescription": "核心不是把工具全铺出来，而是把经纪人的日常经营动作排成一条顺序清晰的链路。",
+      "platformModel": {
+        "funnels": {
+          "title": "获客漏斗",
+          "description": "先把个人主页、房价估值和 lead magnet 变成统一的公开入口。"
+        },
+        "leads": {
+          "title": "线索",
+          "description": "所有来源都要回收到统一 inbox，并被 AI 重新排序。"
+        },
+        "campaigns": {
+          "title": "触达活动",
+          "description": "分享、直邮和订阅都属于继续触达，而不是新的线索来源。"
+        },
+        "dealTools": {
+          "title": "成交工具",
+          "description": "房源搜索、智能匹配、带看和 CMA 属于成交支持层，不该挤在 marketing 主流程里。"
+        },
+        "content": {
+          "title": "内容工作台",
+          "description": "内容生产应该服务漏斗和触达，而不是主导航中心。"
+        }
+      },
+      "moduleGroupsTitle": "重排后的模块结构",
+      "moduleGroupsDescription": "保留当前可用路由，但把心智模型从工具清单收敛成经营路径。"
+    },
+    "subscriptions": {
+      "propertyTypes": {
+        "residential": "住宅",
+        "condo": "公寓",
+        "townhouse": "联排",
+        "multiFamily": "多户",
+        "land": "土地",
+        "commercial": "商业"
+      },
+      "channels": {
+        "email": "邮件",
+        "sms": "短信",
+        "wechat": "微信",
+        "inApp": "站内",
+        "webPush": "浏览器推送"
+      },
+      "frequencies": {
+        "instant": "即时推送",
+        "dailyDigest": "每日汇总",
+        "weeklyDigest": "每周汇总"
+      },
+      "heroBadge": "自动推送",
+      "heroTitle": "房源订阅推送",
+      "heroDescription": "设置搜索条件，新房源上线时自动匹配并推送通知给客户。支持邮件、短信、微信、站内消息等多渠道。",
+      "editTitle": "编辑订阅",
+      "createTitle": "创建新订阅",
+      "formDescription": "设置搜索条件与通知方式，系统将自动匹配新上架房源并推送给客户。",
+      "fields": {
+        "name": "订阅名称",
+        "namePlaceholder": "例如：张先生的 Irvine 学区房",
+        "cities": "目标城市",
+        "citiesPlaceholder": "Irvine, San Jose, Cupertino",
+        "citiesHint": "多个城市用逗号分隔",
+        "keywords": "关键词",
+        "keywordsPlaceholder": "学区房、pool、ocean view",
+        "minPrice": "最低价格",
+        "maxPrice": "最高价格",
+        "minBeds": "最少卧室",
+        "maxBeds": "最多卧室",
+        "propertyTypes": "房源类型",
+        "channel": "推送渠道",
+        "frequency": "推送频率"
+      },
+      "actions": {
+        "saveChanges": "保存修改",
+        "create": "创建订阅",
+        "cancel": "取消",
+        "createNew": "创建新订阅",
+        "pause": "暂停",
+        "resume": "恢复",
+        "edit": "编辑",
+        "remove": "删除",
+        "confirmDelete": "确认删除此订阅？"
+      },
+      "listTitle": "我的订阅",
+      "listDescription": "管理你为客户创建的房源订阅推送规则。",
+      "loading": "正在加载…",
+      "empty": "暂无订阅，点击上方按钮创建第一个订阅推送",
+      "defaultName": "订阅",
+      "status": {
+        "active": "活跃",
+        "paused": "已暂停",
+        "expired": "已过期"
+      },
+      "meta": {
+        "unlimited": "不限",
+        "bedroomUnit": "卧",
+        "channel": "渠道",
+        "frequency": "频率",
+        "matches": "匹配",
+        "times": "次",
+        "matchCount": "匹配：{{count}} 次"
+      },
+      "toasts": {
+        "created": "订阅已创建",
+        "createFailed": "创建失败",
+        "updated": "订阅已更新",
+        "updateFailed": "更新失败",
+        "deleted": "订阅已删除",
+        "deleteFailed": "删除失败"
+      }
+    },
+    "cmaStudio": {
+      "fallbackPrice": "价格待更新",
+      "unnamedListing": "未命名房源",
+      "sourceLabels": {
+        "vector": "向量匹配",
+        "sqlFallback": "SQL 近似匹配"
+      },
+      "heroTitle": "CMA 分析",
+      "heroDescription": "选择标的房源，一键生成可比房源分析，并直接带入客户分享页。",
+      "prefillLabel": "已从外部入口预填标的 ListingKey：",
+      "embedding": {
+        "pendingSummary": "套房源尚未生成向量嵌入",
+        "processing": "正在处理中…",
+        "runNow": "立即触发",
+        "running": "运行中",
+        "triggerFailed": "触发失败"
+      },
+      "subjectCard": {
+        "title": "1. 选择标的房源",
+        "description": "搜索 MLS 房源并作为 CMA 的标的房源。",
+        "searchPlaceholder": "搜索地址或 Listing ID",
+        "currentSubject": "当前标的",
+        "notSelected": "尚未选择",
+        "comparableCount": "可比房源数量",
+        "generating": "生成中",
+        "generate": "生成 CMA",
+        "loadingProperties": "正在读取房源…",
+        "noProperties": "没有找到可用房源",
+        "mlsFallback": "MLS"
+      },
+      "outputCard": {
+        "title": "2. CMA 输出",
+        "description": "显示标的房源与可比样本，支持一键进入分享页。",
+        "empty": "先选择一套标的房源并生成 CMA。",
+        "subject": "标的房源",
+        "comparables": "可比房源",
+        "unknownStatus": "未知状态",
+        "score": "评分",
+        "propertyFallback": "房产",
+        "openShare": "一键带入分享页",
+        "shareTitlePrefix": "CMA 精选推荐 · "
+      },
+      "historyCard": {
+        "title": "最近 CMA 历史",
+        "description": "快速复用最近分析结果，生成客户分享链接。",
+        "loading": "正在读取历史…",
+        "empty": "暂无 CMA 历史记录",
+        "comparableCount": "套可比",
+        "openShare": "进入分享页",
+        "setSubject": "设为标的",
+        "setSubjectSuccess": "已选择该标的房源，可直接重新生成 CMA"
+      },
+      "toasts": {
+        "generated": "CMA 已生成",
+        "generatedDescription": "找到 {{count}} 套可比房源（{{sourceLabel}}）",
+        "failed": "CMA 生成失败",
+        "selectSubject": "请先选择标的房源",
+        "noShareListings": "没有可带入分享页的房源"
+      }
+    },
+    "aiRecommend": {
+      "titles": {
+        "smartMatch": "智能匹配",
+        "smartMatchDescription": "根据客户需求生成推荐房源与跟进话术。",
+        "summaryCopy": "复制摘要",
+        "summaryCopyDescription": "从 AI 推荐结果里勾选房源并复制摘要话术。"
+      },
+      "section": {
+        "clientInfo": "客户信息",
+        "clientInfoDescription": "输入客户的基本信息和购房需求",
+        "clientName": "客户姓名 *",
+        "clientNamePlaceholder": "例如：张先生",
+        "budget": "预算范围",
+        "budgetMinPlaceholder": "最低",
+        "budgetMaxPlaceholder": "最高",
+        "budgetHint": "单位：美元，例如 800000",
+        "budgetSummaryRange": "预算范围：${{min}} - ${{max}}。",
+        "budgetSummaryMinOnly": "预算下限：至少 ${{min}}。",
+        "budgetSummaryMaxOnly": "预算上限：最高 ${{max}}。",
+        "requirements": "需求描述 *",
+        "requirementsPlaceholder": "请详细描述客户的购房需求，例如：\n- 希望在 Long Island 地区\n- 需要 4 卧室 2 卫生间\n- 有小孩，需要好学区\n- 喜欢安静的社区\n- 希望有大后院",
+        "submit": "开始智能推荐",
+        "submitting": "正在分析需求…",
+        "resultsJump": "查看推荐房源",
+        "emptyTitle": "输入客户需求开始智能推荐",
+        "emptyDescription": "AI 将根据需求匹配最合适的房源",
+        "resultsTitle": "推荐房源",
+        "selectedCount": "已选",
+        "selectedCountSuffix": "套",
+        "matchScore": "匹配度",
+        "viewDetails": "查看详情",
+        "aiPitch": "AI 推荐话术",
+        "copyPitch": "复制话术",
+        "copied": "已复制",
+        "generateCma": "生成 CMA",
+        "openShare": "进入分享页",
+        "pitchEmpty": "请选择房源以查看 AI 推荐话术",
+        "beds": "卧",
+        "baths": "卫",
+        "sqft": "sqft",
+        "notAvailable": "暂无"
+      },
+      "summary": {
+        "found": "找到 {{count}} 套匹配房源 · 耗时 {{seconds}}s",
+        "shareTitle": "{{name}} 的 AI 精选推荐"
+      },
+      "toasts": {
+        "recommendFailed": "推荐失败",
+        "feedbackSubmitted": "反馈已提交",
+        "feedbackDescription": "感谢您的反馈，我们会持续优化推荐算法",
+        "requiredFields": "请填写必填项",
+        "requiredFieldsDescription": "客户姓名和需求描述为必填项",
+        "copied": "已复制到剪贴板",
+        "selectOneListing": "请先选择至少 1 套房源"
+      },
+      "feedbackNotes": {
+        "approved": "推荐准确",
+        "rejected": "帮助不大"
+      }
+    },
+    "agentDirectory": {
+      "accessDeniedTitle": "访问受限",
+      "accessDeniedDescription": "仅平台 Owner 可访问 Agent Directory",
+      "loadFailedTitle": "经纪人目录加载失败",
+      "loadFailedDescription": "这通常是数据库查询过慢或后台统计尚未准备好导致的。你可以先重试，系统也会在后台继续刷新成交统计。",
+      "reload": "重新加载",
+      "title": "经纪人目录",
+      "totalAgents": "{{count}} 位经纪人",
+      "loadingTotal": "加载中…",
+      "syncAgents": "同步经纪人",
+      "syncingAgents": "同步中…",
+      "refreshStats": "刷新成交统计",
+      "buildStats": "构建成交统计",
+      "exportCsv": "导出 CSV",
+      "statsStatusTitle": "经纪人目录成交统计状态",
+      "statsMessages": {
+        "refreshingReady": "成交统计正在后台刷新，列表先展示上一次计算结果。",
+        "refreshingCold": "正在首次构建成交统计，成交列暂时可能显示为 0。",
+        "notReady": "成交统计尚未建立，系统会在后台自动补算。",
+        "stale": "成交统计已过期，系统正在准备刷新最新结果。"
+      },
+      "lastUpdatedPrefix": "上次完成时间：",
+      "noStatsSnapshot": "还没有可用的成交统计快照",
+      "searchPlaceholder": "搜索经纪人姓名、邮箱、公司…",
+      "pageSizeSuffix": "条/页",
+      "emptySearch": "没有找到匹配的经纪人",
+      "emptySync": "暂无数据，请先运行 MLS 同步",
+      "columns": {
+        "agent": "经纪人",
+        "email": "邮箱",
+        "phone": "电话",
+        "company": "公司",
+        "companyContact": "公司联系方式",
+        "status": "状态",
+        "listingDeals": "Listing 成交",
+        "buyingDeals": "Buying 成交",
+        "totalDeals": "总成交",
+        "license": "执照号",
+        "mlsId": "MLS ID",
+        "preferred": "Preferred",
+        "mobile": "Mobile",
+        "direct": "Direct"
+      },
+      "pagination": {
+        "summary": "第 {{page}} / {{totalPages}} 页 · 共 {{total}} 条"
+      }
+    }
+  },
+  "sharePages": {
+    "smartMatchShare": {
+      "fetchLoadError": "加载分享页失败",
+      "fetchFeedbackError": "提交反馈失败",
+      "loading": "正在加载专属房源推荐...",
+      "notFoundTitle": "分享页不存在",
+      "notFoundDescription": "该分享链接可能已过期或被撤销。",
+      "kanbanTitle": "看板模式即将上线",
+      "reportTitle": "报告模式即将上线",
+      "comingSoon": "敬请期待"
+    },
+    "smartMatchStory": {
+      "commentSubmitted": "评论已提交",
+      "commentFailed": "评论提交失败",
+      "networkError": "网络错误",
+      "greeting": "你好 {{name}} 👋",
+      "curatedBy": "{{agentName}} 为你精选",
+      "featuredCount": "套精选房源",
+      "avgPricePerSqft": "区域均价 / sqft",
+      "start": "开始看房 →",
+      "galleryCounter": "图片 {{current}}/{{total}}",
+      "prevImage": "上一张图片",
+      "nextImage": "下一张图片",
+      "priceUnavailable": "价格待定",
+      "expertJudgment": "{{agentName}} 的专业判断",
+      "recommendation": "推荐理由",
+      "risks": "风险提示",
+      "strategy": "策略建议",
+      "matchAnalysis": "匹配分析",
+      "closingStrategy": "成交策略",
+      "viewOriginal": "查看原始链接",
+      "tour": "带看",
+      "writeComment": "写点评",
+      "commentPlaceholder": "告诉经纪人你对这套房的想法...",
+      "submitting": "提交中...",
+      "submit": "提交",
+      "back": "返回",
+      "needTwoListings": "至少需要 2 套带坐标的房源",
+      "routePlanning": "路线规划中...",
+      "hideRoute": "隐藏路线",
+      "showRoute": "显示路线",
+      "listingCount": "{{count}} 套房源",
+      "routeFailed": "路线规划失败",
+      "routeError": "路线规划出错",
+      "stops": "站点",
+      "listPriceUnavailable": "暂无价格",
+      "bedsShort": "卧",
+      "bathsShort": "卫",
+      "sqftShort": "sqft",
+      "wechatCopied": "微信号已复制",
+      "wechatPrefix": "微信"
+    },
+    "listingShare": {
+      "loading": "正在加载这份房源分享...",
+      "notFoundTitle": "分享链接不可用",
+      "notFoundDescription": "该房源分享可能已过期、被撤销，或还未同步完成。",
+      "curatedFor": "为 {{name}} 准备",
+      "curatedBy": "{{name}} 的房源分享服务",
+      "listingCount": "{{count}} 套房源",
+      "viewCount": "{{count}} 次浏览",
+      "routeCount": "{{count}} 个带看站点",
+      "createdAt": "创建时间",
+      "strategyTitle": "这批房源为什么值得先看",
+      "strategyFallback": "经纪人会基于预算、节奏和带看顺序持续调整推荐，这份分享是当前最适合推进的一版。",
+      "inventoryTitle": "本次分享的房源",
+      "timelineTitle": "建议带看顺序",
+      "timelineFallback": "如果你准备安排带看，建议先从匹配度最高的房源开始，再决定是否走完整路线。",
+      "requestTour": "请求安排带看",
+      "interestLogged": "已记录你的带看意向",
+      "contactTitle": "联系这位经纪人",
+      "callAgent": "电话联系",
+      "emailAgent": "邮件联系",
+      "copyWechat": "复制微信号",
+      "wechatLabel": "微信号",
+      "wechatCopied": "微信号已复制",
+      "copyFailed": "复制失败，请手动复制",
+      "noContactInfo": "经纪人暂未留下联系方式。",
+      "sourceMls": "MLS 房源",
+      "sourceExternal": "外部房源",
+      "openSource": "打开原始链接",
+      "showDetails": "展开详情",
+      "hideDetails": "收起详情",
+      "notesTitle": "经纪人备注",
+      "pricePending": "价格待定",
+      "noPhoto": "暂无图片",
+      "bedsShort": "卧",
+      "bathsShort": "卫",
+      "sqftShort": "sqft",
+      "interestedHome": "我对这套房感兴趣",
+      "serviceNote": "这是 Kevv Marketing 的房源分享服务页面。你看到的推荐顺序、联系信息和带看节奏都来自经纪人的当前安排。",
+      "brandLabel": "Kevv Marketing",
+      "externalListingFallback": "外部房源",
+      "unknownAddress": "未知地址",
+      "emailSubjectFallback": "房源分享",
+      "statInventory": "房源数量",
+      "statViews": "浏览次数",
+      "statRoute": "带看路线",
+      "strategyEyebrow": "推荐策略",
+      "tourEyebrow": "带看节奏",
+      "inventoryEyebrow": "房源清单",
+      "serviceEyebrow": "服务说明",
+      "serviceTitle": "Kevv 房源分享"
+    },
+    "areaMagnetShare": {
+      "marketIntelBadge": "区域洞察",
+      "defaultTitle": "区域市场报告",
+      "defaultSummary": "这份分享页把区域库存、价格和动作建议压缩成一个可转发的市场诱饵。",
+      "areaFallback": "目标区域",
+      "viewsStat": "浏览",
+      "viewsHint": "{{count}} 次公开访问",
+      "createdStat": "创建时间",
+      "featuredHomesStat": "示例房源",
+      "featuredHomesHint": "{{count}} 套示例房源",
+      "captureTitle": "获取完整报告",
+      "captureDefaultTitle": "留下联系方式，解锁完整报告",
+      "captureDefaultDescription": "这份页卡已经展示了关键判断。留资后，你将拿到完整报告和下一步行动建议。",
+      "captureAction": "获取完整报告",
+      "captureSubmitting": "提交中...",
+      "leadCaptured": "线索已记录",
+      "leadCaptureFailed": "提交失败",
+      "afterCaptureTitle": "已收到你的需求",
+      "afterCaptureDescription": "经纪人会基于你刚才解锁的区域报告继续跟进。",
+      "nameField": "姓名",
+      "emailField": "邮箱",
+      "phoneField": "手机号",
+      "contactTitle": "对接经纪人",
+      "tabOverview": "概览",
+      "tabReport": "报告",
+      "tabShareKit": "分享素材",
+      "featuredHomesTitle": "市场切口",
+      "featuredHomesSubtitle": "可直接拿来对话的样本房源",
+      "jumpToReport": "展开详细报告",
+      "noPhoto": "暂无图片",
+      "pricePending": "价格待定",
+      "activeListing": "在售房源",
+      "noFeaturedHomes": "当前没有可展示的代表房源，但这份市场报告仍然可以直接分享。",
+      "facebookTitle": "Facebook 文案",
+      "instagramTitle": "Instagram 文案",
+      "xhsTitle": "小红书文案",
+      "emailTitle": "邮件引流文案",
+      "copyAction": "复制",
+      "copySuccess": "文案已复制",
+      "copyFailure": "复制失败，请手动复制",
+      "hashtagTitle": "推荐标签",
+      "brandLabel": "Kevv Marketing",
+      "wechatLabel": "微信"
+    }
+  },
+  "areaMagnetStudio": {
+    "heroBadge": "内容化获客",
+    "heroTitle": "区域获客页",
+    "heroDescription": "区域获客页和智能分享页平行存在，但底层共用同一套分享会话、公共链接、互动追踪和撤销机制。这里不是再写一篇文章，而是直接生成一个可留资、可分享、可跟进的区域诱饵。",
+    "bridgeLabel": "并行入口",
+    "bridgeAction": "打开智能分享页",
+    "formTitle": "生成区域诱饵",
+    "formDescription": "只保留对经纪人有价值的结构化输入，不暴露空白 Prompt。系统会自动聚合 MLS 数据、生成叙事和分享页面。",
+    "advancedToggle": "经纪人信息与高级设置",
+    "create": "生成区域获客页",
+    "creating": "正在生成区域报告...",
+    "openShare": "打开分享页",
+    "copyLink": "复制链接",
+    "copySuccess": "分享链接已复制",
+    "copyFailure": "复制失败，请检查浏览器权限",
+    "sectionResult": "这次生成了什么",
+    "resultEmpty": "生成完成后，这里会显示报告摘要、建议要点和分享链接。",
+    "tabsPreview": "公开页标签页",
+    "libraryTitle": "我的区域获客页",
+    "libraryDescription": "查看最近生成的区域诱饵、浏览热度、留资数量和撤销状态。",
+    "emptyLibrary": "还没有区域获客页。先生成第一条，再回来观察浏览和留资。",
+    "generatedToast": "区域获客页已生成",
+    "generateFailed": "生成失败",
+    "revoked": "分享链接已撤销",
+    "revokeFailed": "撤销失败",
+    "refresh": "刷新",
+    "refreshing": "刷新中",
+    "loadingLibrary": "正在读取历史区域获客页...",
+    "scopeLabel": "目标区域",
+    "captureLabel": "留资字段",
+    "phoneField": "手机号",
+    "emailField": "邮箱",
+    "audienceLabel": "目标人群",
+    "toneLabel": "叙事风格",
+    "outputLabel": "系统输出",
+    "statsViews": "浏览",
+    "statsLeads": "留资",
+    "statsListings": "示例房源",
+    "lastActivity": "最近活动",
+    "createdAt": "创建于",
+    "statusActive": "可访问",
+    "statusRevoked": "已撤销",
+    "statusExpired": "已过期",
+    "followHot": "高意向",
+    "followWarm": "值得跟进",
+    "followNew": "刚创建",
+    "followQuiet": "待唤醒",
+    "revoke": "撤销",
+    "generatedBy": "生成模型",
+    "fallbackUsed": "已启用兜底叙事",
+    "agentFields": {
+      "title": "经纪人头衔",
+      "phone": "联系电话",
+      "email": "联系邮箱",
+      "wechat": "微信号",
+      "avatar": "头像 URL",
+      "company": "公司 / 团队"
+    },
+    "scopeOptions": {
+      "zip": {
+        "label": "邮编",
+        "placeholder": "例如 92618"
+      },
+      "neighborhood": {
+        "label": "社区 / 小区",
+        "placeholder": "例如 Tinton Falls"
+      },
+      "building": {
+        "label": "公寓大楼",
+        "placeholder": "例如 The Plaza"
+      }
+    },
+    "magnetOptions": {
+      "springMarket": {
+        "label": "春季市场分析",
+        "description": "把库存、价格和节奏整理成一份可以直接转发的市场判断。"
+      },
+      "schoolMoveUp": {
+        "label": "学区置换指南",
+        "description": "更适合触达置换家庭，强调供需与换房窗口。"
+      },
+      "offMarketBrief": {
+        "label": "非公开成交简报",
+        "description": "更偏向卖家话题，突出区域真实议价和供需压力。"
+      },
+      "renovationRoi": {
+        "label": "翻新回报预测",
+        "description": "适合投资人和准备整装上市的卖家。"
+      }
+    },
+    "audienceOptions": {
+      "seller": "潜在卖家",
+      "buyer": "潜在买家",
+      "investor": "投资人",
+      "moveUp": "置换家庭"
+    },
+    "toneOptions": {
+      "advisory": "顾问式",
+      "urgent": "强调窗口期",
+      "luxury": "高端精炼"
+    },
+    "outputItems": {
+      "marketInsight": "市场洞察报告",
+      "landingPage": "可分享落地页",
+      "socialKit": "社媒文案包",
+      "leadSignals": "留资与跟进信号"
+    },
+    "tabs": {
+      "overview": "概览",
+      "report": "报告",
+      "shareKit": "分享素材"
+    },
+    "metricFallback": "指标",
+    "libraryFallbackTitle": "区域获客页"
+  },
+  "homeValue": {
+    "public": {
+      "badge": "AI 卖房漏斗",
+      "title": "先知道你的房子可能值多少钱",
+      "subtitle": "即时拿到 AI 估值区间、区域判断和下一步卖房策略建议。",
+      "inputLabel": "房产地址",
+      "inputPlaceholder": "123 Main St, Palo Alto, CA",
+      "inputButton": "生成估值",
+      "gateTitle": "你的估值结果已经准备好",
+      "gateSubtitle": "留下联系方式后即可查看完整报告，并让经纪人基于真实竞品继续跟进。",
+      "reportTitle": "你的 AI 估值报告",
+      "reportSubtitle": "这不是静态报告，而是接回 Kevv 统一线索主干的卖房漏斗。",
+      "share": "分享这个估值页",
+      "copy": "复制链接",
+      "copied": "已复制",
+      "loading": "正在加载房价估值页",
+      "notFoundTitle": "房价估值页不存在",
+      "notFoundDescription": "该经纪人还没有启用这个估值漏斗。",
+      "viewTags": {
+        "marketRead": "市场判断",
+        "comps": "竞品参照",
+        "neighborhood": "社区信号"
+      },
+      "errors": {
+        "addressRequired": "请输入完整地址",
+        "generateFailed": "估值生成失败。",
+        "unlockSuccess": "报告已解锁",
+        "unlockFailed": "解锁报告失败。",
+        "copyFailed": "复制失败。"
+      },
+      "placeholders": {
+        "name": "姓名",
+        "email": "邮箱",
+        "phone": "手机号",
+        "timeline": "卖房时间线",
+        "notes": "你最关心的是定价、整备，还是上市节奏？"
+      },
+      "actions": {
+        "generating": "生成中…",
+        "unlocking": "解锁中…",
+        "unlockReport": "解锁完整报告",
+        "explainer": "输入地址后会先拿到估值，再通过留资门槛进入完整报告。",
+        "openAgentProfile": "打开完整个人主页",
+        "bookCall": "预约通话"
+      },
+      "stats": {
+        "range": "估值区间",
+        "layout": "户型",
+        "sqft": "面积",
+        "schoolScore": "学校评分"
+      },
+      "sections": {
+        "estimatedRange": "估值区间",
+        "agentFollowUp": "经纪人跟进",
+        "comparableSales": "竞品成交",
+        "price": "成交价",
+        "marketNotes": "市场备注",
+        "shareHelp": "把这个卖房漏斗发给朋友或邻居，继续让估值页自己带来新线索。"
+      },
+      "shareSummary": "我刚拿到一个 AI 房价估值，区间是 {{low}} - {{high}}。"
+    }
   }
 }
