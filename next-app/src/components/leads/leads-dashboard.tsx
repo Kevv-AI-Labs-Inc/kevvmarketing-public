@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Inbox, Mailbox, Sparkles, Workflow } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,15 +39,8 @@ export function LeadsDashboard() {
   const leads = dashboardQuery.data?.leads ?? [];
   const postcardTemplates = dashboardQuery.data?.postcardTemplates ?? [];
   const dripOptions = dashboardQuery.data?.dripOptions ?? [];
-
-  useEffect(() => {
-    if (!templateId && postcardTemplates[0]) {
-      setTemplateId(postcardTemplates[0].id);
-    }
-    if (!dripCampaignId && dripOptions[0]) {
-      setDripCampaignId(dripOptions[0].id);
-    }
-  }, [dripCampaignId, dripOptions, postcardTemplates, templateId]);
+  const activeTemplateId = templateId ?? postcardTemplates[0]?.id ?? null;
+  const activeDripCampaignId = dripCampaignId ?? dripOptions[0]?.id ?? null;
 
   const refresh = async () => {
     await utils.leads.dashboard.invalidate();
@@ -68,7 +61,7 @@ export function LeadsDashboard() {
   };
 
   const handleCreatePostcardDraft = async () => {
-    if (!templateId || selectedLeadIds.length === 0) {
+    if (!activeTemplateId || selectedLeadIds.length === 0) {
       toast.error("Select leads and a postcard template.");
       return;
     }
@@ -76,7 +69,7 @@ export function LeadsDashboard() {
     try {
       await createPostcardDraftMutation.mutateAsync({
         name: campaignName,
-        templateId,
+        templateId: activeTemplateId,
         contactIds: selectedLeadIds,
       });
       toast.success("Postcard draft campaign created.");
@@ -87,14 +80,14 @@ export function LeadsDashboard() {
   };
 
   const handleEnrollInDrip = async () => {
-    if (!dripCampaignId || selectedLeadIds.length === 0) {
+    if (!activeDripCampaignId || selectedLeadIds.length === 0) {
       toast.error("Select leads and a drip campaign.");
       return;
     }
 
     try {
       const result = await enrollInDripMutation.mutateAsync({
-        campaignId: dripCampaignId,
+        campaignId: activeDripCampaignId,
         contactIds: selectedLeadIds,
       });
       toast.success(`Enrolled ${result.enrolled} lead(s) into drip.`);
@@ -262,8 +255,10 @@ export function LeadsDashboard() {
               />
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
-                value={templateId ?? ""}
-                onChange={(event) => setTemplateId(Number(event.target.value))}
+                value={activeTemplateId ?? ""}
+                onChange={(event) =>
+                  setTemplateId(event.target.value ? Number(event.target.value) : null)
+                }
               >
                 {postcardTemplates.map((template) => (
                   <option key={template.id} value={template.id}>
@@ -290,8 +285,10 @@ export function LeadsDashboard() {
             <CardContent className="space-y-4">
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
-                value={dripCampaignId ?? ""}
-                onChange={(event) => setDripCampaignId(Number(event.target.value))}
+                value={activeDripCampaignId ?? ""}
+                onChange={(event) =>
+                  setDripCampaignId(event.target.value ? Number(event.target.value) : null)
+                }
               >
                 {dripOptions.map((campaign) => (
                   <option key={campaign.id} value={campaign.id}>

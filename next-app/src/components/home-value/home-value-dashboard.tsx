@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, ExternalLink, FileSearch, Home, Users } from "lucide-react";
+import { BarChart3, ExternalLink, FileSearch, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
