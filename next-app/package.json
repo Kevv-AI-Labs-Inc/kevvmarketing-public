@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:harness": "vitest run tests/harness",
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test --project=chromium --grep @smoke"
+    "test:e2e:smoke": "playwright test --project=chromium --grep @smoke",
+    "test:e2e:critical": "playwright test --project=chromium --grep @critical"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1014.0",
