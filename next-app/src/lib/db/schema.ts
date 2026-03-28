@@ -74,6 +74,370 @@ export const magicLinks = pgTable("magic_links", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+// ─── AI-First Agent + Lead Spine ───────────────────────────
+
+export const agentTierEnum = pgEnum("agent_tier", ["free", "pro", "premium"]);
+export const agentProfileStatusEnum = pgEnum("agent_profile_status", [
+  "draft",
+  "active",
+  "suspended",
+]);
+export const leadScoreEnum = pgEnum("lead_score", ["hot", "warm", "cold"]);
+export const contactStatusEnum = pgEnum("contact_status", [
+  "new",
+  "contacted",
+  "qualified",
+  "converted",
+  "lost",
+  "archived",
+]);
+export const conversationStatusEnum = pgEnum("conversation_status", [
+  "active",
+  "closed",
+  "converted",
+]);
+export const messageRoleEnum = pgEnum("message_role", [
+  "system",
+  "user",
+  "assistant",
+]);
+export const postcardCampaignStatusEnum = pgEnum("postcard_campaign_status", [
+  "draft",
+  "ready",
+  "scheduled",
+  "queued",
+  "processing",
+  "completed",
+  "failed",
+  "canceled",
+]);
+export const postcardSendStrategyEnum = pgEnum("postcard_send_strategy", [
+  "send_now",
+  "scheduled",
+  "arrive_by",
+]);
+export const postcardMailingStatusEnum = pgEnum("postcard_mailing_status", [
+  "pending",
+  "validating",
+  "ready",
+  "submitted",
+  "mailed",
+  "in_transit",
+  "delivered",
+  "returned",
+  "failed",
+]);
+export const postcardMailingChannelEnum = pgEnum("postcard_mailing_channel", [
+  "postcard",
+  "letter",
+]);
+
+export const agentProfiles = pgTable(
+  "agent_profiles",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id"),
+    slug: varchar("slug", { length: 64 }).notNull(),
+    email: varchar("email", { length: 320 }).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    phone: varchar("phone", { length: 32 }),
+    title: varchar("title", { length: 128 }).default("Licensed Real Estate Agent"),
+    brokerage: varchar("brokerage", { length: 255 }),
+    licenseState: varchar("license_state", { length: 16 }),
+    officeAddress: varchar("office_address", { length: 255 }),
+    bookingUrl: text("booking_url"),
+    photoUrl: text("photo_url"),
+    logoUrl: text("logo_url"),
+    heroImageUrl: text("hero_image_url"),
+    bio: text("bio"),
+    serviceAreas: jsonb("service_areas").$type<string[]>().default([]),
+    specialties: jsonb("specialties").$type<string[]>().default([]),
+    languages: jsonb("languages").$type<string[]>().default(["English"]),
+    awards: jsonb("awards").$type<string[]>().default([]),
+    testimonials: jsonb("testimonials").$type<
+      Array<{ name: string; text: string; rating: number }>
+    >().default([]),
+    transactions: jsonb("transactions").$type<
+      Array<{ address: string; city: string; price: string; type: string }>
+    >().default([]),
+    neighborhoodKnowledge: jsonb("neighborhood_knowledge").$type<Record<string, string>>().default({}),
+    socialLinks: jsonb("social_links").$type<Record<string, string>>().default({}),
+    visibilitySettings: jsonb("visibility_settings").$type<{
+      showPhone: boolean;
+      showEmail: boolean;
+      showTransactions: boolean;
+      showAwards: boolean;
+      showTestimonials: boolean;
+      showAddress: boolean;
+    }>().default({
+      showPhone: true,
+      showEmail: true,
+      showTransactions: true,
+      showAwards: true,
+      showTestimonials: true,
+      showAddress: true,
+    }),
+    yearsExperience: integer("years_experience").default(0),
+    templateId: varchar("template_id", { length: 32 }).default("classic"),
+    colorScheme: varchar("color_scheme", { length: 32 }).default("gold"),
+    status: agentProfileStatusEnum("status").default("active").notNull(),
+    tier: agentTierEnum("tier").default("free").notNull(),
+    stripeCustomerId: varchar("stripe_customer_id", { length: 128 }),
+    stripeSubscriptionId: varchar("stripe_subscription_id", { length: 128 }),
+    subscriptionStatus: varchar("subscription_status", { length: 32 }),
+    currentPeriodEnd: timestamp("current_period_end"),
+    lastPublishedAt: timestamp("last_published_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  table => [
+    uniqueIndex("agent_profiles_slug_unique").on(table.slug),
+    uniqueIndex("agent_profiles_email_unique").on(table.email),
+    uniqueIndex("agent_profiles_user_id_unique").on(table.userId),
+  ]
+);
+
+export const contacts = pgTable("contacts", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id"),
+  agentProfileId: integer("agent_profile_id"),
+  conversationSessionId: integer("conversation_session_id"),
+  valuationRunId: integer("valuation_run_id"),
+  externalId: varchar("external_id", { length: 255 }),
+  source: varchar("source", { length: 64 }).default("manual").notNull(),
+  sourceRef: varchar("source_ref", { length: 255 }),
+  status: contactStatusEnum("status").default("new").notNull(),
+  score: leadScoreEnum("score").default("cold").notNull(),
+  intent: varchar("intent", { length: 64 }),
+  summary: text("summary"),
+  name: varchar("name", { length: 255 }),
+  firstName: varchar("first_name", { length: 100 }),
+  lastName: varchar("last_name", { length: 100 }),
+  email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 64 }),
+  wechatId: varchar("wechat_id", { length: 100 }),
+  preferredLanguage: varchar("preferred_language", { length: 10 }).default("en"),
+  budgetMin: varchar("budget_min", { length: 20 }),
+  budgetMax: varchar("budget_max", { length: 20 }),
+  area: varchar("area", { length: 255 }),
+  timeline: varchar("timeline", { length: 255 }),
+  notes: text("notes"),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
+  addressLine1: varchar("address_line_1", { length: 255 }),
+  addressLine2: varchar("address_line_2", { length: 255 }),
+  city: varchar("city", { length: 120 }),
+  state: varchar("state", { length: 32 }),
+  postalCode: varchar("postal_code", { length: 20 }),
+  country: varchar("country", { length: 2 }).default("US"),
+  addressVerified: boolean("address_verified").default(false).notNull(),
+  addressVerifiedAt: timestamp("address_verified_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const conversationSessions = pgTable(
+  "conversation_sessions",
+  {
+    id: serial("id").primaryKey(),
+    sessionKey: varchar("session_key", { length: 64 }).notNull(),
+    agentId: integer("agent_id"),
+    agentProfileId: integer("agent_profile_id"),
+    contactId: integer("contact_id"),
+    source: varchar("source", { length: 64 }).default("agent_site_chat").notNull(),
+    status: conversationStatusEnum("status").default("active").notNull(),
+    visitorId: varchar("visitor_id", { length: 64 }),
+    visitorName: varchar("visitor_name", { length: 255 }),
+    visitorEmail: varchar("visitor_email", { length: 320 }),
+    visitorPhone: varchar("visitor_phone", { length: 64 }),
+    detectedLanguage: varchar("detected_language", { length: 10 }).default("en"),
+    pagePath: varchar("page_path", { length: 255 }),
+    referrer: varchar("referrer", { length: 512 }),
+    utmSource: varchar("utm_source", { length: 128 }),
+    utmMedium: varchar("utm_medium", { length: 128 }),
+    utmCampaign: varchar("utm_campaign", { length: 128 }),
+    summary: text("summary"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
+    lastMessageAt: timestamp("last_message_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  table => [uniqueIndex("conversation_sessions_key_unique").on(table.sessionKey)]
+);
+
+export const conversationMessages = pgTable("conversation_messages", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id").notNull(),
+  role: messageRoleEnum("role").notNull(),
+  content: text("content").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ValuationComparableSale = {
+  address: string;
+  price: number;
+  date: string;
+  beds: number;
+  baths: number;
+  sqft: number;
+};
+
+export type ValuationResult = {
+  estimatedValueLow: number;
+  estimatedValueHigh: number;
+  estimatedValue: number;
+  appreciationRate: number;
+  propertyDetails: {
+    beds: number;
+    baths: number;
+    sqft: number;
+    yearBuilt: number;
+    lotSize: string;
+    propertyType: string;
+  };
+  comparableSales: ValuationComparableSale[];
+  schoolRating: number;
+  neighborhoodTrend: string;
+  marketSummary: string;
+  equity?: number;
+};
+
+export const valuationRuns = pgTable("valuation_runs", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id"),
+  agentProfileId: integer("agent_profile_id"),
+  contactId: integer("contact_id"),
+  source: varchar("source", { length: 64 }).default("home_value").notNull(),
+  status: varchar("status", { length: 20 }).default("completed").notNull(),
+  locale: varchar("locale", { length: 10 }).default("en"),
+  address: text("address").notNull(),
+  result: jsonb("result").$type<ValuationResult>(),
+  modelUsed: varchar("model_used", { length: 100 }),
+  provider: varchar("provider", { length: 100 }),
+  summary: text("summary"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const postcardContactImports = pgTable("postcard_contact_imports", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id"),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  totalRows: integer("total_rows").default(0).notNull(),
+  importedRows: integer("imported_rows").default(0).notNull(),
+  failedRows: integer("failed_rows").default(0).notNull(),
+  mappingConfig: jsonb("mapping_config").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const postcardAddressValidations = pgTable("postcard_address_validations", {
+  id: serial("id").primaryKey(),
+  contactId: integer("contact_id").notNull(),
+  provider: varchar("provider", { length: 32 }).notNull(),
+  isDeliverable: boolean("is_deliverable").default(false).notNull(),
+  analysisSummary: text("analysis_summary"),
+  normalizedAddress: jsonb("normalized_address"),
+  providerPayload: jsonb("provider_payload"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const postcardTemplates = pgTable("postcard_templates", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id"),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 64 }).notNull(),
+  isSystem: boolean("is_system").default(false).notNull(),
+  sizeCode: varchar("size_code", { length: 16 }).default("4x6").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  note: text("note"),
+  frontEditorState: jsonb("front_editor_state"),
+  backEditorState: jsonb("back_editor_state"),
+  frontRenderDefinition: jsonb("front_render_definition"),
+  backRenderDefinition: jsonb("back_render_definition"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const postcardCampaigns = pgTable("postcard_campaigns", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id"),
+  templateId: integer("template_id"),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: postcardCampaignStatusEnum("status").default("draft").notNull(),
+  sendStrategy: postcardSendStrategyEnum("send_strategy").default("send_now").notNull(),
+  scheduledAt: timestamp("scheduled_at"),
+  arriveByDate: timestamp("arrive_by_date"),
+  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+  mailType: varchar("mail_type", { length: 32 }).default("usps_first_class").notNull(),
+  unitPriceCents: integer("unit_price_cents").default(0).notNull(),
+  subtotalCents: integer("subtotal_cents").default(0).notNull(),
+  serviceFeeCents: integer("service_fee_cents").default(0).notNull(),
+  totalCents: integer("total_cents").default(0).notNull(),
+  recipientCount: integer("recipient_count").default(0).notNull(),
+  validatedCount: integer("validated_count").default(0).notNull(),
+  submittedCount: integer("submitted_count").default(0).notNull(),
+  deliveredCount: integer("delivered_count").default(0).notNull(),
+  failedCount: integer("failed_count").default(0).notNull(),
+  audienceSnapshot: jsonb("audience_snapshot").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const postcardMailings = pgTable("postcard_mailings", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id").notNull(),
+  contactId: integer("contact_id").notNull(),
+  provider: varchar("provider", { length: 32 }).default("lob_mock").notNull(),
+  providerReference: varchar("provider_reference", { length: 255 }),
+  channel: postcardMailingChannelEnum("channel").default("postcard").notNull(),
+  status: postcardMailingStatusEnum("status").default("pending").notNull(),
+  costCents: integer("cost_cents").default(0).notNull(),
+  expectedDeliveryAt: timestamp("expected_delivery_at"),
+  deliveredAt: timestamp("delivered_at"),
+  failureReason: text("failure_reason"),
+  renderPayload: jsonb("render_payload").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const postcardEvents = pgTable("postcard_events", {
+  id: serial("id").primaryKey(),
+  mailingId: integer("mailing_id").notNull(),
+  eventType: varchar("event_type", { length: 32 }).notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>(),
+  eventTimestamp: timestamp("event_timestamp").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AgentProfile = typeof agentProfiles.$inferSelect;
+export type InsertAgentProfile = typeof agentProfiles.$inferInsert;
+export type Contact = typeof contacts.$inferSelect;
+export type InsertContact = typeof contacts.$inferInsert;
+export type ConversationSession = typeof conversationSessions.$inferSelect;
+export type InsertConversationSession = typeof conversationSessions.$inferInsert;
+export type ConversationMessage = typeof conversationMessages.$inferSelect;
+export type InsertConversationMessage = typeof conversationMessages.$inferInsert;
+export type ValuationRun = typeof valuationRuns.$inferSelect;
+export type InsertValuationRun = typeof valuationRuns.$inferInsert;
+export type PostcardContactImport = typeof postcardContactImports.$inferSelect;
+export type InsertPostcardContactImport = typeof postcardContactImports.$inferInsert;
+export type PostcardAddressValidation = typeof postcardAddressValidations.$inferSelect;
+export type InsertPostcardAddressValidation = typeof postcardAddressValidations.$inferInsert;
+export type PostcardTemplate = typeof postcardTemplates.$inferSelect;
+export type InsertPostcardTemplate = typeof postcardTemplates.$inferInsert;
+export type PostcardCampaign = typeof postcardCampaigns.$inferSelect;
+export type InsertPostcardCampaign = typeof postcardCampaigns.$inferInsert;
+export type PostcardMailing = typeof postcardMailings.$inferSelect;
+export type InsertPostcardMailing = typeof postcardMailings.$inferInsert;
+export type PostcardEvent = typeof postcardEvents.$inferSelect;
+export type InsertPostcardEvent = typeof postcardEvents.$inferInsert;
+
+// Legacy-friendly aliases while migrating donor logic into the unified schema.
+export const chatSessions = conversationSessions;
+export const chatMessages = conversationMessages;
+
 // ─── Marketing App Tables ──────────────────────────────────
 // NOTE: properties, media, members, offices, open_houses, agent_deal_stats,
 // syncLog tables have been moved to listing-data-service.

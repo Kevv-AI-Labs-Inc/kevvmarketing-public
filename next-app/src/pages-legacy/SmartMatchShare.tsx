@@ -10,8 +10,7 @@
  */
 
 import { useT } from "@/i18n";
-import { pickText } from "@/i18n/copy";
-import { sharePageCopy } from "@/i18n/share-pages";
+import { getSharePageCopy } from "@/i18n/share-pages";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SmartMatchStory } from "./share/SmartMatchStory";
 import { Loader2 } from "lucide-react";
@@ -22,8 +21,8 @@ interface SmartMatchShareProps {
 
 export function SmartMatchShare({ token }: SmartMatchShareProps) {
   const { locale } = useT();
-  const copy = sharePageCopy.smartMatchShare;
-  const pick = (value: { zh: string; en: string }) => pickText(locale, value);
+  const copy = getSharePageCopy(locale).smartMatchShare;
+  const pick = (value: string) => value;
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({

@@ -10,7 +10,10 @@ import {
   Eye,
   FileText,
   Flame,
+  Globe2,
+  Home,
   LayoutDashboard,
+  Mailbox,
   Navigation,
   MapPin,
   Search,
@@ -258,28 +261,8 @@ export const marketingCapabilities: MarketingCapability[] = [
     alignment: "gap",
   },
   {
-    id: "agent-community",
-    order: 9,
-    label: { zh: "经纪人目录", en: "Agent Directory" },
-    category: "growth-community",
-    icon: Users,
-    description: {
-      zh: "查看经纪人网络、团队成员和基础资源连接。",
-      en: "Manage the agent directory, team coverage, and brokerage network visibility.",
-    },
-    currentModule: { zh: "Agent Directory", en: "Agent Directory" },
-    compareNote: {
-      zh: "当前更像目录和后台，不是完整协作社区，但作为团队工作台是合理的。",
-      en: "It behaves more like a directory and admin panel than a community, which is appropriate for the current workbench stage.",
-    },
-    route: "/agent-directory",
-    routeLabel: { zh: "打开经纪人目录", en: "Open Agent Directory" },
-    status: "partial",
-    alignment: "adapted",
-  },
-  {
     id: "xhs-notes",
-    order: 10,
+    order: 9,
     label: { zh: "小红书笔记", en: "Xiaohongshu Notes" },
     category: "content-production",
     icon: BookImage,
@@ -345,43 +328,61 @@ export const marketingExtensions: MarketingExtensionModule[] = [
 export const dashboardMenuSections: MarketingMenuSection[] = [
   {
     id: "overview",
-    label: { zh: "概览", en: "Overview" },
+    label: { zh: "指挥台", en: "Command Center" },
     items: [
       {
         id: "dashboard",
         icon: LayoutDashboard,
-        label: { zh: "工作台", en: "Dashboard" },
+        label: { zh: "指挥台", en: "Command Center" },
         path: "/dashboard",
       },
     ],
   },
   {
-    id: "inventory-reach",
-    label: { zh: "房源与触达", en: "Inventory & Reach" },
+    id: "funnels",
+    label: { zh: "获客漏斗", en: "Funnels" },
     items: [
       {
-        id: "listings",
-        icon: Building2,
-        label: { zh: "房源搜索", en: "Listing Search" },
-        path: "/listings",
+        id: "funnels",
+        icon: Globe2,
+        label: { zh: "Funnels", en: "Funnels" },
+        path: "/funnels",
       },
       {
-        id: "new-listings",
-        icon: Flame,
-        label: { zh: "新房源", en: "New Listings" },
-        path: "/new-listings",
+        id: "agent-site",
+        icon: Globe2,
+        label: { zh: "个人主页", en: "Agent Site" },
+        path: "/agent-site",
       },
       {
-        id: "subscriptions",
-        icon: Bell,
-        label: { zh: "房源订阅", en: "Subscriptions" },
-        path: "/subscriptions",
+        id: "home-value",
+        icon: Home,
+        label: { zh: "房价估值", en: "Home Value" },
+        path: "/home-value",
+      },
+      {
+        id: "area-magnet",
+        icon: MapPin,
+        label: { zh: "地区诱饵", en: "Area Magnet" },
+        path: "/area-magnet",
       },
     ],
   },
   {
-    id: "client-flow",
-    label: { zh: "客户转化", en: "Client Flow" },
+    id: "leads",
+    label: { zh: "线索运营", en: "Leads" },
+    items: [
+      {
+        id: "leads",
+        icon: Users,
+        label: { zh: "线索工作台", en: "Leads" },
+        path: "/leads",
+      },
+    ],
+  },
+  {
+    id: "campaigns",
+    label: { zh: "触达活动", en: "Campaigns" },
     items: [
       {
         id: "magic-share",
@@ -390,28 +391,16 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
         path: "/magic-share",
       },
       {
-        id: "area-magnet",
-        icon: MapPin,
-        label: { zh: "地区诱饵", en: "Area Magnet" },
-        path: "/area-magnet",
+        id: "postcards",
+        icon: Mailbox,
+        label: { zh: "明信片", en: "Postcards" },
+        path: "/postcards",
       },
       {
-        id: "smart-match",
-        icon: Sparkles,
-        label: { zh: "Smart Match", en: "Smart Match" },
-        path: "/smart-match",
-      },
-      {
-        id: "showing-tour",
-        icon: Navigation,
-        label: { zh: "带看路线", en: "Showing Tour" },
-        path: "/showing-tour",
-      },
-      {
-        id: "cma-studio",
-        icon: BarChart3,
-        label: { zh: "CMA Studio", en: "CMA Studio" },
-        path: "/cma-studio",
+        id: "subscriptions",
+        icon: Bell,
+        label: { zh: "房源订阅", en: "Subscriptions" },
+        path: "/subscriptions",
       },
     ],
   },
@@ -439,20 +428,43 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
       },
     ],
   },
+  {
+    id: "deal-tools",
+    label: { zh: "成交支持", en: "Deal Tools" },
+    items: [
+      {
+        id: "listings",
+        icon: Building2,
+        label: { zh: "房源搜索", en: "Listing Search" },
+        path: "/listings",
+      },
+      {
+        id: "new-listings",
+        icon: Flame,
+        label: { zh: "新房源", en: "New Listings" },
+        path: "/new-listings",
+      },
+      {
+        id: "smart-match",
+        icon: Sparkles,
+        label: { zh: "Smart Match", en: "Smart Match" },
+        path: "/smart-match",
+      },
+      {
+        id: "showing-tour",
+        icon: Navigation,
+        label: { zh: "带看路线", en: "Showing Tour" },
+        path: "/showing-tour",
+      },
+      {
+        id: "cma-studio",
+        icon: BarChart3,
+        label: { zh: "CMA Studio", en: "CMA Studio" },
+        path: "/cma-studio",
+      },
+    ],
+  },
 ];
-
-export const ownerDashboardSection: MarketingMenuSection = {
-  id: "team-admin",
-  label: { zh: "团队与管理", en: "Team & Admin" },
-  items: [
-    {
-      id: "agent-directory",
-      icon: Users,
-      label: { zh: "经纪人目录", en: "Agent Directory" },
-      path: "/agent-directory",
-    },
-  ],
-};
 
 export function getLocalizedText(locale: Locale, text: LocalizedText): string {
   return text[locale];
@@ -462,28 +474,26 @@ export function getCapabilityStatusLabel(
   locale: Locale,
   status: MarketingCapabilityStatus,
 ): string {
-  switch (status) {
-    case "ready":
-      return locale === "zh" ? "已到位" : "Ready";
-    case "partial":
-      return locale === "zh" ? "部分到位" : "Partial";
-    case "planned":
-      return locale === "zh" ? "待补齐" : "Planned";
-  }
+  return (
+    {
+      ready: { zh: "已到位", en: "Ready" },
+      partial: { zh: "部分到位", en: "Partial" },
+      planned: { zh: "待补齐", en: "Planned" },
+    } satisfies Record<MarketingCapabilityStatus, LocalizedText>
+  )[status][locale];
 }
 
 export function getCapabilityAlignmentLabel(
   locale: Locale,
   alignment: MarketingCapabilityAlignment,
 ): string {
-  switch (alignment) {
-    case "matched":
-      return locale === "zh" ? "需求匹配" : "Requirement Matched";
-    case "adapted":
-      return locale === "zh" ? "适配承接" : "Adapted Module";
-    case "gap":
-      return locale === "zh" ? "能力缺口" : "Gap";
-  }
+  return (
+    {
+      matched: { zh: "需求匹配", en: "Requirement Matched" },
+      adapted: { zh: "适配承接", en: "Adapted Module" },
+      gap: { zh: "能力缺口", en: "Gap" },
+    } satisfies Record<MarketingCapabilityAlignment, LocalizedText>
+  )[alignment][locale];
 }
 
 export function getCapabilityCounts() {

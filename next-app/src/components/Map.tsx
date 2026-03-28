@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePersistFn } from "@/hooks/usePersistFn";
 import { useT } from "@/i18n";
-import { pickText } from "@/i18n/copy";
-import { uiCopy } from "@/i18n/ui-copy";
+import { getUiCopy } from "@/i18n/ui-copy";
 import { cn } from "@/lib/utils";
 
 type LatLng = {
@@ -107,12 +106,11 @@ export function MapView({
   onMapReady,
 }: MapViewProps) {
   const { locale } = useT();
-  const copy = uiCopy.map;
+  const copy = getUiCopy(locale).map;
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<GoogleMapInstance | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const pick = (value: { zh: string; en: string }) => pickText(locale, value);
 
   const init = usePersistFn(async () => {
     setErrorText(null);
@@ -120,19 +118,19 @@ export function MapView({
 
     try {
       if (provider === "none") {
-        throw new Error(pick(copy.providerDisabled));
+        throw new Error(copy.providerDisabled);
       }
       if (!GOOGLE_MAPS_API_KEY) {
-        throw new Error(pick(copy.missingApiKey));
+        throw new Error(copy.missingApiKey);
       }
       await loadGoogleMapScript();
       if (!mapContainer.current) {
-        throw new Error(pick(copy.containerMissing));
+        throw new Error(copy.containerMissing);
       }
 
       const googleMaps = window.google;
       if (!googleMaps?.maps?.Map) {
-        throw new Error(pick(copy.apiUnavailable));
+        throw new Error(copy.apiUnavailable);
       }
 
       map.current = new googleMaps.maps.Map(mapContainer.current, {
@@ -150,9 +148,9 @@ export function MapView({
       let message =
         error instanceof Error
           ? error.message
-          : pick(copy.initFailed);
+          : copy.initFailed;
       if (message === "Failed to load Google Maps script.") {
-        message = pick(copy.scriptLoadFailed);
+        message = copy.scriptLoadFailed;
       }
       setErrorText(message);
     } finally {
@@ -170,14 +168,14 @@ export function MapView({
 
       {isLoading && !errorText ? (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-100/85 text-sm text-slate-600">
-          {pick(copy.loading)}
+          {copy.loading}
         </div>
       ) : null}
 
       {errorText ? (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-100 px-6 text-center">
           <div className="max-w-lg rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-rose-700">
-            {pick(copy.loadFailedPrefix)}
+            {copy.loadFailedPrefix}
             {errorText}
           </div>
         </div>

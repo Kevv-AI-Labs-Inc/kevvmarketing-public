@@ -1,7 +1,6 @@
 // legacy page — incrementally migrated
 import { useT } from "@/i18n";
-import { pickText } from "@/i18n/copy";
-import { dashboardPageCopy } from "@/i18n/dashboard-pages";
+import { getDashboardPageCopy } from "@/i18n/dashboard-pages";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,17 +74,16 @@ interface RecommendationResult {
 
 export default function AIRecommend() {
   const { locale } = useT();
-  const copy = dashboardPageCopy.aiRecommend;
-  const pick = (value: { zh: string; en: string }) => pickText(locale, value);
+  const copy = getDashboardPageCopy(locale).aiRecommend;
   const router = useRouter();
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const resultsPanelRef = useRef<HTMLDivElement | null>(null);
   const isSummaryCopyMode = pathname.startsWith("/summary-copy");
-  const pageTitle = isSummaryCopyMode ? pick(copy.titles.summaryCopy) : pick(copy.titles.smartMatch);
+  const pageTitle = isSummaryCopyMode ? copy.titles.summaryCopy : copy.titles.smartMatch;
   const pageDescription = isSummaryCopyMode
-    ? pick(copy.titles.summaryCopyDescription)
-    : pick(copy.titles.smartMatchDescription);
+    ? copy.titles.summaryCopyDescription
+    : copy.titles.smartMatchDescription;
 
   const [clientName, setClientName] = useState("");
   const [budgetMin, setBudgetMin] = useState("");
@@ -104,7 +102,7 @@ export default function AIRecommend() {
       setSelectedProperties(firstThree);
     },
     onError: (error) => {
-      toast.error(pick(copy.toasts.recommendFailed), {
+      toast.error(copy.toasts.recommendFailed, {
         description: error.message,
       });
     },
@@ -112,8 +110,8 @@ export default function AIRecommend() {
 
   const feedbackMutation = trpc.ai.feedback.useMutation({
     onSuccess: () => {
-      toast.success(pick(copy.toasts.feedbackSubmitted), {
-        description: pick(copy.toasts.feedbackDescription),
+      toast.success(copy.toasts.feedbackSubmitted, {
+        description: copy.toasts.feedbackDescription,
       });
     },
   });
@@ -133,19 +131,16 @@ export default function AIRecommend() {
     e.preventDefault();
 
     if (!clientName.trim() || !requirements.trim()) {
-      toast.error(pick(copy.toasts.requiredFields), {
-        description: pick(copy.toasts.requiredFieldsDescription),
+      toast.error(copy.toasts.requiredFields, {
+        description: copy.toasts.requiredFieldsDescription,
       });
       return;
     }
 
-    const budgetText = budgetMin && budgetMax
-      ? `Budget: $${budgetMin} - $${budgetMax}. `
-      : budgetMin
-        ? `Budget: at least $${budgetMin}. `
-        : budgetMax
-          ? `Budget: up to $${budgetMax}. `
-          : "";
+    const budgetText = copy.section.budgetSummary({
+      min: budgetMin.trim(),
+      max: budgetMax.trim(),
+    });
 
     const profileText = `${clientName}: ${budgetText}${requirements}`;
 
@@ -177,7 +172,7 @@ export default function AIRecommend() {
     if (pitch) {
       await navigator.clipboard.writeText(pitch);
       setCopiedPitch(true);
-      toast.success(pick(copy.toasts.copied));
+      toast.success(copy.toasts.copied);
       setTimeout(() => setCopiedPitch(false), 2000);
     }
   };
@@ -188,12 +183,12 @@ export default function AIRecommend() {
       recommendationId: Date.now(),
       feedbackType: isPositive ? "approved" : "rejected",
       feedbackRating: isPositive ? 5 : 1,
-      feedbackNotes: isPositive ? pick(copy.feedbackNotes.approved) : pick(copy.feedbackNotes.rejected),
+      feedbackNotes: isPositive ? copy.feedbackNotes.approved : copy.feedbackNotes.rejected,
     });
   };
 
   const formatPrice = (price: string | null) => {
-    if (!price) return pick(copy.section.notAvailable);
+    if (!price) return copy.section.notAvailable;
     const num = parseFloat(price);
     if (!Number.isFinite(num)) return price;
     if (num >= 1_000_000) {
@@ -212,14 +207,14 @@ export default function AIRecommend() {
 
   const goToShareStudio = () => {
     if (selectedListingKeys.length === 0) {
-      toast.error(pick(copy.toasts.selectOneListing));
+      toast.error(copy.toasts.selectOneListing);
       return;
     }
     const params = new URLSearchParams();
     params.set("listingKeys", Array.from(new Set(selectedListingKeys)).slice(0, 15).join(","));
     params.set("source", "ai");
     if (clientName.trim().length > 0) {
-      params.set("title", pick(copy.summary.shareTitle(clientName.trim())));
+      params.set("title", copy.summary.shareTitle(clientName.trim()));
       params.set("clientName", clientName.trim());
     }
     router.push(`/magic-share?${params.toString()}`);
@@ -228,7 +223,7 @@ export default function AIRecommend() {
   const goToCmaStudio = () => {
     const subjectKey = selectedListingKeys[0];
     if (!subjectKey) {
-      toast.error(pick(copy.toasts.selectOneListing));
+      toast.error(copy.toasts.selectOneListing);
       return;
     }
     const params = new URLSearchParams();
@@ -260,46 +255,46 @@ export default function AIRecommend() {
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <User className="h-4 w-4" />
-                  {pick(copy.section.clientInfo)}
+                  {copy.section.clientInfo}
                 </CardTitle>
-                <CardDescription>{pick(copy.section.clientInfoDescription)}</CardDescription>
+                <CardDescription>{copy.section.clientInfoDescription}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="clientName">{pick(copy.section.clientName)}</Label>
+                  <Label htmlFor="clientName">{copy.section.clientName}</Label>
                   <Input
                     id="clientName"
-                    placeholder={pick(copy.section.clientNamePlaceholder)}
+                    placeholder={copy.section.clientNamePlaceholder}
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>{pick(copy.section.budget)}</Label>
+                  <Label>{copy.section.budget}</Label>
                   <div className="flex items-center gap-2">
                     <Input
-                      placeholder={pick(copy.section.budgetMinPlaceholder)}
+                      placeholder={copy.section.budgetMinPlaceholder}
                       value={budgetMin}
                       onChange={(e) => setBudgetMin(e.target.value.replace(/[^0-9]/g, ""))}
                       className="flex-1"
                     />
                     <span className="text-muted-foreground">-</span>
                     <Input
-                      placeholder={pick(copy.section.budgetMaxPlaceholder)}
+                      placeholder={copy.section.budgetMaxPlaceholder}
                       value={budgetMax}
                       onChange={(e) => setBudgetMax(e.target.value.replace(/[^0-9]/g, ""))}
                       className="flex-1"
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground">{pick(copy.section.budgetHint)}</p>
+                  <p className="text-xs text-muted-foreground">{copy.section.budgetHint}</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="requirements">{pick(copy.section.requirements)}</Label>
+                  <Label htmlFor="requirements">{copy.section.requirements}</Label>
                   <Textarea
                     id="requirements"
-                    placeholder={pick(copy.section.requirementsPlaceholder)}
+                    placeholder={copy.section.requirementsPlaceholder}
                     value={requirements}
                     onChange={(e) => setRequirements(e.target.value)}
                     rows={8}
@@ -313,12 +308,12 @@ export default function AIRecommend() {
               {recommendMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {pick(copy.section.submitting)}
+                  {copy.section.submitting}
                 </>
               ) : (
                 <>
                   <Wand2 className="h-4 w-4" />
-                  {pick(copy.section.submit)}
+                  {copy.section.submit}
                 </>
               )}
             </Button>
@@ -326,7 +321,7 @@ export default function AIRecommend() {
             {results && (
               <div className="space-y-2">
                 <div className="text-center text-sm text-muted-foreground">
-                  {pick(copy.summary.found(results.recommendations.length, (results.processingTime / 1000).toFixed(1)))}
+                  {copy.summary.found(results.recommendations.length, (results.processingTime / 1000).toFixed(1))}
                 </div>
                 {isMobile && (
                   <Button
@@ -341,7 +336,7 @@ export default function AIRecommend() {
                       })
                     }
                   >
-                    {pick(copy.section.resultsJump)}
+                    {copy.section.resultsJump}
                   </Button>
                 )}
               </div>
@@ -355,8 +350,8 @@ export default function AIRecommend() {
               <div className="space-y-4 text-center">
                 <Sparkles className="mx-auto h-12 w-12 opacity-20" />
                 <div>
-                  <p className="font-medium">{pick(copy.section.emptyTitle)}</p>
-                  <p className="text-sm">{pick(copy.section.emptyDescription)}</p>
+                  <p className="font-medium">{copy.section.emptyTitle}</p>
+                  <p className="text-sm">{copy.section.emptyDescription}</p>
                 </div>
               </div>
             </div>
@@ -366,9 +361,9 @@ export default function AIRecommend() {
                 <div className="shrink-0 border-b border-border bg-muted/30 p-4">
                   <h3 className="flex items-center gap-2 font-medium">
                     <CheckCircle2 className="h-4 w-4 text-primary" />
-                    {pick(copy.section.resultsTitle)}
+                    {copy.section.resultsTitle}
                     <Badge variant="secondary" className="ml-auto">
-                      {pick(copy.section.selectedCount)} {selectedProperties.size} {pick(copy.section.selectedCountSuffix)}
+                      {copy.section.selectedCount} {selectedProperties.size} {copy.section.selectedCountSuffix}
                     </Badge>
                   </h3>
                 </div>
@@ -407,7 +402,7 @@ export default function AIRecommend() {
                                 </div>
                                 <div className="flex shrink-0 items-center gap-2">
                                   <Badge variant="outline" className={cn(rec.property.final_score > 0.5 && "border-green-200 bg-green-50 text-green-700")}>
-                                    {pick(copy.section.matchScore)} {(rec.property.final_score * 100).toFixed(0)}%
+                                    {copy.section.matchScore} {(rec.property.final_score * 100).toFixed(0)}%
                                   </Badge>
                                   <Button
                                     variant="ghost"
@@ -417,7 +412,7 @@ export default function AIRecommend() {
                                       e.stopPropagation();
                                       window.open(`/listings?key=${rec.property.listingKey}`, "_blank");
                                     }}
-                                    title={pick(copy.section.viewDetails)}
+                                    title={copy.section.viewDetails}
                                   >
                                     <Eye className="h-4 w-4" />
                                   </Button>
@@ -427,15 +422,15 @@ export default function AIRecommend() {
                               <div className="mb-2 flex items-center gap-4 text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Bed className="h-3 w-3" />
-                                  {rec.property.bedroomsTotal || pick(copy.section.notAvailable)} {pick(copy.section.beds)}
+                                  {rec.property.bedroomsTotal || copy.section.notAvailable} {copy.section.beds}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Bath className="h-3 w-3" />
-                                  {rec.property.bathroomsTotalInteger || pick(copy.section.notAvailable)} {pick(copy.section.baths)}
+                                  {rec.property.bathroomsTotalInteger || copy.section.notAvailable} {copy.section.baths}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Square className="h-3 w-3" />
-                                  {rec.property.livingArea ? `${parseInt(rec.property.livingArea, 10).toLocaleString()} ${pick(copy.section.sqft)}` : pick(copy.section.notAvailable)}
+                                  {rec.property.livingArea ? `${parseInt(rec.property.livingArea, 10).toLocaleString()} ${copy.section.sqft}` : copy.section.notAvailable}
                                 </span>
                               </div>
 
@@ -463,7 +458,7 @@ export default function AIRecommend() {
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="flex items-center gap-2 font-medium">
                     <MessageSquare className="h-4 w-4 text-primary" />
-                    {pick(copy.section.aiPitch)}
+                    {copy.section.aiPitch}
                   </h3>
                   <div className="flex items-center gap-2">
                     <Button variant="ghost" size="sm" onClick={() => handleFeedback(true)} disabled={feedbackMutation.isPending}>
@@ -477,22 +472,22 @@ export default function AIRecommend() {
                       {copiedPitch ? (
                         <>
                           <Check className="h-4 w-4" />
-                          {pick(copy.section.copied)}
+                          {copy.section.copied}
                         </>
                       ) : (
                         <>
                           <Copy className="h-4 w-4" />
-                          {pick(copy.section.copyPitch)}
+                          {copy.section.copyPitch}
                         </>
                       )}
                     </Button>
                     <Button size="sm" variant="outline" className="gap-2" disabled={selectedProperties.size === 0} onClick={goToCmaStudio}>
                       <BarChart3 className="h-4 w-4" />
-                      {pick(copy.section.generateCma)}
+                      {copy.section.generateCma}
                     </Button>
                     <Button size="sm" className="gap-2" disabled={selectedProperties.size === 0} onClick={goToShareStudio}>
                       <Send className="h-4 w-4" />
-                      {pick(copy.section.openShare)}
+                      {copy.section.openShare}
                     </Button>
                   </div>
                 </div>
@@ -504,7 +499,7 @@ export default function AIRecommend() {
                         <Streamdown>{getSelectedPitch()}</Streamdown>
                       </div>
                     ) : (
-                      <p className="py-4 text-center text-sm text-muted-foreground">{pick(copy.section.pitchEmpty)}</p>
+                      <p className="py-4 text-center text-sm text-muted-foreground">{copy.section.pitchEmpty}</p>
                     )}
                   </CardContent>
                 </Card>

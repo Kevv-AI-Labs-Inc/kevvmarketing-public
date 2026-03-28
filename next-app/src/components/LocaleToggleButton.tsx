@@ -19,7 +19,7 @@ export function LocaleToggleButton({
   size = "sm",
 }: LocaleToggleButtonProps) {
   const router = useRouter();
-  const { locale, setLocale } = useT();
+  const { locale, setLocale, t } = useT();
 
   return (
     <Button
@@ -27,13 +27,14 @@ export function LocaleToggleButton({
       variant={variant}
       size={size}
       className={cn(className)}
+      aria-label={t("localeToggle.switchLabel")}
       onClick={() => {
         setLocale(locale === "zh" ? "en" : "zh");
         router.refresh();
       }}
     >
       <Globe className="h-4 w-4" />
-      <span>{locale === "zh" ? "English" : "中文"}</span>
+      <span>{t("localeToggle.targetLanguage")}</span>
     </Button>
   );
 }

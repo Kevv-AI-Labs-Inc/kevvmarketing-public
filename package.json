@@ -10,7 +10,8 @@
     "dev": "cd next-app && npm run dev",
     "build": "cd next-app && npm run build",
     "start": "cd next-app && npm run start",
-    "check": "cd next-app && npx tsc --noEmit",
+    "check": "node next-app/scripts/check-i18n.mjs && cd next-app && npm run typecheck",
+    "check:i18n": "node next-app/scripts/check-i18n.mjs",
     "format": "prettier --write .",
     "db:push": "node scripts/db-push-if-configured.mjs"
   },

@@ -50,7 +50,7 @@ function resolveDatabaseUrl(env: EnvLike = process.env): string | null {
 const connectionString = resolveDatabaseUrl();
 
 export default defineConfig({
-  schema: "./drizzle/schema.ts",
+  schema: "./next-app/src/lib/db/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
   ...(connectionString

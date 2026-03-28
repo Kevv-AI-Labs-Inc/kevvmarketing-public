@@ -30,8 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
-import { useT } from "@/i18n";
-import { pickText } from "@/i18n/copy";
+import { createTranslator, useT } from "@/i18n";
+import { localeTag } from "@/i18n/copy";
 import { trpc } from "@/lib/trpc";
 
 type ScopeType = "zip" | "neighborhood" | "building";
@@ -39,161 +39,65 @@ type MagnetType = "spring_market" | "school_move_up" | "off_market_brief" | "ren
 type Audience = "seller" | "buyer" | "investor" | "move_up";
 type Tone = "advisory" | "urgent" | "luxury";
 
-type LocalizedText = { zh: string; en: string };
-
-const scopeOptions: Array<{ value: ScopeType; label: LocalizedText; placeholder: LocalizedText }> = [
+const scopeOptions = [
   {
     value: "zip",
-    label: { zh: "邮编", en: "ZIP code" },
-    placeholder: { zh: "例如 92618", en: "Example: 92618" },
+    labelKey: "areaMagnetStudio.scopeOptions.zip.label",
+    placeholderKey: "areaMagnetStudio.scopeOptions.zip.placeholder",
   },
   {
     value: "neighborhood",
-    label: { zh: "社区 / 小区", en: "Neighborhood" },
-    placeholder: { zh: "例如 Tinton Falls", en: "Example: Tinton Falls" },
+    labelKey: "areaMagnetStudio.scopeOptions.neighborhood.label",
+    placeholderKey: "areaMagnetStudio.scopeOptions.neighborhood.placeholder",
   },
   {
     value: "building",
-    label: { zh: "公寓大楼", en: "Building" },
-    placeholder: { zh: "例如 The Plaza", en: "Example: The Plaza" },
+    labelKey: "areaMagnetStudio.scopeOptions.building.label",
+    placeholderKey: "areaMagnetStudio.scopeOptions.building.placeholder",
   },
-];
+ ] as const;
 
-const magnetOptions: Array<{
-  value: MagnetType;
-  label: LocalizedText;
-  description: LocalizedText;
-}> = [
+const magnetOptions = [
   {
     value: "spring_market",
-    label: { zh: "春季市场分析", en: "Spring market report" },
-    description: {
-      zh: "把库存、价格和节奏整理成一份可以直接转发的市场判断。",
-      en: "Turn inventory, pricing, and tempo into a shareable market readout.",
-    },
+    labelKey: "areaMagnetStudio.magnetOptions.springMarket.label",
+    descriptionKey: "areaMagnetStudio.magnetOptions.springMarket.description",
   },
   {
     value: "school_move_up",
-    label: { zh: "学区置换指南", en: "School move-up guide" },
-    description: {
-      zh: "更适合触达置换家庭，强调供需与换房窗口。",
-      en: "Built for move-up families, emphasizing supply, timing, and upgrade windows.",
-    },
+    labelKey: "areaMagnetStudio.magnetOptions.schoolMoveUp.label",
+    descriptionKey: "areaMagnetStudio.magnetOptions.schoolMoveUp.description",
   },
   {
     value: "off_market_brief",
-    label: { zh: "非公开成交简报", en: "Off-market brief" },
-    description: {
-      zh: "更偏向卖家话题，突出区域真实议价和供需压力。",
-      en: "Seller-leaning brief focused on pricing power and local demand pressure.",
-    },
+    labelKey: "areaMagnetStudio.magnetOptions.offMarketBrief.label",
+    descriptionKey: "areaMagnetStudio.magnetOptions.offMarketBrief.description",
   },
   {
     value: "renovation_roi",
-    label: { zh: "翻新回报预测", en: "Renovation ROI" },
-    description: {
-      zh: "适合投资人和准备整装上市的卖家。",
-      en: "Useful for investors or sellers planning a refresh before listing.",
-    },
+    labelKey: "areaMagnetStudio.magnetOptions.renovationRoi.label",
+    descriptionKey: "areaMagnetStudio.magnetOptions.renovationRoi.description",
   },
-];
+ ] as const;
 
-const audienceOptions: Array<{ value: Audience; label: LocalizedText }> = [
-  { value: "seller", label: { zh: "潜在卖家", en: "Potential sellers" } },
-  { value: "buyer", label: { zh: "潜在买家", en: "Potential buyers" } },
-  { value: "investor", label: { zh: "投资人", en: "Investors" } },
-  { value: "move_up", label: { zh: "置换家庭", en: "Move-up families" } },
-];
+const audienceOptions = [
+  { value: "seller", labelKey: "areaMagnetStudio.audienceOptions.seller" },
+  { value: "buyer", labelKey: "areaMagnetStudio.audienceOptions.buyer" },
+  { value: "investor", labelKey: "areaMagnetStudio.audienceOptions.investor" },
+  { value: "move_up", labelKey: "areaMagnetStudio.audienceOptions.moveUp" },
+] as const;
 
-const toneOptions: Array<{ value: Tone; label: LocalizedText }> = [
-  { value: "advisory", label: { zh: "顾问式", en: "Advisory" } },
-  { value: "urgent", label: { zh: "强调窗口期", en: "Urgent" } },
-  { value: "luxury", label: { zh: "高端精炼", en: "Luxury" } },
-];
+const toneOptions = [
+  { value: "advisory", labelKey: "areaMagnetStudio.toneOptions.advisory" },
+  { value: "urgent", labelKey: "areaMagnetStudio.toneOptions.urgent" },
+  { value: "luxury", labelKey: "areaMagnetStudio.toneOptions.luxury" },
+] as const;
 
-const staticCopy = {
-  heroBadge: { zh: "内容化获客", en: "Content-driven acquisition" },
-  heroTitle: { zh: "Area Magnet", en: "Area Magnet" },
-  heroDescription: {
-    zh: "Area Magnet 和 Magic Share 平行存在，但底层共用同一套 share session、公共链接、互动追踪和撤销机制。这里不是再做一篇文章，而是直接生成一个可留资、可分享、可跟进的区域诱饵。",
-    en: "Area Magnet lives next to Magic Share, but both sit on the same share-session backbone, public links, engagement tracking, and revoke flow. This is not just another AI article. It is a lead-ready, shareable market asset.",
-  },
-  bridgeLabel: { zh: "并行入口", en: "Parallel entry" },
-  bridgeAction: { zh: "打开 Magic Share", en: "Open Magic Share" },
-  formTitle: { zh: "生成区域诱饵", en: "Generate area magnet" },
-  formDescription: {
-    zh: "只保留对经纪人有价值的结构化输入，不暴露空白 Prompt。系统会自动聚合 MLS 数据、生成叙事和分享页面。",
-    en: "Keep the input structured and low-friction. The system will assemble listing data, write the narrative, and produce the share page automatically.",
-  },
-  advancedToggle: { zh: "经纪人信息与高级设置", en: "Agent profile and advanced settings" },
-  create: { zh: "生成 Area Magnet", en: "Generate Area Magnet" },
-  creating: { zh: "正在生成区域报告...", en: "Generating area report..." },
-  openShare: { zh: "打开分享页", en: "Open share page" },
-  copyLink: { zh: "复制链接", en: "Copy link" },
-  copySuccess: { zh: "分享链接已复制", en: "Share link copied" },
-  copyFailure: { zh: "复制失败，请检查浏览器权限", en: "Copy failed. Check browser permissions." },
-  sectionResult: { zh: "这次生成了什么", en: "What this run produced" },
-  resultEmpty: {
-    zh: "生成完成后，这里会显示报告摘要、建议要点和分享链接。",
-    en: "After generation, this panel will show the report summary, key talking points, and share link.",
-  },
-  tabsPreview: { zh: "公开页标签页", en: "Public share tabs" },
-  tabs: [
-    { zh: "Overview", en: "Overview" },
-    { zh: "Report", en: "Report" },
-    { zh: "Share Kit", en: "Share Kit" },
-  ],
-  libraryTitle: { zh: "My Area Magnets", en: "My Area Magnets" },
-  libraryDescription: {
-    zh: "查看最近生成的区域诱饵、浏览热度、留资数量和撤销状态。",
-    en: "Review recent magnets, view activity, captured leads, and revoke status.",
-  },
-  emptyLibrary: {
-    zh: "还没有区域诱饵。先生成第一条，再回来观察浏览和留资。",
-    en: "No area magnets yet. Create the first one, then come back to watch visits and lead capture.",
-  },
-  generatedToast: { zh: "Area Magnet 已生成", en: "Area Magnet generated" },
-  generateFailed: { zh: "生成失败", en: "Generation failed" },
-  revoked: { zh: "分享链接已撤销", en: "Share link revoked" },
-  revokeFailed: { zh: "撤销失败", en: "Failed to revoke share" },
-  refresh: { zh: "刷新", en: "Refresh" },
-  refreshing: { zh: "刷新中", en: "Refreshing" },
-  loadingLibrary: { zh: "正在读取历史区域诱饵...", en: "Loading area magnet history..." },
-  scopeLabel: { zh: "目标区域", en: "Target area" },
-  captureLabel: { zh: "留资字段", en: "Capture fields" },
-  phoneField: { zh: "手机号", en: "Phone" },
-  emailField: { zh: "邮箱", en: "Email" },
-  audienceLabel: { zh: "目标人群", en: "Target audience" },
-  toneLabel: { zh: "叙事风格", en: "Narrative tone" },
-  outputLabel: { zh: "系统输出", en: "System outputs" },
-  outputItems: [
-    { zh: "市场洞察报告", en: "Market insight report" },
-    { zh: "可分享落地页", en: "Shareable landing page" },
-    { zh: "社媒文案包", en: "Social copy kit" },
-    { zh: "留资与跟进信号", en: "Lead capture and follow-up signals" },
-  ],
-  statsViews: { zh: "浏览", en: "Views" },
-  statsLeads: { zh: "留资", en: "Leads" },
-  statsListings: { zh: "示例房源", en: "Featured homes" },
-  lastActivity: { zh: "最近活动", en: "Last activity" },
-  createdAt: { zh: "创建于", en: "Created" },
-  statusActive: { zh: "可访问", en: "Active" },
-  statusRevoked: { zh: "已撤销", en: "Revoked" },
-  statusExpired: { zh: "已过期", en: "Expired" },
-  followHot: { zh: "高意向", en: "Hot" },
-  followWarm: { zh: "值得跟进", en: "Warm" },
-  followNew: { zh: "刚创建", en: "New" },
-  followQuiet: { zh: "待唤醒", en: "Quiet" },
-  revoke: { zh: "撤销", en: "Revoke" },
-  generatedBy: { zh: "生成模型", en: "Generation model" },
-  fallbackUsed: { zh: "已启用兜底叙事", en: "Fallback narrative used" },
-};
-
-function formatActivityTime(locale: "zh" | "en", value: string | null) {
-  if (!value) return pickText(locale, staticCopy.createdAt);
+function formatActivityTime(locale: "zh" | "en", value: string | null, fallback: string) {
+  if (!value) return fallback;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+  return new Intl.DateTimeFormat(localeTag(locale), {
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -201,29 +105,29 @@ function formatActivityTime(locale: "zh" | "en", value: string | null) {
   }).format(parsed);
 }
 
-function describeSessionStatus(locale: "zh" | "en", status: string) {
+function describeSessionStatus(copy: { statusActive: string; statusRevoked: string; statusExpired: string }, status: string) {
   switch (status) {
     case "active":
-      return pickText(locale, staticCopy.statusActive);
+      return copy.statusActive;
     case "revoked":
-      return pickText(locale, staticCopy.statusRevoked);
+      return copy.statusRevoked;
     case "expired":
-      return pickText(locale, staticCopy.statusExpired);
+      return copy.statusExpired;
     default:
       return status;
   }
 }
 
-function describeFollowUpSignal(locale: "zh" | "en", signal: string) {
+function describeFollowUpSignal(copy: { followHot: string; followWarm: string; followNew: string; followQuiet: string }, signal: string) {
   switch (signal) {
     case "hot":
-      return pickText(locale, staticCopy.followHot);
+      return copy.followHot;
     case "warm":
-      return pickText(locale, staticCopy.followWarm);
+      return copy.followWarm;
     case "new":
-      return pickText(locale, staticCopy.followNew);
+      return copy.followNew;
     default:
-      return pickText(locale, staticCopy.followQuiet);
+      return copy.followQuiet;
   }
 }
 
@@ -243,6 +147,97 @@ function followUpTone(signal: string) {
 export default function AreaMagnetStudio() {
   const { user } = useAuth();
   const { locale } = useT();
+  const t = createTranslator(locale);
+  const copy = {
+    heroBadge: t("areaMagnetStudio.heroBadge"),
+    heroTitle: t("areaMagnetStudio.heroTitle"),
+    heroDescription: t("areaMagnetStudio.heroDescription"),
+    bridgeLabel: t("areaMagnetStudio.bridgeLabel"),
+    bridgeAction: t("areaMagnetStudio.bridgeAction"),
+    formTitle: t("areaMagnetStudio.formTitle"),
+    formDescription: t("areaMagnetStudio.formDescription"),
+    advancedToggle: t("areaMagnetStudio.advancedToggle"),
+    create: t("areaMagnetStudio.create"),
+    creating: t("areaMagnetStudio.creating"),
+    openShare: t("areaMagnetStudio.openShare"),
+    copyLink: t("areaMagnetStudio.copyLink"),
+    copySuccess: t("areaMagnetStudio.copySuccess"),
+    copyFailure: t("areaMagnetStudio.copyFailure"),
+    sectionResult: t("areaMagnetStudio.sectionResult"),
+    resultEmpty: t("areaMagnetStudio.resultEmpty"),
+    tabsPreview: t("areaMagnetStudio.tabsPreview"),
+    libraryTitle: t("areaMagnetStudio.libraryTitle"),
+    libraryDescription: t("areaMagnetStudio.libraryDescription"),
+    emptyLibrary: t("areaMagnetStudio.emptyLibrary"),
+    generatedToast: t("areaMagnetStudio.generatedToast"),
+    generateFailed: t("areaMagnetStudio.generateFailed"),
+    revoked: t("areaMagnetStudio.revoked"),
+    revokeFailed: t("areaMagnetStudio.revokeFailed"),
+    refresh: t("areaMagnetStudio.refresh"),
+    refreshing: t("areaMagnetStudio.refreshing"),
+    loadingLibrary: t("areaMagnetStudio.loadingLibrary"),
+    scopeLabel: t("areaMagnetStudio.scopeLabel"),
+    captureLabel: t("areaMagnetStudio.captureLabel"),
+    phoneField: t("areaMagnetStudio.phoneField"),
+    emailField: t("areaMagnetStudio.emailField"),
+    audienceLabel: t("areaMagnetStudio.audienceLabel"),
+    toneLabel: t("areaMagnetStudio.toneLabel"),
+    outputLabel: t("areaMagnetStudio.outputLabel"),
+    statsViews: t("areaMagnetStudio.statsViews"),
+    statsLeads: t("areaMagnetStudio.statsLeads"),
+    statsListings: t("areaMagnetStudio.statsListings"),
+    lastActivity: t("areaMagnetStudio.lastActivity"),
+    createdAt: t("areaMagnetStudio.createdAt"),
+    statusActive: t("areaMagnetStudio.statusActive"),
+    statusRevoked: t("areaMagnetStudio.statusRevoked"),
+    statusExpired: t("areaMagnetStudio.statusExpired"),
+    followHot: t("areaMagnetStudio.followHot"),
+    followWarm: t("areaMagnetStudio.followWarm"),
+    followNew: t("areaMagnetStudio.followNew"),
+    followQuiet: t("areaMagnetStudio.followQuiet"),
+    revoke: t("areaMagnetStudio.revoke"),
+    generatedBy: t("areaMagnetStudio.generatedBy"),
+    fallbackUsed: t("areaMagnetStudio.fallbackUsed"),
+    agentFields: {
+      title: t("areaMagnetStudio.agentFields.title"),
+      phone: t("areaMagnetStudio.agentFields.phone"),
+      email: t("areaMagnetStudio.agentFields.email"),
+      wechat: t("areaMagnetStudio.agentFields.wechat"),
+      avatar: t("areaMagnetStudio.agentFields.avatar"),
+      company: t("areaMagnetStudio.agentFields.company"),
+    },
+    outputItems: [
+      t("areaMagnetStudio.outputItems.marketInsight"),
+      t("areaMagnetStudio.outputItems.landingPage"),
+      t("areaMagnetStudio.outputItems.socialKit"),
+      t("areaMagnetStudio.outputItems.leadSignals"),
+    ],
+    tabs: [
+      t("areaMagnetStudio.tabs.overview"),
+      t("areaMagnetStudio.tabs.report"),
+      t("areaMagnetStudio.tabs.shareKit"),
+    ],
+    metricFallback: t("areaMagnetStudio.metricFallback"),
+    libraryFallbackTitle: t("areaMagnetStudio.libraryFallbackTitle"),
+  } as const;
+  const localizedScopeOptions = scopeOptions.map((option) => ({
+    ...option,
+    label: t(option.labelKey),
+    placeholder: t(option.placeholderKey),
+  }));
+  const localizedMagnetOptions = magnetOptions.map((option) => ({
+    ...option,
+    label: t(option.labelKey),
+    description: t(option.descriptionKey),
+  }));
+  const localizedAudienceOptions = audienceOptions.map((option) => ({
+    ...option,
+    label: t(option.labelKey),
+  }));
+  const localizedToneOptions = toneOptions.map((option) => ({
+    ...option,
+    label: t(option.labelKey),
+  }));
   const utils = trpc.useUtils();
   const [scopeType, setScopeType] = useState<ScopeType>("zip");
   const [query, setQuery] = useState("");
@@ -335,10 +330,10 @@ export default function AreaMagnetStudio() {
         // clipboard is best effort only
       }
       await utils.share.listMine.invalidate({ sessionType: "area_magnet" });
-      toast.success(pickText(locale, staticCopy.generatedToast), { description: shareUrl });
+      toast.success(copy.generatedToast, { description: shareUrl });
     },
     onError: (error) => {
-      toast.error(pickText(locale, staticCopy.generateFailed), { description: error.message });
+      toast.error(copy.generateFailed, { description: error.message });
     },
   });
 
@@ -350,16 +345,16 @@ export default function AreaMagnetStudio() {
   const revokeShareMutation = trpc.share.revokeSession.useMutation({
     onSuccess: async () => {
       await utils.share.listMine.invalidate({ sessionType: "area_magnet" });
-      toast.success(pickText(locale, staticCopy.revoked));
+      toast.success(copy.revoked);
     },
     onError: (error) => {
-      toast.error(pickText(locale, staticCopy.revokeFailed), { description: error.message });
+      toast.error(copy.revokeFailed, { description: error.message });
     },
   });
 
   const handleCreate = () => {
     if (!query.trim()) {
-      toast.error(pickText(locale, staticCopy.scopeLabel));
+      toast.error(copy.scopeLabel);
       return;
     }
 
@@ -390,35 +385,35 @@ export default function AreaMagnetStudio() {
     const shareUrl = `${window.location.origin}${sharePath}`;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success(pickText(locale, staticCopy.copySuccess), { description: shareUrl });
+      toast.success(copy.copySuccess, { description: shareUrl });
     } catch {
-      toast.error(pickText(locale, staticCopy.copyFailure));
+      toast.error(copy.copyFailure);
     }
   };
 
-  const selectedScope = scopeOptions.find((option) => option.value === scopeType) ?? scopeOptions[0];
+  const selectedScope = localizedScopeOptions.find((option) => option.value === scopeType) ?? localizedScopeOptions[0];
 
   return (
     <div className="space-y-6 pb-8">
       <div className="rounded-3xl border border-primary/10 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_34%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(247,250,247,0.96))] p-6 text-foreground shadow-sm md:p-8">
         <div className="flex flex-wrap items-center gap-2 text-sm text-primary">
           <Badge variant="outline" className="rounded-full border-primary/20 bg-white/70 px-3 py-1 text-[11px] uppercase tracking-[0.24em]">
-            {pickText(locale, staticCopy.heroBadge)}
+            {copy.heroBadge}
           </Badge>
           <Badge variant="outline" className="rounded-full border-primary/20 bg-white/50 px-3 py-1 text-[11px] uppercase tracking-[0.24em]">
-            {pickText(locale, staticCopy.bridgeLabel)}
+            {copy.bridgeLabel}
           </Badge>
         </div>
         <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl space-y-3">
-            <h1 className="text-3xl font-serif tracking-tight md:text-4xl">{pickText(locale, staticCopy.heroTitle)}</h1>
+            <h1 className="text-3xl font-serif tracking-tight md:text-4xl">{copy.heroTitle}</h1>
             <p className="text-sm leading-7 text-muted-foreground md:text-base">
-              {pickText(locale, staticCopy.heroDescription)}
+              {copy.heroDescription}
             </p>
           </div>
           <Button asChild variant="outline" className="rounded-full border-primary/25 bg-white/80">
             <Link href="/magic-share">
-              {pickText(locale, staticCopy.bridgeAction)}
+              {copy.bridgeAction}
               <Share2 className="ml-2 h-4 w-4" />
             </Link>
           </Button>
@@ -428,40 +423,40 @@ export default function AreaMagnetStudio() {
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Card>
           <CardHeader>
-            <CardTitle>{pickText(locale, staticCopy.formTitle)}</CardTitle>
-            <CardDescription>{pickText(locale, staticCopy.formDescription)}</CardDescription>
+            <CardTitle>{copy.formTitle}</CardTitle>
+            <CardDescription>{copy.formDescription}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
               <div className="space-y-2">
-                <Label>{pickText(locale, staticCopy.scopeLabel)}</Label>
+                <Label>{copy.scopeLabel}</Label>
                 <Select value={scopeType} onValueChange={(value: ScopeType) => setScopeType(value)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {scopeOptions.map((option) => (
+                    {localizedScopeOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {pickText(locale, option.label)}
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>{pickText(locale, selectedScope.label)}</Label>
+                <Label>{selectedScope.label}</Label>
                 <Input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder={pickText(locale, selectedScope.placeholder)}
+                  placeholder={selectedScope.placeholder}
                 />
               </div>
             </div>
 
             <div className="space-y-3">
-              <Label>{pickText(locale, staticCopy.formTitle)}</Label>
+              <Label>{copy.formTitle}</Label>
               <div className="grid gap-3 md:grid-cols-2">
-                {magnetOptions.map((option) => {
+                {localizedMagnetOptions.map((option) => {
                   const active = option.value === magnetType;
                   return (
                     <button
@@ -472,9 +467,9 @@ export default function AreaMagnetStudio() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-medium text-foreground">{pickText(locale, option.label)}</p>
+                          <p className="font-medium text-foreground">{option.label}</p>
                           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                            {pickText(locale, option.description)}
+                            {option.description}
                           </p>
                         </div>
                         {active ? <Sparkles className="h-4 w-4 text-primary" /> : null}
@@ -487,45 +482,45 @@ export default function AreaMagnetStudio() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <Label>{pickText(locale, staticCopy.audienceLabel)}</Label>
+                <Label>{copy.audienceLabel}</Label>
                 <Select value={audience} onValueChange={(value: Audience) => setAudience(value)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {audienceOptions.map((option) => (
+                    {localizedAudienceOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {pickText(locale, option.label)}
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>{pickText(locale, staticCopy.toneLabel)}</Label>
+                <Label>{copy.toneLabel}</Label>
                 <Select value={tone} onValueChange={(value: Tone) => setTone(value)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {toneOptions.map((option) => (
+                    {localizedToneOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {pickText(locale, option.label)}
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>{pickText(locale, staticCopy.captureLabel)}</Label>
+                <Label>{copy.captureLabel}</Label>
                 <div className="flex min-h-9 items-center gap-4 rounded-xl border bg-background px-3">
                   <Label className="gap-2 text-sm font-normal">
                     <Checkbox checked={captureEmail} onCheckedChange={(value) => setCaptureEmail(Boolean(value))} />
-                    {pickText(locale, staticCopy.emailField)}
+                    {copy.emailField}
                   </Label>
                   <Label className="gap-2 text-sm font-normal">
                     <Checkbox checked={capturePhone} onCheckedChange={(value) => setCapturePhone(Boolean(value))} />
-                    {pickText(locale, staticCopy.phoneField)}
+                    {copy.phoneField}
                   </Label>
                 </div>
               </div>
@@ -537,33 +532,33 @@ export default function AreaMagnetStudio() {
               onClick={() => setShowAdvanced((value) => !value)}
             >
               <Layers3 className="h-4 w-4" />
-              {pickText(locale, staticCopy.advancedToggle)}
+              {copy.advancedToggle}
             </button>
 
             {showAdvanced ? (
               <div className="grid grid-cols-1 gap-3 rounded-2xl border bg-muted/10 p-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>{locale === "zh" ? "经纪人头衔" : "Agent title"}</Label>
+                  <Label>{copy.agentFields.title}</Label>
                   <Input value={agentTitle} onChange={(event) => setAgentTitle(event.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{locale === "zh" ? "联系电话" : "Phone"}</Label>
+                  <Label>{copy.agentFields.phone}</Label>
                   <Input value={agentPhone} onChange={(event) => setAgentPhone(event.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{locale === "zh" ? "联系邮箱" : "Email"}</Label>
+                  <Label>{copy.agentFields.email}</Label>
                   <Input value={agentEmail} onChange={(event) => setAgentEmail(event.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{locale === "zh" ? "微信号" : "WeChat ID"}</Label>
+                  <Label>{copy.agentFields.wechat}</Label>
                   <Input value={agentWechatId} onChange={(event) => setAgentWechatId(event.target.value)} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label>{locale === "zh" ? "头像 URL" : "Avatar URL"}</Label>
+                  <Label>{copy.agentFields.avatar}</Label>
                   <Input value={agentAvatarUrl} onChange={(event) => setAgentAvatarUrl(event.target.value)} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label>{locale === "zh" ? "公司 / 团队" : "Brokerage / team"}</Label>
+                  <Label>{copy.agentFields.company}</Label>
                   <Input value={agentCompany} onChange={(event) => setAgentCompany(event.target.value)} />
                 </div>
               </div>
@@ -573,12 +568,12 @@ export default function AreaMagnetStudio() {
               {createAreaMagnetMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {pickText(locale, staticCopy.creating)}
+                  {copy.creating}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4" />
-                  {pickText(locale, staticCopy.create)}
+                  {copy.create}
                 </>
               )}
             </Button>
@@ -587,26 +582,26 @@ export default function AreaMagnetStudio() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{pickText(locale, staticCopy.sectionResult)}</CardTitle>
-            <CardDescription>{pickText(locale, staticCopy.outputLabel)}</CardDescription>
+            <CardTitle>{copy.sectionResult}</CardTitle>
+            <CardDescription>{copy.outputLabel}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              {staticCopy.outputItems.map((item) => (
-                <div key={item.en} className="rounded-2xl border bg-muted/10 p-4 text-sm text-muted-foreground">
-                  {pickText(locale, item)}
+              {copy.outputItems.map((item) => (
+                <div key={item} className="rounded-2xl border bg-muted/10 p-4 text-sm text-muted-foreground">
+                  {item}
                 </div>
               ))}
             </div>
 
             <div className="rounded-2xl border bg-muted/10 p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                {pickText(locale, staticCopy.tabsPreview)}
+                {copy.tabsPreview}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {staticCopy.tabs.map((item) => (
-                  <Badge key={item.en} variant="secondary" className="rounded-full px-3 py-1">
-                    {pickText(locale, item)}
+                {copy.tabs.map((item) => (
+                  <Badge key={item} variant="secondary" className="rounded-full px-3 py-1">
+                    {item}
                   </Badge>
                 ))}
               </div>
@@ -625,10 +620,10 @@ export default function AreaMagnetStudio() {
                 {generatedPreview.generatedBy ? (
                   <div className="rounded-2xl border bg-muted/10 p-3 text-sm text-muted-foreground">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-foreground">{pickText(locale, staticCopy.generatedBy)}:</span>
+                      <span className="font-medium text-foreground">{copy.generatedBy}:</span>
                       <Badge variant="secondary">{generatedPreview.generatedBy.model}</Badge>
                       {generatedPreview.generatedBy.usedFallback ? (
-                        <Badge variant="outline">{pickText(locale, staticCopy.fallbackUsed)}</Badge>
+                        <Badge variant="outline">{copy.fallbackUsed}</Badge>
                       ) : null}
                     </div>
                   </div>
@@ -645,7 +640,7 @@ export default function AreaMagnetStudio() {
                 <div className="grid gap-3 md:grid-cols-2">
                   {generatedPreview.metrics.slice(0, 4).map((metric, index) => (
                     <div key={`${metric.label}-${index}`} className="rounded-2xl border bg-muted/10 p-4">
-                      <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">{metric.label || "Metric"}</p>
+                      <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">{metric.label || copy.metricFallback}</p>
                       <p className="mt-2 text-xl font-semibold text-foreground">{metric.value || "—"}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{metric.detail || ""}</p>
                     </div>
@@ -659,11 +654,11 @@ export default function AreaMagnetStudio() {
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" onClick={() => handleCopyShareLink(generatedShareUrl.replace(window.location.origin, ""))}>
                         <Copy className="mr-2 h-4 w-4" />
-                        {pickText(locale, staticCopy.copyLink)}
+                        {copy.copyLink}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => window.open(generatedShareUrl, "_blank", "noopener,noreferrer")}>
                         <ExternalLink className="mr-2 h-4 w-4" />
-                        {pickText(locale, staticCopy.openShare)}
+                        {copy.openShare}
                       </Button>
                     </div>
                   </div>
@@ -671,7 +666,7 @@ export default function AreaMagnetStudio() {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed bg-muted/10 p-5 text-sm text-muted-foreground">
-                {pickText(locale, staticCopy.resultEmpty)}
+                {copy.resultEmpty}
               </div>
             )}
           </CardContent>
@@ -681,17 +676,17 @@ export default function AreaMagnetStudio() {
       <Card>
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle>{pickText(locale, staticCopy.libraryTitle)}</CardTitle>
-            <CardDescription>{pickText(locale, staticCopy.libraryDescription)}</CardDescription>
+            <CardTitle>{copy.libraryTitle}</CardTitle>
+            <CardDescription>{copy.libraryDescription}</CardDescription>
           </div>
           <Button variant="outline" size="sm" disabled={mySharesQuery.isFetching} onClick={() => mySharesQuery.refetch()}>
             {mySharesQuery.isFetching ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {pickText(locale, staticCopy.refreshing)}
+                {copy.refreshing}
               </>
             ) : (
-              pickText(locale, staticCopy.refresh)
+              copy.refresh
             )}
           </Button>
         </CardHeader>
@@ -699,11 +694,11 @@ export default function AreaMagnetStudio() {
           {mySharesQuery.isLoading ? (
             <div className="flex items-center py-8 text-sm text-muted-foreground">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {pickText(locale, staticCopy.loadingLibrary)}
+              {copy.loadingLibrary}
             </div>
           ) : (mySharesQuery.data?.length ?? 0) === 0 ? (
             <div className="rounded-2xl border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
-              {pickText(locale, staticCopy.emptyLibrary)}
+              {copy.emptyLibrary}
             </div>
           ) : (
             <div className="grid gap-4 xl:grid-cols-2">
@@ -711,36 +706,36 @@ export default function AreaMagnetStudio() {
                 <div key={share.token} className="rounded-2xl border bg-muted/10 p-4 shadow-sm">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-foreground">{share.title || share.scopeLabel || "Area Magnet"}</p>
+                      <p className="truncate text-sm font-semibold text-foreground">{share.title || share.scopeLabel || copy.libraryFallbackTitle}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{share.scopeLabel || share.sharePath}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant={share.status === "active" ? "default" : "secondary"}>
-                        {describeSessionStatus(locale, share.status)}
+                        {describeSessionStatus(copy, share.status)}
                       </Badge>
                       <Badge variant="outline" className={followUpTone(share.followUpSignal)}>
-                        {describeFollowUpSignal(locale, share.followUpSignal)}
+                        {describeFollowUpSignal(copy, share.followUpSignal)}
                       </Badge>
                     </div>
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-3">
                     <div className="rounded-xl border bg-background/70 p-3">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{pickText(locale, staticCopy.statsViews)}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{copy.statsViews}</p>
                       <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
                         <BarChart3 className="h-4 w-4 text-muted-foreground" />
                         {share.viewCount}
                       </div>
                     </div>
                     <div className="rounded-xl border bg-background/70 p-3">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{pickText(locale, staticCopy.statsLeads)}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{copy.statsLeads}</p>
                       <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         {share.leadCount}
                       </div>
                     </div>
                     <div className="rounded-xl border bg-background/70 p-3">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{pickText(locale, staticCopy.statsListings)}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{copy.statsListings}</p>
                       <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         {share.listingCount}
@@ -751,18 +746,18 @@ export default function AreaMagnetStudio() {
                   <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                     <Phone className="h-3.5 w-3.5" />
                     {share.lastActivityAt
-                      ? `${pickText(locale, staticCopy.lastActivity)} ${formatActivityTime(locale, share.lastActivityAt)}`
-                      : `${pickText(locale, staticCopy.createdAt)} ${formatActivityTime(locale, share.createdAt)}`}
+                      ? `${copy.lastActivity} ${formatActivityTime(locale, share.lastActivityAt, copy.createdAt)}`
+                      : `${copy.createdAt} ${formatActivityTime(locale, share.createdAt, copy.createdAt)}`}
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button variant="outline" size="sm" onClick={() => handleCopyShareLink(share.sharePath)}>
                       <Copy className="mr-2 h-4 w-4" />
-                      {pickText(locale, staticCopy.copyLink)}
+                      {copy.copyLink}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => window.open(`${window.location.origin}${share.sharePath}`, "_blank", "noopener,noreferrer")}>
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      {pickText(locale, staticCopy.openShare)}
+                      {copy.openShare}
                     </Button>
                     <Button
                       variant="ghost"
@@ -772,7 +767,7 @@ export default function AreaMagnetStudio() {
                       onClick={() => revokeShareMutation.mutate({ token: share.token })}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      {pickText(locale, staticCopy.revoke)}
+                      {copy.revoke}
                     </Button>
                   </div>
                 </div>

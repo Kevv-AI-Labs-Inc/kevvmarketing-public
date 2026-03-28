@@ -16,8 +16,11 @@ import { cmaRouter } from "./server/cma/cmaRouter";
 import { mlsRouter } from "./server/mls/mlsRouter";
 import { aiRouter } from "./server/ai/aiRouter";
 import { vectorRouter } from "./server/vector/vectorRouter";
-import { agentDirectoryRouter } from "./server/agentDirectory/agentDirectoryRouter";
 import { subscriptionRouter } from "./server/subscriptionRouter";
+import { leadCaptureRouter } from "./server/leadCaptureRouter";
+import { profileRouter } from "./server/profileRouter";
+import { homeValueRouter } from "./server/homeValueRouter";
+import { postcardRouter } from "./server/postcardRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -33,8 +36,11 @@ export const appRouter = router({
   cma: cmaRouter,
   ai: aiRouter,
   vector: vectorRouter,
-  agentDirectory: agentDirectoryRouter,
   subscription: subscriptionRouter,
+  leads: leadCaptureRouter,
+  profile: profileRouter,
+  homeValue: homeValueRouter,
+  postcard: postcardRouter,
   // Auth is handled by NextAuth — no tRPC auth routes needed
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),

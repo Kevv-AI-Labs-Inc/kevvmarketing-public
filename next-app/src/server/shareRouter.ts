@@ -3,9 +3,11 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
+  agentProfiles,
   shareLeads,
   shareSessionEvents,
   shareSessions,
+  users,
 } from "../drizzle/schema";
 // TODO: properties and media data will come from listing-data-service API
 // import { properties, media } from "../drizzle/schema";
@@ -20,7 +22,10 @@ import { recordUsage, type ApiKeyContext, validateApiKey } from "./apiKeyAuth";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { triggerLeadAutomation } from "./leads/leadAutomationService";
+import { captureLead } from "./leads/leadCaptureService";
 import { generateAreaMagnetReport } from "./share/areaMagnetService";
+import { recalculateScore } from "./tracking/engagementScorer";
 // TODO: image URLs will come from listing-data-service API
 
 type Database = NonNullable<Awaited<ReturnType<typeof getDb>>>;
@@ -2169,9 +2174,12 @@ export const shareRouter = router({
       const rows = await db
         .select({
           id: shareSessions.id,
+          token: shareSessions.token,
+          title: shareSessions.title,
           status: shareSessions.status,
           expiresAt: shareSessions.expiresAt,
           sessionType: shareSessions.sessionType,
+          createdByEmail: shareSessions.createdByEmail,
           magnetPayload: shareSessions.magnetPayload,
         })
         .from(shareSessions)
@@ -2235,6 +2243,68 @@ export const shareRouter = router({
           intent,
         },
       });
+
+      const [owner] =
+        session.createdByEmail
+          ? await db
+              .select()
+              .from(users)
+              .where(eq(users.email, session.createdByEmail))
+              .limit(1)
+          : [];
+
+      const [ownerProfile] =
+        owner
+          ? await db
+              .select()
+              .from(agentProfiles)
+              .where(eq(agentProfiles.userId, owner.id))
+              .limit(1)
+          : [];
+
+      if (owner) {
+        const unifiedLead = await captureLead(
+          {
+            agentId: owner.id,
+            agentProfileId: ownerProfile?.id ?? undefined,
+            source: session.sessionType === "area_magnet" ? "area_magnet" : "magic_share",
+            sourceRef: session.token,
+            name: name ?? undefined,
+            email: email ?? undefined,
+            phone: phone ?? undefined,
+            intent: intent ?? undefined,
+            notes: notes ?? undefined,
+            summary: `Lead captured from ${session.sessionType} share session ${session.title ?? session.token}.`,
+            score: intent?.toLowerCase().includes("sell") ? "hot" : "warm",
+            tags: [session.sessionType === "area_magnet" ? "area-magnet" : "magic-share"],
+            eventType: "share_lead_submit",
+            eventData: {
+              shareSessionId: session.id,
+              sessionType: session.sessionType,
+            },
+            sourceId: String(session.id),
+          },
+          db
+        );
+
+        await triggerLeadAutomation(
+          {
+            agentId: owner.id,
+            contactId: unifiedLead.id,
+            source: session.sessionType === "area_magnet" ? "area_magnet" : "magic_share",
+            title: `${unifiedLead.name || "New lead"} submitted from a share page`,
+            description: `${session.title ?? "Share page"} converted a lead through ${session.sessionType}.`,
+            priority: unifiedLead.score === "hot" ? "high" : "medium",
+            suggestedAction: "contact_now",
+            actionData: {
+              shareSessionId: session.id,
+            },
+          },
+          db
+        );
+
+        await recalculateScore(unifiedLead.id, owner.id);
+      }
 
       return { success: true };
     }),

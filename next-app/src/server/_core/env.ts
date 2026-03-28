@@ -4,7 +4,6 @@ export const ENV = {
   // 基础
   databaseUrl: resolveDatabaseUrl() ?? "",
   isProduction: process.env.NODE_ENV === "production",
-  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
 
   // AI Provider — default to OpenAI in production runtime
   aiProvider: (process.env.AI_PROVIDER ?? "openai") as "gemini" | "openai",

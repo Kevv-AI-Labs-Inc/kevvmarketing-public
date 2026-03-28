@@ -14,8 +14,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useT } from "@/i18n";
-import { pickText } from "@/i18n/copy";
-import { sharePageCopy } from "@/i18n/share-pages";
+import { getSharePageCopy } from "@/i18n/share-pages";
 import { Badge } from "@/components/ui/badge";
 import {
     ThumbsUp,
@@ -217,8 +216,8 @@ const kenBurnsKeyframes = `
 
 export function SmartMatchStory({ data, onFeedback, isFeedbackPending }: SmartMatchStoryProps) {
     const { locale } = useT();
-    const copy = sharePageCopy.smartMatchStory;
-    const pick = (value: { zh: string; en: string }) => pickText(locale, value);
+    const copy = getSharePageCopy(locale).smartMatchStory;
+    const pick = (value: string) => value;
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showDetails, setShowDetails] = useState(false);
     const [touchStartX, setTouchStartX] = useState<number | null>(null);

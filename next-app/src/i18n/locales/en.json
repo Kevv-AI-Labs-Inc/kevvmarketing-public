@@ -1,11 +1,45 @@
 {
   "app": {
     "name": "Kevv Marketing",
-    "tagline": "Intelligent Marketing Workspace"
+    "tagline": "AI Real Estate Marketing Workspace"
+  },
+  "terminology": {
+    "funnels": "Funnels",
+    "leads": "Leads",
+    "campaigns": "Campaigns",
+    "dealTools": "Deal Tools",
+    "contentStudio": "Content Studio",
+    "agentSite": "Agent Site",
+    "homeValue": "Home Value",
+    "areaMagnet": "Area Magnet",
+    "magicShare": "Magic Share",
+    "smartMatch": "Smart Match",
+    "showingTour": "Showing Tour",
+    "subscriptions": "Subscriptions",
+    "postcards": "Postcards"
+  },
+  "metadata": {
+    "rootTitle": "{{appName}} | AI real estate marketing workspace",
+    "rootDescription": "Use {{appName}} to run flyers, smart matches, share pages, subscriptions, public funnels, and bilingual real estate marketing workflows in one platform."
+  },
+  "localeToggle": {
+    "switchLabel": "Switch language",
+    "targetLanguage": "中文",
+    "currentEnglish": "English",
+    "currentChinese": "中文"
+  },
+  "shell": {
+    "marketingWord": "Marketing",
+    "unauthenticatedPrompt": "Please sign in to continue.",
+    "signInCta": "Sign in",
+    "menuFallback": "Menu",
+    "toggleNavigation": "Toggle navigation",
+    "agentFallback": "Agent",
+    "backHome": "Back home"
   },
   "sidebar": {
     "overview": "Overview",
-    "dashboard": "Dashboard",
+    "dashboard": "Command Center",
     "insights": "AI Insights",
     "listings": "Listings",
     "newListings": "New Listings",
@@ -21,9 +55,9 @@
     "ads": "Ad Campaigns",
     "drip": "Drip Automation",
     "cmaStudio": "CMA Analysis",
-    "studios": "Studios",
+    "studios": "Video Studio",
     "subscriptions": "Subscriptions",
-    "xhsShare": "Xiaohongshu",
+    "xhsShare": "XHS Notes",
     "chinese": "Chinese Market",
     "cultural": "Feng Shui / Calendar",
     "wechat": "WeChat Share",
@@ -58,8 +92,8 @@
     "priceOpportunity": "💰 Price Drop Opportunity",
     "preferenceMatch": "🏠 Preference Match",
     "referralOpportunity": "📤 Referral Opportunity",
-    "markRead": "Mark as Read",
-    "takeAction": "Take Action",
+    "markRead": "Mark as read",
+    "takeAction": "Take action",
     "unread": "Unread",
     "urgent": "Urgent",
     "high": "High",
@@ -84,7 +118,7 @@
   },
   "content": {
     "title": "Content Factory",
-    "generate": "AI Generate",
+    "generate": "Generate",
     "templates": "Templates",
     "scheduled": "Scheduled",
     "published": "Published",
@@ -95,7 +129,7 @@
     "campaigns": "Campaigns",
     "performance": "Performance",
     "budget": "Budget",
-    "createCampaign": "Create Campaign"
+    "createCampaign": "Create campaign"
   },
   "drip": {
     "title": "Drip Automation",
@@ -103,16 +137,16 @@
     "active": "Active",
     "paused": "Paused",
     "enrollments": "Enrollments",
-    "createCampaign": "Create Sequence"
+    "createCampaign": "Create sequence"
   },
   "cma": {
     "title": "CMA Analysis",
-    "newReport": "New Report",
-    "reports": "Report History",
-    "suggestedPrice": "Suggested Price",
-    "comps": "Comparable Properties",
-    "adjustments": "Price Adjustments",
-    "aiAnalysis": "AI Analysis"
+    "newReport": "New report",
+    "reports": "Report history",
+    "suggestedPrice": "Suggested price",
+    "comps": "Comparable properties",
+    "adjustments": "Price adjustments",
+    "aiAnalysis": "AI analysis"
   },
   "cultural": {
     "title": "Feng Shui / Calendar",
@@ -149,13 +183,985 @@
     "edit": "Edit",
     "create": "Create",
     "search": "Search",
-    "loading": "Loading...",
+    "loading": "Loading…",
     "noData": "No data",
     "confirm": "Confirm",
     "back": "Back",
     "next": "Next",
-    "viewAll": "View All",
+    "viewAll": "View all",
     "export": "Export",
     "refresh": "Refresh"
+  },
+  "map": {
+    "providerDisabled": "Map support is disabled. Set NEXT_PUBLIC_MAP_UI_PROVIDER=google.",
+    "missingApiKey": "Google Maps API key is missing. Configure NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.",
+    "containerMissing": "Map container not found.",
+    "apiUnavailable": "Google Maps API is unavailable.",
+    "initFailed": "Map failed to initialize.",
+    "scriptLoadFailed": "Failed to load the Google Maps script.",
+    "loading": "Loading map…",
+    "loadFailedPrefix": "Map failed to load: "
+  },
+  "landing": {
+    "header": {
+      "signIn": "Sign in",
+      "getStartedShort": "Start free"
+    },
+    "hero": {
+      "badge": "An AI marketing platform built for real estate agents",
+      "line1": "One listing.",
+      "line2": "Every channel.",
+      "line3": "Both languages.",
+      "body": "{{appName}} turns MLS listings into AI flyers, social campaigns, WeChat content, CMA reports, and public funnels in one place, with English and Chinese working side by side.",
+      "primaryCta": "Start free",
+      "secondaryCta": "About Kevv AI"
+    },
+    "stats": {
+      "fasterContent": "faster content creation",
+      "integratedTools": "integrated tools",
+      "languages": "languages in one workspace"
+    },
+    "whyKevv": {
+      "eyebrow": "Why Kevv",
+      "title": "AI, automation, and cross-border marketing in one platform"
+    },
+    "pillars": {
+      "aiEngine": {
+        "badge": "AI Engine",
+        "title": "Let content generate itself",
+        "body": "One listing can become dozens of ready-to-publish assets. AI writes property descriptions, social posts, email copy, and ad concepts for each channel in both English and Chinese."
+      },
+      "crossBorder": {
+        "badge": "Cross-Border",
+        "title": "Reach Chinese-speaking buyers across the Pacific",
+        "body": "Built-in WeChat workflows, culturally accurate messaging, and bilingual production let you market North American listings to Chinese-speaking buyers without switching tools."
+      },
+      "intelligence": {
+        "badge": "Lead Intelligence",
+        "title": "Smart matching without manual searching",
+        "body": "AI buyer matching, showing routes, and market insights surface the opportunities worth moving first for every client."
+      }
+    },
+    "toolkit": {
+      "eyebrow": "Full toolkit",
+      "title": "Run the operating chain in one workspace instead of juggling tools.",
+      "body": "From the first listing photo to the final signature, your funnels, campaigns, content, and deal support can all live in one place."
+    },
+    "tools": {
+      "contentFactory": {
+        "name": "Content Factory",
+        "desc": "AI listing copy, social posts, and email campaigns"
+      },
+      "flyerStudio": {
+        "name": "Flyer Studio",
+        "desc": "Drag-and-drop print and digital flyer creation"
+      },
+      "cmaStudio": {
+        "name": "CMA Analysis",
+        "desc": "Comparative market analysis and pricing reports"
+      },
+      "smartMatch": {
+        "name": "Smart Match",
+        "desc": "AI buyer-to-listing matching engine"
+      },
+      "magicShare": {
+        "name": "Magic Share",
+        "desc": "One-click listing share pages"
+      },
+      "showingTour": {
+        "name": "Showing Tour",
+        "desc": "Automatically optimized tour sequencing"
+      },
+      "ads": {
+        "name": "Ad Campaigns",
+        "desc": "Multi-platform paid campaign management"
+      },
+      "drip": {
+        "name": "Drip Automation",
+        "desc": "Automated email nurture sequences"
+      },
+      "neighborhood": {
+        "name": "Neighborhood Intel",
+        "desc": "Local market data and school signals"
+      },
+      "listingManagement": {
+        "name": "Listing Management",
+        "desc": "A centralized MLS operations workspace"
+      },
+      "wechat": {
+        "name": "WeChat Marketing",
+        "desc": "Native WeChat content and mini-program flows"
+      },
+      "cultural": {
+        "name": "Cultural Intelligence",
+        "desc": "Culturally accurate messaging and guidance"
+      },
+      "crossBorderTools": {
+        "name": "Cross-Border Tools",
+        "desc": "Bilingual marketing tools for international buyers"
+      }
+    },
+    "crossBorder": {
+      "badge": "Cross-Border",
+      "titlePrefix": "A platform built for",
+      "titleAccent": "Chinese-North American real estate",
+      "titleSuffix": "from day one",
+      "body": "{{shortName}} is not a translation layer added later. We built WeChat-native content, culturally accurate messaging, and bilingual marketing tools into the product from the start because this market genuinely needs them."
+    },
+    "crossBorderChecklist": {
+      "wechat": "Native WeChat article and mini-program sharing",
+      "descriptions": "Property descriptions adapted for Chinese-speaking buyers",
+      "bilingual": "Bilingual flyers, social posts, and email campaigns",
+      "matching": "Cross-border buyer matching and showing routes"
+    },
+    "crossBorderCards": {
+      "wechat": {
+        "title": "WeChat Marketing",
+        "desc": "Publish listings straight into the WeChat ecosystem"
+      },
+      "cultural": {
+        "title": "Cultural Intelligence",
+        "desc": "Feng shui notes, lucky numbers, and culturally accurate messaging"
+      },
+      "campaigns": {
+        "title": "Cross-Border Campaigns",
+        "desc": "Geo-aware campaigns for international buyers"
+      },
+      "bilingualAi": {
+        "title": "Bilingual AI Content",
+        "desc": "Generate English and Chinese copy in one flow"
+      }
+    },
+    "closing": {
+      "title": "Stop juggling tools and move deals toward the close.",
+      "body": "Run smarter marketing from one workspace across every channel, in English and Chinese.",
+      "primaryCta": "Start free",
+      "secondaryCta": "Talk to the team"
+    },
+    "footer": {
+      "rights": "The product source is open.",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    }
+  },
+  "loginAuth": {
+    "securityBadge": "Secure identity handoff",
+    "heroTitleNewWorkspace": "Start with an identity your team already trusts.",
+    "heroTitleDefault": "{{appName}} · AI real estate marketing platform",
+    "heroDescription": "Sign in with Google, Microsoft, or a secure one-time email link. {{appName}} never asks you to set a password.",
+    "authCardPromptNewWorkspace": "Choose the provider you already use and we will create the workspace for you automatically.",
+    "authCardPromptDefault": "Choose Google, Microsoft, or request a one-time email sign-in link.",
+    "noPasswordsTitle": "No passwords stored",
+    "noPasswordsBody": "Authentication is delegated to Google, Microsoft, or a one-time email link.",
+    "enterEmail": "Enter the email address that should receive the sign-in link.",
+    "magicLinkNotConfigured": "Email sign-in links are not configured yet.",
+    "magicLinkFailed": "The sign-in link could not be sent.",
+    "magicLinkInbox": "Check your inbox for the secure sign-in link.",
+    "passwordlessDivider": "Passwordless fallback",
+    "magicLinkTitle": "Email me a secure sign-in link",
+    "magicLinkDescription": "Use this when you do not want to run OAuth right now. The link expires quickly and works only once.",
+    "sendingLink": "Sending",
+    "sendLink": "Send sign-in link",
+    "sentPrefix": "If ",
+    "sentSuffix": " is reachable, a one-time sign-in link is on the way.",
+    "helpTitle": "Before you retry",
+    "needHelpPrefix": "Need help? Contact ",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "returnHome": "Return home",
+    "featureCards": {
+      "identity": {
+        "title": "Identity stays with the provider",
+        "body": "{{appName}} stays passwordless. Identity comes from Google, Microsoft, or a one-time email link."
+      },
+      "providers": {
+        "title": "Google, Microsoft, or a secure email link",
+        "body": "Agents can use either ecosystem or request a one-time link."
+      },
+      "tools": {
+        "title": "Real estate marketing tools",
+        "body": "Run AI listing content, CMA reports, social campaigns, and WeChat workflows for Chinese-speaking markets."
+      }
+    },
+    "providerStatus": {
+      "live": "Live",
+      "notConfigured": "Not configured"
+    },
+    "providerAction": {
+      "continueWith": "Continue with {{provider}}",
+      "notConfigured": "{{provider}} sign-in is not configured yet.",
+      "startFailed": "{{provider}} sign-in could not be started."
+    },
+    "helpChecklist": {
+      "provider": "Use the same Google or Microsoft account that owns the mailbox you plan to use.",
+      "magicLink": "Magic links are for sign-in only. No password is required.",
+      "microsoft": "For Microsoft work accounts, tenant consent may be required before the first use."
+    }
+  },
+  "authIssue": {
+    "accessDenied": {
+      "title": "{{provider}} authorization was not completed",
+      "description": "The identity provider did not finish the sign-in request. This usually means consent was cancelled, the app is still in testing, or the organization blocked the request.",
+      "checklist": {
+        "retry": "Retry the same sign-in method once in a fresh browser tab.",
+        "google": "If this is a Google testing app, confirm that the email is listed as a test user.",
+        "microsoft": "If this is a Microsoft work account, ask the tenant admin to allow the app or grant consent."
+      }
+    },
+    "missingEmail": {
+      "title": "{{provider}} did not return a usable email",
+      "description": "{{appName}} provisions accounts by verified email address. OAuth completed, but the callback did not include a stable mailbox we can attach to a workspace.",
+      "checklist": {
+        "mailbox": "Use an account with a real mailbox instead of an alias-only identity.",
+        "microsoft": "For Microsoft, prefer the primary work mailbox instead of an external guest identity.",
+        "provider": "If the problem repeats, compare the result with another provider."
+      }
+    },
+    "accountSyncFailed": {
+      "title": "We could not finish account provisioning",
+      "description": "Authentication succeeded, but {{appName}} could not create or update the local workspace record. This is usually a database or callback configuration problem.",
+      "checklist": {
+        "retry": "Retry once to rule out a transient callback failure.",
+        "logs": "If it repeats, review the deployment logs for the sign-in callback.",
+        "providers": "Do not keep switching providers until the callback issue is fixed."
+      }
+    },
+    "oauthCallback": {
+      "title": "{{provider}} could not complete the callback",
+      "description": "The identity provider redirected back, but the OAuth callback failed before a session could be created.",
+      "checklist": {
+        "redirect": "Verify that the redirect URI in Google Cloud or Microsoft Entra matches exactly.",
+        "credentials": "Confirm the provider client ID and secret are configured correctly in production.",
+        "logs": "Check the callback-route deployment logs around the failure time."
+      }
+    },
+    "configuration": {
+      "title": "Authentication is not configured correctly",
+      "description": "{{appName}} received a request for a provider that is missing credentials, redirect URIs, or environment variables.",
+      "checklist": {
+        "railway": "Confirm the provider is configured in the active Railway environment.",
+        "redirect": "Make sure the production redirect URI matches the current domain exactly.",
+        "disable": "Disable any provider button that is not fully configured."
+      }
+    },
+    "verification": {
+      "title": "This sign-in link is no longer valid",
+      "description": "A one-time verification link or callback token has expired, or it has already been used.",
+      "checklist": {
+        "restart": "Start the sign-in flow again from the {{appName}} login page.",
+        "history": "Avoid reopening an old sign-in link from browser history."
+      }
+    },
+    "defaultError": {
+      "title": "Sign-in did not complete",
+      "description": "{{appName}} received an unexpected authentication error before the session could be created.",
+      "checklist": {
+        "retry": "Retry the same sign-in method once.",
+        "cookies": "If it only happens in one browser, clear the site cookies and try again.",
+        "logs": "If it repeats, inspect the auth callback logs with the exact failure time."
+      }
+    }
+  },
+  "legal": {
+    "privacy": {
+      "eyebrow": "Legal",
+      "title": "Privacy Policy",
+      "summary": "This page explains how {{appName}} handles sign-in data, product usage data, and support communications.",
+      "updatedAt": "Updated March 22, 2026",
+      "sections": {
+        "collect": {
+          "heading": "What we collect",
+          "paragraph1": "When you sign in with Google, Microsoft, or an email link, we process the minimum identity data needed to run the account, such as provider identifiers, email address, name, and avatar.",
+          "paragraph2": "When you use the marketing workflows, we also process the share pages, subscriptions, content requests, and related activity logs needed to provide the product, troubleshoot issues, and prevent abuse."
+        },
+        "usage": {
+          "heading": "How we use data",
+          "paragraph1": "We use this data to authenticate users, preserve workspace state, generate marketing content, send notifications you explicitly request, and keep the platform secure and reliable.",
+          "paragraph2": "{{appName}} does not sell your content or client leads to third parties unless a disclosure is strictly required to deliver the service."
+        },
+        "vendors": {
+          "heading": "Third-party services",
+          "paragraph1": "The platform relies on third-party services for OAuth sign-in, email delivery, map services, and hosting. Those vendors process the minimum data required to provide their part of the service.",
+          "paragraph2": "You should also review the privacy terms of the relevant providers, especially when using Google, Microsoft, or map-related features."
+        },
+        "retention": {
+          "heading": "Retention and contact",
+          "paragraph1": "We retain data only for as long as required for business operations and compliance. To request access, export, or deletion of account-related data, contact {{supportEmail}}."
+        }
+      }
+    },
+    "terms": {
+      "eyebrow": "Legal",
+      "title": "Terms of Service",
+      "summary": "This page describes the core rules, responsibilities, and service limits that apply when you use {{appName}}.",
+      "updatedAt": "Updated March 22, 2026",
+      "sections": {
+        "accounts": {
+          "heading": "Accounts and access",
+          "paragraph1": "You must access the service through a valid, authorized identity provider account and remain responsible for the activity performed under that account.",
+          "paragraph2": "We may suspend or restrict access if we detect abusive behavior, suspicious sign-ins, or material policy violations."
+        },
+        "acceptableUse": {
+          "heading": "Acceptable use",
+          "paragraph1": "You may not use {{appName}} to send spam, impersonate others, scrape unauthorized data, or publish content that violates applicable law or real-estate industry rules.",
+          "paragraph2": "You must ensure that any listing data, media assets, or client information entered into the system is lawfully obtained and permitted for your intended use."
+        },
+        "aiContent": {
+          "heading": "AI-generated content",
+          "paragraph1": "Copy, summaries, recommendations, and marketing assets generated by the platform may be AI-assisted. You remain responsible for reviewing all outputs before sharing them externally.",
+          "paragraph2": "{{appName}} does not provide legal, tax, appraisal, brokerage-practice, or fair-housing compliance advice."
+        },
+        "liability": {
+          "heading": "Availability and limitation of liability",
+          "paragraph1": "We keep improving the product, but we do not guarantee uninterrupted service or constant availability of every third-party integration.",
+          "paragraph2": "To the maximum extent permitted by law, {{appName}} is not liable for indirect losses arising from service interruptions, third-party outages, or inaccurate AI output."
+        },
+        "contact": {
+          "heading": "Contact",
+          "paragraph1": "If you have questions about these terms or need enterprise contracting and compliance support, contact {{supportEmail}}."
+        }
+      },
+      "homeLabel": "Back home",
+      "loginLabel": "Sign in"
+    }
+  },
+  "dashboardPages": {
+    "home": {
+      "heroBadge": "AI agent growth workspace",
+      "heroTitle": "Build the funnel first, then turn leads into action.",
+      "heroDescription": "The center of this system is no longer a pile of tool pages. It is the operating chain a real estate agent actually runs every day: funnels, leads, campaigns, deal tools, and content.",
+      "heroFootnote": "Public pages, home-value capture, area magnets, share pages, and direct mail all flow back into one lead spine, where AI helps qualify, prioritize, and trigger the next move.",
+      "actions": {
+        "openLeads": "Open leads",
+        "openFunnels": "Open funnels",
+        "openCampaigns": "Open campaigns"
+      },
+      "stats": {
+        "inventoryTitle": "Inventory",
+        "inventoryDescription": "Total listings currently available",
+        "funnelsTitle": "Funnels",
+        "funnelsDescription": "Public entry points and seller magnets",
+        "campaignsTitle": "Campaigns",
+        "campaignsDescription": "Outbound and reactivation channels",
+        "dealToolsTitle": "Deal Tools",
+        "dealToolsDescription": "Inventory, matching, showings, and CMA",
+        "contentTitle": "Content Studio",
+        "contentDescription": "Flyers, video, and channel-ready content",
+        "syncLabel": "Last sync",
+        "syncUnknown": "Not recorded"
+      },
+      "workspacesTitle": "What should move today",
+      "workspacesDescription": "Enter through the operating lane first, not the tool page first.",
+      "workspaces": {
+        "funnels": {
+          "eyebrow": "Funnels",
+          "title": "Public entry points and seller funnels",
+          "description": "Treat the agent site, home value, and area magnet as one inbound funnel instead of three separate tools.",
+          "actionLabel": "Open funnels",
+          "modules": {
+            "agentSite": "Agent Site",
+            "homeValue": "Home Value",
+            "areaMagnet": "Area Magnet"
+          }
+        },
+        "leads": {
+          "eyebrow": "Leads",
+          "title": "Unified lead operations",
+          "description": "Every entry point lands on one contact spine, where AI summaries, scores, insights, and drip enrollment take over.",
+          "actionLabel": "Open leads",
+          "modules": {
+            "leads": "Leads",
+            "insight": "AI Insight",
+            "score": "Engagement Score"
+          }
+        },
+        "campaigns": {
+          "eyebrow": "Campaigns",
+          "title": "Outbound and reactivation",
+          "description": "Put Magic Share, Postcards, and Subscriptions together because they are all activation channels for current or potential leads.",
+          "actionLabel": "Open campaigns",
+          "modules": {
+            "magicShare": "Magic Share",
+            "postcards": "Postcards",
+            "subscriptions": "Subscriptions"
+          }
+        },
+        "dealTools": {
+          "eyebrow": "Deal Tools",
+          "title": "Inventory, match, and presentation support",
+          "description": "Listings, Smart Match, Showing Tour, and CMA belong in deal support, not at the center of the marketing IA.",
+          "actionLabel": "Open deal tools",
+          "modules": {
+            "listings": "Listings",
+            "smartMatch": "Smart Match",
+            "cmaStudio": "CMA Analysis"
+          }
+        },
+        "content": {
+          "eyebrow": "Content",
+          "title": "Branded content production",
+          "description": "Content Studio still matters, but it should serve funnels and campaigns rather than become the main organizing principle.",
+          "actionLabel": "Open content studio",
+          "modules": {
+            "flyerStudio": "Flyer Studio",
+            "videoStudio": "Video Studio",
+            "xhs": "XHS Notes"
+          }
+        }
+      },
+      "platformModelTitle": "Recommended operating model",
+      "platformModelDescription": "The goal is not to surface every tool. It is to arrange the agent's daily operating moves into one clear sequence.",
+      "platformModel": {
+        "funnels": {
+          "title": "Funnels",
+          "description": "Turn the agent site, home value, and lead magnets into one coherent public acquisition layer."
+        },
+        "leads": {
+          "title": "Leads",
+          "description": "Every source should land in one inbox and be re-ranked by AI."
+        },
+        "campaigns": {
+          "title": "Campaigns",
+          "description": "Share pages, direct mail, and subscriptions are activation channels, not separate product silos."
+        },
+        "dealTools": {
+          "title": "Deal Tools",
+          "description": "Listings, Smart Match, showings, and CMA belong to the conversion layer, not the center of the marketing flow."
+        },
+        "content": {
+          "title": "Content Studio",
+          "description": "Content should serve funnels and campaigns rather than dominate the main navigation."
+        }
+      },
+      "moduleGroupsTitle": "Rearranged module architecture",
+      "moduleGroupsDescription": "Keep the current routes, but reorganize the mental model from a tool list into an operating path."
+    },
+    "subscriptions": {
+      "propertyTypes": {
+        "residential": "Residential",
+        "condo": "Condo",
+        "townhouse": "Townhouse",
+        "multiFamily": "Multi-Family",
+        "land": "Land",
+        "commercial": "Commercial"
+      },
+      "channels": {
+        "email": "Email",
+        "sms": "SMS",
+        "wechat": "WeChat",
+        "inApp": "In-App",
+        "webPush": "Web Push"
+      },
+      "frequencies": {
+        "instant": "Instant",
+        "dailyDigest": "Daily digest",
+        "weeklyDigest": "Weekly digest"
+      },
+      "heroBadge": "Automated delivery",
+      "heroTitle": "Listing subscriptions",
+      "heroDescription": "Save search criteria and automatically notify clients when matching listings go live across email, SMS, WeChat, and in-app channels.",
+      "editTitle": "Edit subscription",
+      "createTitle": "Create subscription",
+      "formDescription": "Configure search filters and delivery settings. New matching listings will be pushed automatically.",
+      "fields": {
+        "name": "Subscription name",
+        "namePlaceholder": "Example: Irvine school-zone homes for Mr. Zhang",
+        "cities": "Target cities",
+        "citiesPlaceholder": "Irvine, San Jose, Cupertino",
+        "citiesHint": "Separate multiple cities with commas",
+        "keywords": "Keywords",
+        "keywordsPlaceholder": "school district, pool, ocean view",
+        "minPrice": "Min price",
+        "maxPrice": "Max price",
+        "minBeds": "Min beds",
+        "maxBeds": "Max beds",
+        "propertyTypes": "Property types",
+        "channel": "Delivery channel",
+        "frequency": "Delivery frequency"
+      },
+      "actions": {
+        "saveChanges": "Save changes",
+        "create": "Create subscription",
+        "cancel": "Cancel",
+        "createNew": "Create subscription",
+        "pause": "Pause",
+        "resume": "Resume",
+        "edit": "Edit",
+        "remove": "Delete",
+        "confirmDelete": "Delete this subscription?"
+      },
+      "listTitle": "My subscriptions",
+      "listDescription": "Manage the saved listing alerts you created for clients.",
+      "loading": "Loading…",
+      "empty": "No subscriptions yet. Create your first alert above.",
+      "defaultName": "Subscription",
+      "status": {
+        "active": "Active",
+        "paused": "Paused",
+        "expired": "Expired"
+      },
+      "meta": {
+        "unlimited": "No limit",
+        "bedroomUnit": "beds",
+        "channel": "Channel",
+        "frequency": "Frequency",
+        "matches": "Matches",
+        "times": "",
+        "matchCount": "Matches: {{count}}"
+      },
+      "toasts": {
+        "created": "Subscription created",
+        "createFailed": "Failed to create subscription",
+        "updated": "Subscription updated",
+        "updateFailed": "Failed to update subscription",
+        "deleted": "Subscription deleted",
+        "deleteFailed": "Failed to delete subscription"
+      }
+    },
+    "cmaStudio": {
+      "fallbackPrice": "Price pending",
+      "unnamedListing": "Unnamed listing",
+      "sourceLabels": {
+        "vector": "Vector match",
+        "sqlFallback": "SQL fallback"
+      },
+      "heroTitle": "CMA Analysis",
+      "heroDescription": "Pick a subject property, generate comparable analysis, and push the result directly into the client-facing share flow.",
+      "prefillLabel": "Subject ListingKey prefilled from external entry:",
+      "embedding": {
+        "pendingSummary": "listings still need vector embeddings",
+        "processing": "processing…",
+        "runNow": "Run now",
+        "running": "Running",
+        "triggerFailed": "Failed to trigger"
+      },
+      "subjectCard": {
+        "title": "1. Select subject property",
+        "description": "Search MLS listings and choose the subject property for this CMA.",
+        "searchPlaceholder": "Search address or listing ID",
+        "currentSubject": "Current subject",
+        "notSelected": "Not selected yet",
+        "comparableCount": "Comparable count",
+        "generating": "Generating",
+        "generate": "Generate CMA",
+        "loadingProperties": "Loading listings…",
+        "noProperties": "No listings found",
+        "mlsFallback": "MLS"
+      },
+      "outputCard": {
+        "title": "2. CMA output",
+        "description": "Review the subject and comparables, then jump into the share flow in one click.",
+        "empty": "Select a subject listing and generate a CMA first.",
+        "subject": "Subject property",
+        "comparables": "Comparables",
+        "unknownStatus": "Unknown",
+        "score": "Score",
+        "propertyFallback": "Property",
+        "openShare": "Open in share studio",
+        "shareTitlePrefix": "CMA highlights · "
+      },
+      "historyCard": {
+        "title": "Recent CMA history",
+        "description": "Reuse recent CMA results and generate client share links quickly.",
+        "loading": "Loading history…",
+        "empty": "No CMA history yet",
+        "comparableCount": "comparables",
+        "openShare": "Open share page",
+        "setSubject": "Use as subject",
+        "setSubjectSuccess": "Subject selected. You can regenerate the CMA now."
+      },
+      "toasts": {
+        "generated": "CMA generated",
+        "generatedDescription": "{{count}} comparable listings found ({{sourceLabel}})",
+        "failed": "Failed to generate CMA",
+        "selectSubject": "Select a subject listing first",
+        "noShareListings": "No listings available to send into the share page"
+      }
+    },
+    "aiRecommend": {
+      "titles": {
+        "smartMatch": "Smart Match",
+        "smartMatchDescription": "Generate listing recommendations and follow-up messaging from client needs.",
+        "summaryCopy": "Summary Copy",
+        "summaryCopyDescription": "Select listings from AI recommendations and copy summary messaging."
+      },
+      "section": {
+        "clientInfo": "Client profile",
+        "clientInfoDescription": "Enter the client profile and what they are looking for.",
+        "clientName": "Client name *",
+        "clientNamePlaceholder": "Example: Mr. Zhang",
+        "budget": "Budget",
+        "budgetMinPlaceholder": "Min",
+        "budgetMaxPlaceholder": "Max",
+        "budgetHint": "USD only, for example 800000",
+        "budgetSummaryRange": "Budget: ${{min}} - ${{max}}. ",
+        "budgetSummaryMinOnly": "Budget: at least ${{min}}. ",
+        "budgetSummaryMaxOnly": "Budget: up to ${{max}}. ",
+        "requirements": "Requirements *",
+        "requirementsPlaceholder": "Describe the client needs in detail, for example:\n- Wants Long Island\n- Needs 4 bedrooms and 2 bathrooms\n- Has children and needs strong schools\n- Prefers a quiet neighborhood\n- Wants a large backyard",
+        "submit": "Run Smart Match",
+        "submitting": "Analyzing client needs…",
+        "resultsJump": "View recommendations",
+        "emptyTitle": "Enter client needs to start",
+        "emptyDescription": "AI will match the most relevant listings.",
+        "resultsTitle": "Recommended listings",
+        "selectedCount": "Selected",
+        "selectedCountSuffix": "",
+        "matchScore": "Match",
+        "viewDetails": "Open listing",
+        "aiPitch": "AI pitch",
+        "copyPitch": "Copy pitch",
+        "copied": "Copied",
+        "generateCma": "Generate CMA",
+        "openShare": "Open share page",
+        "pitchEmpty": "Select one or more listings to view the AI pitch.",
+        "beds": "bd",
+        "baths": "ba",
+        "sqft": "sqft",
+        "notAvailable": "N/A"
+      },
+      "summary": {
+        "found": "{{count}} matched listings found · {{seconds}}s",
+        "shareTitle": "{{name}}'s AI picks"
+      },
+      "toasts": {
+        "recommendFailed": "Recommendation failed",
+        "feedbackSubmitted": "Feedback submitted",
+        "feedbackDescription": "Thanks. We’ll keep improving the recommendation model.",
+        "requiredFields": "Required fields missing",
+        "requiredFieldsDescription": "Client name and requirement details are required.",
+        "copied": "Copied to clipboard",
+        "selectOneListing": "Select at least one listing first"
+      },
+      "feedbackNotes": {
+        "approved": "Good recommendation",
+        "rejected": "Not helpful"
+      }
+    }
+  },
+  "sharePages": {
+    "smartMatchShare": {
+      "fetchLoadError": "Failed to load share page",
+      "fetchFeedbackError": "Failed to submit feedback",
+      "loading": "Loading your personalized listing share...",
+      "notFoundTitle": "Share page not found",
+      "notFoundDescription": "This share link may have expired or been revoked.",
+      "kanbanTitle": "Kanban mode is coming soon",
+      "reportTitle": "Report mode is coming soon",
+      "comingSoon": "Coming soon"
+    },
+    "smartMatchStory": {
+      "commentSubmitted": "Comment submitted",
+      "commentFailed": "Failed to submit comment",
+      "networkError": "Network error",
+      "greeting": "Hi {{name}} 👋",
+      "curatedBy": "Curated by {{agentName}}",
+      "featuredCount": "featured listings",
+      "avgPricePerSqft": "avg price / sqft",
+      "start": "Start browsing →",
+      "galleryCounter": "Image {{current}}/{{total}}",
+      "prevImage": "Previous image",
+      "nextImage": "Next image",
+      "priceUnavailable": "Price N/A",
+      "expertJudgment": "{{agentName}}'s take",
+      "recommendation": "Recommendation",
+      "risks": "Risk notes",
+      "strategy": "Strategy",
+      "matchAnalysis": "Match analysis",
+      "closingStrategy": "Closing strategy",
+      "viewOriginal": "View original link",
+      "tour": "Tour",
+      "writeComment": "Leave feedback",
+      "commentPlaceholder": "Tell the agent what you think about this listing...",
+      "submitting": "Submitting...",
+      "submit": "Submit",
+      "back": "Back",
+      "needTwoListings": "At least 2 listings with coordinates are required",
+      "routePlanning": "Planning route...",
+      "hideRoute": "Hide route",
+      "showRoute": "Show route",
+      "listingCount": "{{count}} listings",
+      "routeFailed": "Failed to plan route",
+      "routeError": "Route planning error",
+      "stops": "stops",
+      "listPriceUnavailable": "N/A",
+      "bedsShort": "bd",
+      "bathsShort": "ba",
+      "sqftShort": "sqft",
+      "wechatCopied": "WeChat ID copied",
+      "wechatPrefix": "WeChat"
+    },
+    "listingShare": {
+      "loading": "Loading this listing share...",
+      "notFoundTitle": "Share link unavailable",
+      "notFoundDescription": "This listing share may have expired, been revoked, or is still syncing.",
+      "curatedFor": "Prepared for {{name}}",
+      "curatedBy": "{{name}}'s listing share service",
+      "listingCount": "{{count}} homes",
+      "viewCount": "{{count}} views",
+      "routeCount": "{{count}} route stops",
+      "createdAt": "Created",
+      "strategyTitle": "Why these homes made the shortlist",
+      "strategyFallback": "Your agent will keep tuning the shortlist around budget, timing, and touring flow. This is the strongest version to move forward with right now.",
+      "inventoryTitle": "Homes in this share",
+      "timelineTitle": "Recommended touring order",
+      "timelineFallback": "If you are planning a showing, start with the strongest-fit homes first and decide from there whether to run the full route.",
+      "requestTour": "Request a tour",
+      "interestLogged": "Your touring interest has been recorded",
+      "contactTitle": "Contact this agent",
+      "callAgent": "Call agent",
+      "emailAgent": "Email agent",
+      "copyWechat": "Copy WeChat ID",
+      "wechatLabel": "WeChat ID",
+      "wechatCopied": "WeChat ID copied",
+      "copyFailed": "Copy failed. Please copy it manually.",
+      "noContactInfo": "The agent has not provided contact details yet.",
+      "sourceMls": "MLS listing",
+      "sourceExternal": "External listing",
+      "openSource": "Open source link",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details",
+      "notesTitle": "Agent notes",
+      "pricePending": "Price on request",
+      "noPhoto": "Photo pending",
+      "bedsShort": "bd",
+      "bathsShort": "ba",
+      "sqftShort": "sqft",
+      "interestedHome": "I’m interested in this home",
+      "serviceNote": "This page is powered by Kevv Marketing. The shortlist, contact information, and touring flow reflect the agent's current plan.",
+      "brandLabel": "Kevv Marketing",
+      "externalListingFallback": "External listing",
+      "unknownAddress": "Unknown address",
+      "emailSubjectFallback": "Listing share",
+      "statInventory": "Inventory",
+      "statViews": "Views",
+      "statRoute": "Route",
+      "strategyEyebrow": "Strategy",
+      "tourEyebrow": "Tour",
+      "inventoryEyebrow": "Inventory",
+      "serviceEyebrow": "Service",
+      "serviceTitle": "Kevv Listing Share"
+    },
+    "areaMagnetShare": {
+      "marketIntelBadge": "Market intelligence",
+      "defaultTitle": "Area market report",
+      "defaultSummary": "This share compresses local inventory, pricing, and recommended actions into a forwardable market lead magnet.",
+      "areaFallback": "Target area",
+      "viewsStat": "Views",
+      "viewsHint": "{{count}} public visits",
+      "createdStat": "Created",
+      "featuredHomesStat": "Featured homes",
+      "featuredHomesHint": "{{count}} featured homes",
+      "captureTitle": "Unlock the full report",
+      "captureDefaultTitle": "Leave your contact details to unlock the full report",
+      "captureDefaultDescription": "This page already shows the core read. Leave your details to receive the full report and recommended next steps.",
+      "captureAction": "Get the full report",
+      "captureSubmitting": "Submitting...",
+      "leadCaptured": "Lead captured",
+      "leadCaptureFailed": "Failed to submit lead",
+      "afterCaptureTitle": "Your request is in",
+      "afterCaptureDescription": "The agent can now follow up based on the area report you just unlocked.",
+      "nameField": "Name",
+      "emailField": "Email",
+      "phoneField": "Phone",
+      "contactTitle": "Agent contact",
+      "tabOverview": "Overview",
+      "tabReport": "Report",
+      "tabShareKit": "Share kit",
+      "featuredHomesTitle": "Lead angle",
+      "featuredHomesSubtitle": "Featured homes you can use in the conversation",
+      "jumpToReport": "Open full report",
+      "noPhoto": "Photo pending",
+      "pricePending": "Price pending",
+      "activeListing": "Active listing",
+      "noFeaturedHomes": "No featured homes are available yet, but this market report is still ready to share.",
+      "facebookTitle": "Facebook copy",
+      "instagramTitle": "Instagram caption",
+      "xhsTitle": "XHS note",
+      "emailTitle": "Email teaser",
+      "copyAction": "Copy",
+      "copySuccess": "Copied to clipboard",
+      "copyFailure": "Copy failed. Please copy it manually.",
+      "hashtagTitle": "Suggested hashtags",
+      "brandLabel": "Kevv Marketing",
+      "wechatLabel": "WeChat"
+    }
+  },
+  "areaMagnetStudio": {
+    "heroBadge": "Content-driven acquisition",
+    "heroTitle": "Area magnet",
+    "heroDescription": "Area Magnet runs alongside Magic Share, but both rely on the same share-session backbone, public links, engagement tracking, and revoke flow. This is not another AI article. It is a lead-ready, shareable market asset.",
+    "bridgeLabel": "Parallel entry",
+    "bridgeAction": "Open Magic Share",
+    "formTitle": "Generate area magnet",
+    "formDescription": "Keep the input structured and useful for agents. The system will aggregate MLS data, write the narrative, and assemble the public share page.",
+    "advancedToggle": "Agent profile and advanced settings",
+    "create": "Generate area magnet",
+    "creating": "Generating area report...",
+    "openShare": "Open share page",
+    "copyLink": "Copy link",
+    "copySuccess": "Share link copied",
+    "copyFailure": "Copy failed. Check browser permissions.",
+    "sectionResult": "What this run produced",
+    "resultEmpty": "After generation, this panel will show the report summary, key talking points, and the share link.",
+    "tabsPreview": "Public share tabs",
+    "libraryTitle": "My area magnets",
+    "libraryDescription": "Review recent magnets, page activity, lead capture volume, and revoke status.",
+    "emptyLibrary": "No area magnets yet. Create the first one, then come back to watch visits and lead capture.",
+    "generatedToast": "Area magnet generated",
+    "generateFailed": "Generation failed",
+    "revoked": "Share link revoked",
+    "revokeFailed": "Failed to revoke share",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing",
+    "loadingLibrary": "Loading area magnet history...",
+    "scopeLabel": "Target area",
+    "captureLabel": "Capture fields",
+    "phoneField": "Phone",
+    "emailField": "Email",
+    "audienceLabel": "Target audience",
+    "toneLabel": "Narrative tone",
+    "outputLabel": "System outputs",
+    "statsViews": "Views",
+    "statsLeads": "Leads",
+    "statsListings": "Featured homes",
+    "lastActivity": "Last activity",
+    "createdAt": "Created",
+    "statusActive": "Active",
+    "statusRevoked": "Revoked",
+    "statusExpired": "Expired",
+    "followHot": "Hot",
+    "followWarm": "Warm",
+    "followNew": "New",
+    "followQuiet": "Quiet",
+    "revoke": "Revoke",
+    "generatedBy": "Generation model",
+    "fallbackUsed": "Fallback narrative used",
+    "agentFields": {
+      "title": "Agent title",
+      "phone": "Phone",
+      "email": "Email",
+      "wechat": "WeChat ID",
+      "avatar": "Avatar URL",
+      "company": "Brokerage / team"
+    },
+    "scopeOptions": {
+      "zip": {
+        "label": "ZIP code",
+        "placeholder": "Example: 92618"
+      },
+      "neighborhood": {
+        "label": "Neighborhood",
+        "placeholder": "Example: Tinton Falls"
+      },
+      "building": {
+        "label": "Building",
+        "placeholder": "Example: The Plaza"
+      }
+    },
+    "magnetOptions": {
+      "springMarket": {
+        "label": "Spring market report",
+        "description": "Turn inventory, pricing, and pace into a shareable market readout."
+      },
+      "schoolMoveUp": {
+        "label": "School move-up guide",
+        "description": "Built for move-up families, emphasizing supply, timing, and upgrade windows."
+      },
+      "offMarketBrief": {
+        "label": "Off-market brief",
+        "description": "Seller-leaning brief focused on pricing power and local demand pressure."
+      },
+      "renovationRoi": {
+        "label": "Renovation ROI",
+        "description": "Useful for investors or sellers planning a refresh before listing."
+      }
+    },
+    "audienceOptions": {
+      "seller": "Potential sellers",
+      "buyer": "Potential buyers",
+      "investor": "Investors",
+      "moveUp": "Move-up families"
+    },
+    "toneOptions": {
+      "advisory": "Advisory",
+      "urgent": "Urgent",
+      "luxury": "Luxury"
+    },
+    "outputItems": {
+      "marketInsight": "Market insight report",
+      "landingPage": "Shareable landing page",
+      "socialKit": "Social copy kit",
+      "leadSignals": "Lead capture and follow-up signals"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "report": "Report",
+      "shareKit": "Share Kit"
+    },
+    "metricFallback": "Metric",
+    "libraryFallbackTitle": "Area magnet"
+  },
+  "homeValue": {
+    "public": {
+      "badge": "AI seller funnel",
+      "title": "Know what your home could sell for",
+      "subtitle": "Get an instant AI valuation range, local positioning notes, and next-step seller strategy.",
+      "inputLabel": "Property address",
+      "inputPlaceholder": "123 Main St, Palo Alto, CA",
+      "inputButton": "Generate valuation",
+      "gateTitle": "Your valuation is ready",
+      "gateSubtitle": "Share your contact info to unlock the full report and let the agent follow up with a comp-backed strategy.",
+      "reportTitle": "Your AI valuation report",
+      "reportSubtitle": "This is not a static report. It is a live seller funnel stitched back into Kevv's unified lead system.",
+      "share": "Share this valuation page",
+      "copy": "Copy link",
+      "copied": "Copied",
+      "loading": "Loading Home Value",
+      "notFoundTitle": "Home Value page not found",
+      "notFoundDescription": "This valuation funnel is not live yet for the requested agent.",
+      "viewTags": {
+        "marketRead": "Market read",
+        "comps": "Comparable sales",
+        "neighborhood": "Neighborhood signal"
+      },
+      "errors": {
+        "addressRequired": "Please enter a full property address.",
+        "generateFailed": "Failed to generate valuation.",
+        "unlockSuccess": "Report unlocked.",
+        "unlockFailed": "Failed to unlock report.",
+        "copyFailed": "Copy failed."
+      },
+      "placeholders": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "timeline": "Timeline",
+        "notes": "Are you most focused on pricing, prep scope, or launch timing?"
+      },
+      "actions": {
+        "generating": "Generating…",
+        "unlocking": "Unlocking…",
+        "unlockReport": "Unlock full report",
+        "explainer": "The funnel first generates the valuation, then uses a lead gate before the full report.",
+        "openAgentProfile": "Open full agent profile",
+        "bookCall": "Book a call"
+      },
+      "stats": {
+        "range": "Range",
+        "layout": "Layout",
+        "sqft": "Sqft",
+        "schoolScore": "School score"
+      },
+      "sections": {
+        "estimatedRange": "Estimated range",
+        "agentFollowUp": "Agent follow-up",
+        "comparableSales": "Comparable sales",
+        "price": "Price",
+        "marketNotes": "Market notes",
+        "shareHelp": "Share this seller funnel with neighbors or past clients and let the valuation page keep generating leads."
+      },
+      "shareSummary": "I just ran an AI home valuation and got a range of {{low}} - {{high}}."
+    }
   }
 }
