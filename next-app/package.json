@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "check:routes": "node ./scripts/check-routes.mjs",
+    "typecheck": "npm run check:routes && next typegen && tsc --noEmit",
     "build": "npm run check:routes && next build --webpack",
     "start": "next start",
     "lint": "npm run check:routes && eslint"

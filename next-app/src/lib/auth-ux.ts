@@ -1,8 +1,7 @@
 import { formatAuthProviderLabel, type AuthProviderId } from "@/lib/auth-provider-config";
 import { DEFAULT_AUTHENTICATED_PATH } from "@/const";
 import type { Locale } from "@/i18n";
-import { pickText } from "@/i18n/copy";
-import { uiCopy } from "@/i18n/ui-copy";
+import { getUiCopy } from "@/i18n/ui-copy";
 
 export type LoginIssueTone = "error" | "warning" | "info";
 
@@ -41,9 +40,7 @@ export function resolveLoginIssue(
   const code = Array.isArray(error) ? error[0] : error;
   const providerCode = Array.isArray(provider) ? provider[0] : provider;
   const providerLabel = formatAuthProviderLabel(providerCode);
-  const copy = uiCopy.authUx;
-  const pick = (value: { zh: string; en: string }) => pickText(locale, value);
-  const checklist = (items: ReadonlyArray<{ zh: string; en: string }>) => items.map((item) => pick(item));
+  const copy = getUiCopy(locale).authUx;
 
   if (!code) {
     return null;
@@ -54,23 +51,23 @@ export function resolveLoginIssue(
     case "denied":
       return {
         tone: "warning",
-        title: pick(copy.accessDenied.title(providerLabel)),
-        description: pick(copy.accessDenied.description),
-        checklist: checklist(copy.accessDenied.checklist),
+        title: copy.accessDenied.title(providerLabel),
+        description: copy.accessDenied.description,
+        checklist: copy.accessDenied.checklist,
       };
     case "missing-email":
       return {
         tone: "warning",
-        title: pick(copy.missingEmail.title(providerLabel)),
-        description: pick(copy.missingEmail.description),
-        checklist: checklist(copy.missingEmail.checklist),
+        title: copy.missingEmail.title(providerLabel),
+        description: copy.missingEmail.description,
+        checklist: copy.missingEmail.checklist,
       };
     case "account-sync-failed":
       return {
         tone: "error",
-        title: pick(copy.accountSyncFailed.title),
-        description: pick(copy.accountSyncFailed.description),
-        checklist: checklist(copy.accountSyncFailed.checklist),
+        title: copy.accountSyncFailed.title,
+        description: copy.accountSyncFailed.description,
+        checklist: copy.accountSyncFailed.checklist,
       };
     case "OAuthSignin":
     case "OAuthCallback":
@@ -78,32 +75,32 @@ export function resolveLoginIssue(
     case "CallbackRouteError":
       return {
         tone: "error",
-        title: pick(copy.oauthCallback.title(providerLabel)),
-        description: pick(copy.oauthCallback.description),
-        checklist: checklist(copy.oauthCallback.checklist),
+        title: copy.oauthCallback.title(providerLabel),
+        description: copy.oauthCallback.description,
+        checklist: copy.oauthCallback.checklist,
       };
     case "Configuration":
       return {
         tone: "error",
-        title: pick(copy.configuration.title),
-        description: pick(copy.configuration.description),
-        checklist: checklist(copy.configuration.checklist),
+        title: copy.configuration.title,
+        description: copy.configuration.description,
+        checklist: copy.configuration.checklist,
       };
     case "Verification":
     case "CredentialsSignin":
       return {
         tone: "warning",
-        title: pick(copy.verification.title),
-        description: pick(copy.verification.description),
-        checklist: checklist(copy.verification.checklist),
+        title: copy.verification.title,
+        description: copy.verification.description,
+        checklist: copy.verification.checklist,
       };
     case "Default":
     default:
       return {
         tone: "error",
-        title: pick(copy.defaultError.title),
-        description: pick(copy.defaultError.description),
-        checklist: checklist(copy.defaultError.checklist),
+        title: copy.defaultError.title,
+        description: copy.defaultError.description,
+        checklist: copy.defaultError.checklist,
       };
   }
 }

@@ -16,10 +16,10 @@ import {
   Send,
   ShieldCheck,
 } from "lucide-react";
+
 import { LocaleToggleButton } from "@/components/LocaleToggleButton";
 import { useT } from "@/i18n";
-import { pickText } from "@/i18n/copy";
-import { uiCopy } from "@/i18n/ui-copy";
+import { getUiCopy } from "@/i18n/ui-copy";
 import { cn } from "@/lib/utils";
 import { siteConfig } from "@/lib/site";
 import type { LoginIssue, LoginProviderState } from "@/lib/auth-ux";
@@ -57,12 +57,18 @@ function MicrosoftGlyph() {
 const providerMeta = {
   google: {
     label: "Google",
-    subtitle: { zh: "个人 Gmail 或 Google Workspace", en: "Consumer Gmail or Google Workspace" },
+    subtitle: {
+      zh: "个人 Gmail 或 Google Workspace",
+      en: "Consumer Gmail or Google Workspace",
+    },
     icon: GoogleGlyph,
   },
   "microsoft-entra-id": {
     label: "Microsoft",
-    subtitle: { zh: "Outlook 或 Microsoft 365 / Entra ID", en: "Outlook or Microsoft 365 / Entra ID" },
+    subtitle: {
+      zh: "Outlook 或 Microsoft 365 / Entra ID",
+      en: "Outlook or Microsoft 365 / Entra ID",
+    },
     icon: MicrosoftGlyph,
   },
 } as const;
@@ -81,8 +87,7 @@ export function LoginAuthHub({
   providers,
 }: LoginAuthHubProps) {
   const { locale } = useT();
-  const copy = uiCopy.loginAuthHub;
-  const pick = (value: { zh: string; en: string }) => pickText(locale, value);
+  const copy = getUiCopy(locale).loginAuthHub;
   const providerMap = new Map(providers.map((provider) => [provider.id, provider]));
   const [loadingProvider, setLoadingProvider] = React.useState<string | null>(null);
   const [magicLinkEmail, setMagicLinkEmail] = React.useState("");
@@ -93,14 +98,15 @@ export function LoginAuthHub({
     const provider = providerMap.get(providerId);
     const meta = providerMeta[providerId];
     if (!provider?.configured) {
-      toast.error(pick(copy.providerNotConfigured(meta.label)));
+      toast.error(copy.providerNotConfigured(meta.label));
       return;
     }
+
     try {
       setLoadingProvider(providerId);
       await signIn(providerId, { callbackUrl });
     } catch {
-      toast.error(pick(copy.providerStartFailed(meta.label)));
+      toast.error(copy.providerStartFailed(meta.label));
       setLoadingProvider(null);
     }
   }
@@ -109,13 +115,14 @@ export function LoginAuthHub({
     event.preventDefault();
     const trimmedEmail = magicLinkEmail.trim().toLowerCase();
     if (!trimmedEmail) {
-      toast.error(pick(copy.enterEmail));
+      toast.error(copy.enterEmail);
       return;
     }
     if (!magicLinkConfigured) {
-      toast.error(pick(copy.magicLinkNotConfigured));
+      toast.error(copy.magicLinkNotConfigured);
       return;
     }
+
     try {
       setMagicLinkPending(true);
       const response = await fetch("/api/auth/magic-link/request", {
@@ -123,14 +130,18 @@ export function LoginAuthHub({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: trimmedEmail, callbackUrl }),
       });
-      const payload = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+        message?: string;
+      } | null;
       if (!response.ok) {
-        throw new Error(payload?.error || pick(copy.magicLinkFailed));
+        throw new Error(payload?.error || copy.magicLinkFailed);
       }
+
       setMagicLinkSentTo(trimmedEmail);
-      toast.success(payload?.message || pick(copy.magicLinkInbox));
+      toast.success(payload?.message || copy.magicLinkInbox);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : pick(copy.magicLinkFailed));
+      toast.error(error instanceof Error ? error.message : copy.magicLinkFailed);
     } finally {
       setMagicLinkPending(false);
     }
@@ -148,28 +159,35 @@ export function LoginAuthHub({
         <section className="hidden lg:block">
           <div className="flex items-center justify-between gap-4">
             <span className="inline-block rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-xs font-medium text-primary">
-              {pick(copy.securityBadge)}
+              {copy.securityBadge}
             </span>
             <LocaleToggleButton />
           </div>
           <h1 className="mt-6 max-w-2xl text-5xl font-semibold leading-tight tracking-tight text-foreground">
-            {isNewWorkspaceFlow ? pick(copy.heroTitleNewWorkspace) : pick(copy.heroTitleDefault)}
+            {isNewWorkspaceFlow ? copy.heroTitleNewWorkspace : copy.heroTitleDefault}
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">{pick(copy.heroDescription)}</p>
+          <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">
+            {copy.heroDescription}
+          </p>
 
           <div className="mt-8 grid max-w-2xl gap-3">
             {copy.featureCards.map((item, index) => {
               const icons = [LockKeyhole, Mail, ShieldCheck] as const;
               const Icon = icons[index];
               return (
-                <div key={item.id} className="rounded-2xl border border-border bg-card/80 p-5 shadow-soft backdrop-blur">
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-border bg-card/80 p-5 shadow-soft backdrop-blur"
+                >
                   <div className="flex items-start gap-4">
                     <div className="rounded-xl bg-primary/10 p-3 text-primary">
                       <Icon className="h-5 w-5" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-foreground">{pick(item.title)}</h2>
-                      <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{pick(item.body)}</p>
+                      <h2 className="text-lg font-semibold text-foreground">{item.title}</h2>
+                      <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+                        {item.body}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -185,13 +203,20 @@ export function LoginAuthHub({
           <div className="space-y-3 border-b border-border pb-5 text-center">
             <h2 className="text-2xl font-bold tracking-tight text-foreground">{siteConfig.name}</h2>
             <p className="text-sm text-muted-foreground">
-              {isNewWorkspaceFlow ? pick(copy.authCardPromptNewWorkspace) : pick(copy.authCardPromptDefault)}
+              {isNewWorkspaceFlow
+                ? copy.authCardPromptNewWorkspace
+                : copy.authCardPromptDefault}
             </p>
           </div>
 
           <div className="mt-6 space-y-5">
             {issue ? (
-              <div className={cn("rounded-xl border px-4 py-4 text-left shadow-sm", issueToneStyles[issue.tone])}>
+              <div
+                className={cn(
+                  "rounded-xl border px-4 py-4 text-left shadow-sm",
+                  issueToneStyles[issue.tone],
+                )}
+              >
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
                   <div className="space-y-3">
@@ -215,8 +240,8 @@ export function LoginAuthHub({
                 <div className="flex items-start gap-3">
                   <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                   <div>
-                    <p className="text-sm font-semibold text-emerald-800">{pick(copy.noPasswordsTitle)}</p>
-                    <p className="mt-1 text-sm leading-6 text-emerald-700">{pick(copy.noPasswordsBody)}</p>
+                    <p className="text-sm font-semibold text-emerald-800">{copy.noPasswordsTitle}</p>
+                    <p className="mt-1 text-sm leading-6 text-emerald-700">{copy.noPasswordsBody}</p>
                   </div>
                 </div>
               </div>
@@ -235,13 +260,14 @@ export function LoginAuthHub({
                     disabled={disabled}
                     className={cn(
                       "group rounded-xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-primary/40 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-55",
-                      provider.configured && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+                      provider.configured &&
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
                     )}
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center text-base font-semibold text-foreground">
-                          <Icon /> {pick(copy.continueWith(meta.label))}
+                          <Icon /> {copy.continueWith(meta.label)}
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">{meta.subtitle[locale]}</p>
                       </div>
@@ -249,9 +275,13 @@ export function LoginAuthHub({
                         {loadingProvider === provider.id ? (
                           <Loader2 className="h-5 w-5 animate-spin text-primary" />
                         ) : provider.configured ? (
-                          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">{pick(copy.statusLive)}</span>
+                          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                            {copy.statusLive}
+                          </span>
                         ) : (
-                          <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">{pick(copy.statusNotConfigured)}</span>
+                          <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                            {copy.statusNotConfigured}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -262,7 +292,7 @@ export function LoginAuthHub({
 
             <div className="flex items-center gap-3 text-xs uppercase tracking-[0.24em] text-muted-foreground">
               <span className="h-px flex-1 bg-border" />
-              {pick(copy.passwordlessDivider)}
+              {copy.passwordlessDivider}
               <span className="h-px flex-1 bg-border" />
             </div>
 
@@ -271,17 +301,21 @@ export function LoginAuthHub({
                 <div>
                   <div className="flex items-center gap-2 text-base font-semibold text-foreground">
                     <Mail className="h-4 w-4 text-primary" />
-                    {pick(copy.magicLinkTitle)}
+                    {copy.magicLinkTitle}
                   </div>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{pick(copy.magicLinkDescription)}</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    {copy.magicLinkDescription}
+                  </p>
                 </div>
                 <span
                   className={cn(
                     "shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium",
-                    magicLinkConfigured ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700",
+                    magicLinkConfigured
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-amber-200 bg-amber-50 text-amber-700",
                   )}
                 >
-                  {magicLinkConfigured ? pick(copy.statusLive) : pick(copy.statusNotConfigured)}
+                  {magicLinkConfigured ? copy.statusLive : copy.statusNotConfigured}
                 </span>
               </div>
 
@@ -292,7 +326,7 @@ export function LoginAuthHub({
                   autoComplete="email"
                   placeholder="agent@brokerage.com"
                   value={magicLinkEmail}
-                  onChange={(e) => setMagicLinkEmail(e.target.value)}
+                  onChange={(event) => setMagicLinkEmail(event.target.value)}
                   disabled={!magicLinkConfigured || magicLinkPending}
                   className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-55"
                 />
@@ -303,11 +337,11 @@ export function LoginAuthHub({
                 >
                   {magicLinkPending ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> {pick(copy.sendingLink)}
+                      <Loader2 className="h-4 w-4 animate-spin" /> {copy.sendingLink}
                     </>
                   ) : (
                     <>
-                      <Send className="h-4 w-4" /> {pick(copy.sendLink)}
+                      <Send className="h-4 w-4" /> {copy.sendLink}
                     </>
                   )}
                 </button>
@@ -315,24 +349,27 @@ export function LoginAuthHub({
 
               {magicLinkSentTo && (
                 <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                  {pick(copy.sentPrefix)}
+                  {copy.sentPrefix}
                   <span className="font-medium">{magicLinkSentTo}</span>
-                  {pick(copy.sentSuffix)}
+                  {copy.sentSuffix}
                 </div>
               )}
             </div>
 
             <div className="rounded-xl border border-border bg-secondary/50 p-4">
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Building2 className="h-4 w-4 text-primary" /> {pick(copy.helpTitle)}
+                <Building2 className="h-4 w-4 text-primary" /> {copy.helpTitle}
               </div>
               <div className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
                 {copy.helpChecklist.map((item) => (
-                  <p key={item.en}>{pick(item)}</p>
+                  <p key={item}>{item}</p>
                 ))}
                 <p>
-                  {pick(copy.needHelpPrefix)}
-                  <a href={`mailto:${siteConfig.supportEmail}`} className="font-medium text-foreground underline-offset-4 hover:underline">
+                  {copy.needHelpPrefix}
+                  <a
+                    href={`mailto:${siteConfig.supportEmail}`}
+                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                  >
                     {siteConfig.supportEmail}
                   </a>
                   .
@@ -342,13 +379,13 @@ export function LoginAuthHub({
 
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
               <Link className="inline-flex items-center gap-1 hover:text-foreground" href="/privacy">
-                {pick(copy.privacy)} <ArrowUpRight className="h-3 w-3" />
+                {copy.privacy} <ArrowUpRight className="h-3 w-3" />
               </Link>
               <Link className="inline-flex items-center gap-1 hover:text-foreground" href="/terms">
-                {pick(copy.terms)} <ArrowUpRight className="h-3 w-3" />
+                {copy.terms} <ArrowUpRight className="h-3 w-3" />
               </Link>
               <Link className="inline-flex items-center gap-1 hover:text-foreground" href="/">
-                {pick(copy.returnHome)} <ArrowUpRight className="h-3 w-3" />
+                {copy.returnHome} <ArrowUpRight className="h-3 w-3" />
               </Link>
             </div>
           </div>

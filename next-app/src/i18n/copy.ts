@@ -1,14 +1,16 @@
-import { getLocalizedText, type LocalizedText } from "./messages";
 import type { Locale } from "./config";
 
-export type { LocalizedText };
+export type LocalizedText = {
+  zh: string;
+  en: string;
+};
 
 export function text(zh: string, en: string): LocalizedText {
   return { zh, en };
 }
 
 export function pickText(locale: Locale, value: LocalizedText): string {
-  return getLocalizedText(locale, value);
+  return value[locale];
 }
 
 export function localeTag(locale: Locale): string {

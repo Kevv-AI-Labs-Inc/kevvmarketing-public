@@ -1,403 +1,434 @@
-import { text } from "./copy";
+import type { Locale } from "./config";
+import { createTranslator } from "./messages";
 
-export const dashboardPageCopy = {
-  home: {
-    heroBadge: text("营销工作台", "Marketing Platform"),
-    heroTitle: text(
-      "一个地方完成房源营销、客户触达和成交准备。",
-      "One place for listing marketing, client follow-up, and presentation prep.",
-    ),
-    heroDescription: text(
-      "正常的经纪人 dashboard 不应该先展示内部能力对齐，而应该先帮助你找房、发出去、持续跟进，并把客户展示材料准备好。",
-      "A healthy real estate dashboard should not lead with internal capability mapping. It should help agents find inventory, send it out, stay in follow-up, and prepare client-ready presentations.",
-    ),
-    heroFootnote: text(
-      "这版首页按库存、触达、演示和内容生产四条主线重排，更接近真实营销工作台。",
-      "This homepage is now organized around four operating lanes: inventory, outreach, presentations, and content production.",
-    ),
-    actions: {
-      openListings: text("打开 Listings", "Open Listings"),
-      launchShare: text("生成区域诱饵", "Create area magnet"),
-      createFlyer: text("制作海报", "Create flyer"),
-    },
-    stats: {
-      inventoryTitle: text("房源库存", "Inventory"),
-      inventoryDescription: text("当前可用房源总量", "Total listings currently available"),
-      reachTitle: text("触达流程", "Reach workflows"),
-      reachDescription: text("找房、订阅和客户触达", "Search, saved alerts, and outbound sharing"),
-      presentationTitle: text("成交准备", "Presentation stack"),
-      presentationDescription: text("匹配、带看与 CMA", "Matching, showings, and CMA"),
-      contentTitle: text("内容生产", "Content studio"),
-      contentDescription: text("海报、视频和平台内容", "Flyers, video, and platform-native content"),
-      syncLabel: text("最近同步", "Last sync"),
-      syncUnknown: text("未记录", "Not recorded"),
-    },
-    workspacesTitle: text("今天要推进什么", "What should move today"),
-    workspacesDescription: text(
-      "把首页变成操作入口，而不是功能清单。",
-      "Use the homepage as an operating surface instead of a feature inventory.",
-    ),
-    workspaces: {
-      inventory: {
-        eyebrow: text("库存", "Inventory"),
-        title: text("找房与订阅", "Search and subscribe"),
-        description: text(
-          "先确认库存，再把合适房源持续推给客户。",
-          "Start from inventory, then keep qualified listings flowing to clients.",
-        ),
-        actionLabel: text("进入房源搜索", "Open listings"),
-        modules: [
-          text("房源搜索", "Listings"),
-          text("新房源", "New Listings"),
-          text("房源订阅", "Subscriptions"),
-        ],
-      },
-      reach: {
-        eyebrow: text("触达", "Outreach"),
-        title: text("分享、诱饵与跟进", "Share, magnets, and follow-up"),
-        description: text(
-          "让房源分享和区域诱饵都能直接产出可转发、可留资、可跟进的客户入口。",
-          "Turn both listing shares and area magnets into client-ready entry points that can be forwarded, captured, and followed up.",
-        ),
-        actionLabel: text("打开 Area Magnet", "Open Area Magnet"),
-        modules: [
-          text("Area Magnet", "Area Magnet"),
-          text("Magic Share", "Magic Share"),
-          text("房源订阅", "Subscriptions"),
-        ],
-      },
-      presentation: {
-        eyebrow: text("演示", "Presentation"),
-        title: text("客户演示与成交准备", "Prepare the client presentation"),
-        description: text(
-          "让推荐、带看和 CMA 串成一条成交前链路。",
-          "Turn recommendations, showing routes, and CMA into one pre-close workflow.",
-        ),
-        actionLabel: text("打开 Smart Match", "Open Smart Match"),
-        modules: [
-          text("Smart Match", "Smart Match"),
-          text("带看路线", "Showing Tour"),
-          text("CMA Studio", "CMA Studio"),
-        ],
-      },
-      content: {
-        eyebrow: text("内容", "Content"),
-        title: text("品牌化内容产出", "Produce branded content"),
-        description: text(
-          "同一套房源素材，生成海报、视频和中文平台内容。",
-          "Turn the same listing record into flyers, video, and channel-specific content.",
-        ),
-        actionLabel: text("打开海报工坊", "Open Flyer Studio"),
-        modules: [
-          text("制作海报", "Flyer Studio"),
-          text("制作视频", "Video Studio"),
-          text("小红书笔记", "XHS Notes"),
-        ],
-      },
-    },
-    platformModelTitle: text("一个正常的营销平台应该覆盖什么", "What a normal marketing platform should cover"),
-    platformModelDescription: text(
-      "参考 MoxiWorks 这类平台的产品结构，核心不是堆功能，而是让营销动作形成闭环。",
-      "Using platforms like MoxiWorks as a benchmark, the core job is not feature sprawl; it is closing the loop on agent follow-through.",
-    ),
-    platformModel: [
-      {
-        title: text("房源营销", "Listing marketing"),
-        description: text(
-          "海报、分享页和平台内容都应该从同一套房源数据出发。",
-          "Flyers, share pages, and channel content should all start from the same listing record.",
-        ),
-      },
-      {
-        title: text("客户触达", "Client follow-up"),
-        description: text(
-          "客户收到的不只是链接，而是持续有节奏的订阅和跟进。",
-          "Clients should not just get links. They should get consistent alerts and follow-through.",
-        ),
-      },
-      {
-        title: text("成交准备", "Presentation prep"),
-        description: text(
-          "推荐、带看、CMA 和分享页要能自然接力。",
-          "Recommendations, showings, CMA, and presentation pages should hand off naturally.",
-        ),
-      },
-      {
-        title: text("单一工作台", "One operating surface"),
-        description: text(
-          "首页应该先告诉经纪人下一步该做什么，而不是系统内部怎么组织。",
-          "The homepage should tell agents what to do next, not how the system is internally organized.",
-        ),
-      },
-    ],
-    moduleGroupsTitle: text("当前工作台模块", "Current workspace modules"),
-    moduleGroupsDescription: text(
-      "保留现在真正能打开和使用的模块，把信息架构收成更合理的三组。",
-      "Keep the modules that are actually usable today and group them into a more coherent workspace architecture.",
-    ),
-  },
-  subscriptions: {
-    propertyTypes: [
-      { value: "Residential", label: text("住宅", "Residential") },
-      { value: "Condo", label: text("公寓", "Condo") },
-      { value: "Townhouse", label: text("联排", "Townhouse") },
-      { value: "Multi-Family", label: text("多户", "Multi-Family") },
-      { value: "Land", label: text("土地", "Land") },
-      { value: "Commercial", label: text("商业", "Commercial") },
-    ],
-    channels: [
-      { value: "email", label: text("邮件", "Email") },
-      { value: "sms", label: text("短信", "SMS") },
-      { value: "wechat", label: text("微信", "WeChat") },
-      { value: "in_app", label: text("站内", "In-App") },
-      { value: "web_push", label: text("浏览器推送", "Web Push") },
-    ],
-    frequencies: [
-      { value: "instant", label: text("即时推送", "Instant") },
-      { value: "daily_digest", label: text("每日汇总", "Daily digest") },
-      { value: "weekly_digest", label: text("每周汇总", "Weekly digest") },
-    ],
-    heroBadge: text("自动推送", "Automated Delivery"),
-    heroTitle: text("房源订阅推送", "Listing Subscriptions"),
-    heroDescription: text(
-      "设置搜索条件，新房源上线时自动匹配并推送通知给客户。支持邮件、短信、微信、站内消息等多渠道。",
-      "Save search criteria and automatically notify clients when matching listings go live across email, SMS, WeChat, and in-app channels.",
-    ),
-    editTitle: text("编辑订阅", "Edit subscription"),
-    createTitle: text("创建新订阅", "Create subscription"),
-    formDescription: text(
-      "设置搜索条件与通知方式，系统将自动匹配新上架房源并推送给客户。",
-      "Configure search filters and delivery settings. New matching listings will be pushed automatically.",
-    ),
-    fields: {
-      name: text("订阅名称", "Subscription name"),
-      namePlaceholder: text("例如：张先生的 Irvine 学区房", "Example: Irvine school-zone homes for Mr. Zhang"),
-      cities: text("目标城市", "Target cities"),
-      citiesPlaceholder: text("Irvine, San Jose, Cupertino", "Irvine, San Jose, Cupertino"),
-      citiesHint: text("多个城市用逗号分隔", "Separate multiple cities with commas"),
-      keywords: text("关键词", "Keywords"),
-      keywordsPlaceholder: text("学区房、pool、ocean view", "school district, pool, ocean view"),
-      minPrice: text("最低价格", "Min price"),
-      maxPrice: text("最高价格", "Max price"),
-      minBeds: text("最少卧室", "Min beds"),
-      maxBeds: text("最多卧室", "Max beds"),
-      propertyTypes: text("房源类型", "Property types"),
-      channel: text("推送渠道", "Delivery channel"),
-      frequency: text("推送频率", "Delivery frequency"),
-    },
-    actions: {
-      saveChanges: text("保存修改", "Save changes"),
-      create: text("创建订阅", "Create subscription"),
-      cancel: text("取消", "Cancel"),
-      createNew: text("创建新订阅", "Create subscription"),
-      pause: text("暂停", "Pause"),
-      resume: text("恢复", "Resume"),
-      edit: text("编辑", "Edit"),
-      remove: text("删除", "Delete"),
-      confirmDelete: text("确认删除此订阅？", "Delete this subscription?"),
-    },
-    listTitle: text("我的订阅", "My subscriptions"),
-    listDescription: text("管理你为客户创建的房源订阅推送规则。", "Manage the saved listing alerts you created for clients."),
-    loading: text("正在加载...", "Loading..."),
-    empty: text("暂无订阅，点击上方按钮创建第一个订阅推送", "No subscriptions yet. Create your first alert above."),
-    defaultName: text("订阅", "Subscription"),
-    status: {
-      active: text("活跃", "Active"),
-      paused: text("已暂停", "Paused"),
-      expired: text("已过期", "Expired"),
-    },
-    meta: {
-      unlimited: text("不限", "No limit"),
-      bedroomUnit: text("卧", "beds"),
-      channel: text("渠道", "Channel"),
-      frequency: text("频率", "Frequency"),
-      matches: text("匹配", "Matches"),
-      times: text("次", ""),
-    },
-    toasts: {
-      created: text("订阅已创建", "Subscription created"),
-      createFailed: text("创建失败", "Failed to create subscription"),
-      updated: text("订阅已更新", "Subscription updated"),
-      updateFailed: text("更新失败", "Failed to update subscription"),
-      deleted: text("订阅已删除", "Subscription deleted"),
-      deleteFailed: text("删除失败", "Failed to delete subscription"),
-    },
-  },
-  cmaStudio: {
-    fallbackPrice: text("价格待更新", "Price pending"),
-    unnamedListing: text("未命名房源", "Unnamed listing"),
-    sourceLabels: {
-      vector: text("向量匹配", "Vector match"),
-      sqlFallback: text("SQL 近似匹配", "SQL fallback"),
-    },
-    heroTitle: text("CMA Studio", "CMA Studio"),
-    heroDescription: text(
-      "选择标的房源，一键生成可比房源分析，并直接带入客户分享页（Listing Presentation）。",
-      "Pick a subject property, generate comparable analysis, and push the result directly into a client-facing share page.",
-    ),
-    prefillLabel: text("已从外部入口预填标的 ListingKey：", "Subject ListingKey prefilled from external entry: "),
-    embedding: {
-      pendingSummary: text("套房源尚未生成向量嵌入", "listings still need vector embeddings"),
-      processing: text("正在处理中...", "processing..."),
-      runNow: text("立即触发", "Run now"),
-      running: text("运行中", "Running"),
-      triggerFailed: text("触发失败", "Failed to trigger"),
-    },
-    subjectCard: {
-      title: text("1. 选择标的房源", "1. Select subject property"),
-      description: text("搜索 MLS 房源并作为 CMA 的 subject property。", "Search MLS listings and choose the subject property for this CMA."),
-      searchPlaceholder: text("搜索地址或 Listing ID", "Search address or listing ID"),
-      currentSubject: text("当前标的", "Current subject"),
-      notSelected: text("尚未选择", "Not selected yet"),
-      comparableCount: text("可比房源数量", "Comparable count"),
-      generating: text("生成中", "Generating"),
-      generate: text("生成 CMA", "Generate CMA"),
-      loadingProperties: text("正在读取房源...", "Loading listings..."),
-      noProperties: text("没有找到可用房源", "No listings found"),
-      mlsFallback: text("MLS", "MLS"),
-    },
-    outputCard: {
-      title: text("2. CMA 输出", "2. CMA output"),
-      description: text("显示标的房源与可比样本，支持一键进入分享页。", "Review the subject and comparables, then jump into the share flow in one click."),
-      empty: text("先选择一套标的房源并生成 CMA。", "Select a subject listing and generate a CMA first."),
-      subject: text("标的房源", "Subject property"),
-      comparables: text("可比房源", "Comparables"),
-      unknownStatus: text("未知状态", "Unknown"),
-      score: text("评分", "Score"),
-      propertyFallback: text("房产", "Property"),
-      openShare: text("一键带入分享页", "Open in share studio"),
-      shareTitlePrefix: text("CMA 精选推荐 · ", "CMA highlights · "),
-    },
-    historyCard: {
-      title: text("最近 CMA 历史", "Recent CMA history"),
-      description: text("快速复用最近分析结果，生成客户分享链接。", "Reuse recent CMA results and generate client share links quickly."),
-      loading: text("正在读取历史...", "Loading history..."),
-      empty: text("暂无 CMA 历史记录", "No CMA history yet"),
-      comparableCount: text("套可比", "comparables"),
-      openShare: text("进入分享页", "Open share page"),
-      setSubject: text("设为标的", "Use as subject"),
-      setSubjectSuccess: text("已选择该标的房源，可直接重新生成 CMA", "Subject selected. You can regenerate the CMA now."),
-    },
-    toasts: {
-      generated: text("CMA 已生成", "CMA generated"),
-      generatedDescription: (count: number, sourceLabel: string) =>
-        text(`找到 ${count} 套可比房源（${sourceLabel}）`, `${count} comparable listings found (${sourceLabel})`),
-      failed: text("CMA 生成失败", "Failed to generate CMA"),
-      selectSubject: text("请先选择标的房源", "Select a subject listing first"),
-      noShareListings: text("没有可带入分享页的房源", "No listings available to send into the share page"),
-    },
-  },
-  aiRecommend: {
-    titles: {
-      smartMatch: text("Smart Match", "Smart Match"),
-      smartMatchDescription: text("根据客户需求生成推荐房源与跟进话术。", "Generate listing recommendations and follow-up messaging from client needs."),
-      summaryCopy: text("复制摘要", "Summary Copy"),
-      summaryCopyDescription: text("从 AI 推荐结果里勾选房源并复制摘要话术。", "Select listings from AI recommendations and copy summary messaging."),
-    },
-    section: {
-      clientInfo: text("客户信息", "Client profile"),
-      clientInfoDescription: text("输入客户的基本信息和购房需求", "Enter the client profile and what they are looking for."),
-      clientName: text("客户姓名 *", "Client name *"),
-      clientNamePlaceholder: text("例如：张先生", "Example: Mr. Zhang"),
-      budget: text("预算范围", "Budget"),
-      budgetMinPlaceholder: text("最低", "Min"),
-      budgetMaxPlaceholder: text("最高", "Max"),
-      budgetHint: text("单位：美元，例如 800000", "USD only, for example 800000"),
-      requirements: text("需求描述 *", "Requirements *"),
-      requirementsPlaceholder: text(
-        "请详细描述客户的购房需求，例如：\n- 希望在 Long Island 地区\n- 需要 4 卧室 2 卫生间\n- 有小孩，需要好学区\n- 喜欢安静的社区\n- 希望有大后院",
-        "Describe the client needs in detail, for example:\n- Wants Long Island\n- Needs 4 bedrooms and 2 bathrooms\n- Has children and needs strong schools\n- Prefers a quiet neighborhood\n- Wants a large backyard",
-      ),
-      submit: text("开始智能推荐", "Run Smart Match"),
-      submitting: text("正在分析需求...", "Analyzing client needs..."),
-      resultsJump: text("查看推荐房源", "View recommendations"),
-      emptyTitle: text("输入客户需求开始智能推荐", "Enter client needs to start"),
-      emptyDescription: text("AI 将根据需求匹配最合适的房源", "AI will match the most relevant listings."),
-      resultsTitle: text("推荐房源", "Recommended listings"),
-      selectedCount: text("已选", "Selected"),
-      selectedCountSuffix: text("套", ""),
-      matchScore: text("匹配度", "Match"),
-      viewDetails: text("查看详情", "Open listing"),
-      aiPitch: text("AI 推荐话术", "AI pitch"),
-      copyPitch: text("复制话术", "Copy pitch"),
-      copied: text("已复制", "Copied"),
-      generateCma: text("生成 CMA", "Generate CMA"),
-      openShare: text("进入分享页", "Open share page"),
-      pitchEmpty: text("请选择房源以查看 AI 推荐话术", "Select one or more listings to view the AI pitch."),
-      beds: text("卧", "bd"),
-      baths: text("卫", "ba"),
-      sqft: text("sqft", "sqft"),
-      notAvailable: text("暂无", "N/A"),
-    },
-    summary: {
-      found: (count: number, seconds: string) =>
-        text(`找到 ${count} 套匹配房源 · 耗时 ${seconds}s`, `${count} matched listings found · ${seconds}s`),
-      shareTitle: (name: string) =>
-        text(`${name} 的 AI 精选推荐`, `${name}'s AI picks`),
-    },
-    toasts: {
-      recommendFailed: text("推荐失败", "Recommendation failed"),
-      feedbackSubmitted: text("反馈已提交", "Feedback submitted"),
-      feedbackDescription: text("感谢您的反馈，我们会持续优化推荐算法", "Thanks. We’ll keep improving the recommendation model."),
-      requiredFields: text("请填写必填项", "Required fields missing"),
-      requiredFieldsDescription: text("客户姓名和需求描述为必填项", "Client name and requirement details are required."),
-      copied: text("已复制到剪贴板", "Copied to clipboard"),
-      selectOneListing: text("请先选择至少 1 套房源", "Select at least one listing first"),
-    },
-    feedbackNotes: {
-      approved: text("推荐准确", "Good recommendation"),
-      rejected: text("帮助不大", "Not helpful"),
-    },
-  },
-  agentDirectory: {
-    accessDeniedTitle: text("访问受限", "Access denied"),
-    accessDeniedDescription: text("仅平台 Owner 可访问 Agent Directory", "Only platform owners can access Agent Directory."),
-    loadFailedTitle: text("Agent Directory 加载失败", "Agent Directory failed to load"),
-    loadFailedDescription: text(
-      "这通常是数据库查询过慢或后台统计尚未准备好导致的。你可以先重试，系统也会在后台继续刷新成交统计。",
-      "This usually means the database query is still too slow or the background stats pipeline is not ready yet. Retry once and let the refresh keep running in the background.",
-    ),
-    reload: text("重新加载", "Reload"),
-    title: text("Agent Directory", "Agent Directory"),
-    totalAgents: (count: string) => text(`${count} 位经纪人`, `${count} agents`),
-    loadingTotal: text("加载中...", "Loading..."),
-    syncAgents: text("Sync Agents", "Sync Agents"),
-    syncingAgents: text("同步中...", "Syncing..."),
-    refreshStats: text("刷新成交统计", "Refresh deal stats"),
-    buildStats: text("构建成交统计", "Build deal stats"),
-    exportCsv: text("导出 CSV", "Export CSV"),
-    statsStatusTitle: text("Agent Directory 成交统计状态", "Agent Directory deal-stat status"),
-    statsMessages: {
-      refreshingReady: text("成交统计正在后台刷新，列表先展示上一次计算结果。", "Deal stats are refreshing in the background. The table is still showing the last completed snapshot."),
-      refreshingCold: text("正在首次构建成交统计，成交列暂时可能显示为 0。", "The initial deal-stat build is still running, so deal columns may temporarily show zero."),
-      notReady: text("成交统计尚未建立，系统会在后台自动补算。", "Deal stats are not ready yet. The background worker will backfill them automatically."),
-      stale: text("成交统计已过期，系统正在准备刷新最新结果。", "Deal stats are stale and a refresh is being prepared."),
-    },
-    lastUpdatedPrefix: text("上次完成时间：", "Last completed at: "),
-    noStatsSnapshot: text("还没有可用的成交统计快照", "No completed deal-stat snapshot is available yet"),
-    searchPlaceholder: text("搜索经纪人姓名、邮箱、公司...", "Search agent name, email, or brokerage..."),
-    pageSizeSuffix: text("条/页", "rows/page"),
-    emptySearch: text("没有找到匹配的经纪人", "No matching agents found"),
-    emptySync: text("暂无数据 — 请先运行 MLS 同步", "No data yet. Run MLS sync first."),
-    columns: {
-      agent: text("经纪人", "Agent"),
-      email: text("邮箱", "Email"),
-      phone: text("电话", "Phone"),
-      company: text("公司", "Company"),
-      companyContact: text("公司联系方式", "Office contact"),
-      status: text("状态", "Status"),
-      listingDeals: text("Listing 成交", "Listing deals"),
-      buyingDeals: text("Buying 成交", "Buying deals"),
-      totalDeals: text("总成交", "Total deals"),
-      license: text("License", "License"),
-      mlsId: text("MLS ID", "MLS ID"),
-      preferred: text("Preferred", "Preferred"),
-      mobile: text("Mobile", "Mobile"),
-      direct: text("Direct", "Direct"),
-    },
-    pagination: {
-      summary: (page: number, totalPages: number, total: string) =>
-        text(`第 ${page} / ${totalPages} 页 · 共 ${total} 条`, `Page ${page} / ${totalPages} · ${total} total`),
-    },
-  },
+const workspaceModules = {
+  funnels: ["agentSite", "homeValue", "areaMagnet"],
+  leads: ["leads", "insight", "score"],
+  campaigns: ["magicShare", "postcards", "subscriptions"],
+  dealTools: ["listings", "smartMatch", "cmaStudio"],
+  content: ["flyerStudio", "videoStudio", "xhs"],
 } as const;
+
+const platformModelKeys = [
+  "funnels",
+  "leads",
+  "campaigns",
+  "dealTools",
+  "content",
+] as const;
+
+const propertyTypeMap = [
+  { value: "Residential", key: "residential" },
+  { value: "Condo", key: "condo" },
+  { value: "Townhouse", key: "townhouse" },
+  { value: "Multi-Family", key: "multiFamily" },
+  { value: "Land", key: "land" },
+  { value: "Commercial", key: "commercial" },
+] as const;
+
+const channelMap = [
+  { value: "email", key: "email" },
+  { value: "sms", key: "sms" },
+  { value: "wechat", key: "wechat" },
+  { value: "in_app", key: "inApp" },
+  { value: "web_push", key: "webPush" },
+] as const;
+
+const frequencyMap = [
+  { value: "instant", key: "instant" },
+  { value: "daily_digest", key: "dailyDigest" },
+  { value: "weekly_digest", key: "weeklyDigest" },
+] as const;
+
+export function getDashboardPageCopy(locale: Locale) {
+  const t = createTranslator(locale);
+
+  return {
+    home: {
+      heroBadge: t("dashboardPages.home.heroBadge"),
+      heroTitle: t("dashboardPages.home.heroTitle"),
+      heroDescription: t("dashboardPages.home.heroDescription"),
+      heroFootnote: t("dashboardPages.home.heroFootnote"),
+      actions: {
+        openLeads: t("dashboardPages.home.actions.openLeads"),
+        openFunnels: t("dashboardPages.home.actions.openFunnels"),
+        openCampaigns: t("dashboardPages.home.actions.openCampaigns"),
+      },
+      stats: {
+        inventoryTitle: t("dashboardPages.home.stats.inventoryTitle"),
+        inventoryDescription: t("dashboardPages.home.stats.inventoryDescription"),
+        funnelsTitle: t("dashboardPages.home.stats.funnelsTitle"),
+        funnelsDescription: t("dashboardPages.home.stats.funnelsDescription"),
+        campaignsTitle: t("dashboardPages.home.stats.campaignsTitle"),
+        campaignsDescription: t("dashboardPages.home.stats.campaignsDescription"),
+        dealToolsTitle: t("dashboardPages.home.stats.dealToolsTitle"),
+        dealToolsDescription: t("dashboardPages.home.stats.dealToolsDescription"),
+        contentTitle: t("dashboardPages.home.stats.contentTitle"),
+        contentDescription: t("dashboardPages.home.stats.contentDescription"),
+        syncLabel: t("dashboardPages.home.stats.syncLabel"),
+        syncUnknown: t("dashboardPages.home.stats.syncUnknown"),
+      },
+      workspacesTitle: t("dashboardPages.home.workspacesTitle"),
+      workspacesDescription: t("dashboardPages.home.workspacesDescription"),
+      workspaces: {
+        funnels: {
+          eyebrow: t("dashboardPages.home.workspaces.funnels.eyebrow"),
+          title: t("dashboardPages.home.workspaces.funnels.title"),
+          description: t("dashboardPages.home.workspaces.funnels.description"),
+          actionLabel: t("dashboardPages.home.workspaces.funnels.actionLabel"),
+          modules: workspaceModules.funnels.map((key) =>
+            t(`dashboardPages.home.workspaces.funnels.modules.${key}`),
+          ),
+        },
+        leads: {
+          eyebrow: t("dashboardPages.home.workspaces.leads.eyebrow"),
+          title: t("dashboardPages.home.workspaces.leads.title"),
+          description: t("dashboardPages.home.workspaces.leads.description"),
+          actionLabel: t("dashboardPages.home.workspaces.leads.actionLabel"),
+          modules: workspaceModules.leads.map((key) =>
+            t(`dashboardPages.home.workspaces.leads.modules.${key}`),
+          ),
+        },
+        campaigns: {
+          eyebrow: t("dashboardPages.home.workspaces.campaigns.eyebrow"),
+          title: t("dashboardPages.home.workspaces.campaigns.title"),
+          description: t("dashboardPages.home.workspaces.campaigns.description"),
+          actionLabel: t("dashboardPages.home.workspaces.campaigns.actionLabel"),
+          modules: workspaceModules.campaigns.map((key) =>
+            t(`dashboardPages.home.workspaces.campaigns.modules.${key}`),
+          ),
+        },
+        dealTools: {
+          eyebrow: t("dashboardPages.home.workspaces.dealTools.eyebrow"),
+          title: t("dashboardPages.home.workspaces.dealTools.title"),
+          description: t("dashboardPages.home.workspaces.dealTools.description"),
+          actionLabel: t("dashboardPages.home.workspaces.dealTools.actionLabel"),
+          modules: workspaceModules.dealTools.map((key) =>
+            t(`dashboardPages.home.workspaces.dealTools.modules.${key}`),
+          ),
+        },
+        content: {
+          eyebrow: t("dashboardPages.home.workspaces.content.eyebrow"),
+          title: t("dashboardPages.home.workspaces.content.title"),
+          description: t("dashboardPages.home.workspaces.content.description"),
+          actionLabel: t("dashboardPages.home.workspaces.content.actionLabel"),
+          modules: workspaceModules.content.map((key) =>
+            t(`dashboardPages.home.workspaces.content.modules.${key}`),
+          ),
+        },
+      },
+      platformModelTitle: t("dashboardPages.home.platformModelTitle"),
+      platformModelDescription: t("dashboardPages.home.platformModelDescription"),
+      platformModel: platformModelKeys.map((key) => ({
+        title: t(`dashboardPages.home.platformModel.${key}.title`),
+        description: t(`dashboardPages.home.platformModel.${key}.description`),
+      })),
+      moduleGroupsTitle: t("dashboardPages.home.moduleGroupsTitle"),
+      moduleGroupsDescription: t("dashboardPages.home.moduleGroupsDescription"),
+    },
+    subscriptions: {
+      propertyTypes: propertyTypeMap.map((item) => ({
+        value: item.value,
+        label: t(`dashboardPages.subscriptions.propertyTypes.${item.key}`),
+      })),
+      channels: channelMap.map((item) => ({
+        value: item.value,
+        label: t(`dashboardPages.subscriptions.channels.${item.key}`),
+      })),
+      frequencies: frequencyMap.map((item) => ({
+        value: item.value,
+        label: t(`dashboardPages.subscriptions.frequencies.${item.key}`),
+      })),
+      heroBadge: t("dashboardPages.subscriptions.heroBadge"),
+      heroTitle: t("dashboardPages.subscriptions.heroTitle"),
+      heroDescription: t("dashboardPages.subscriptions.heroDescription"),
+      editTitle: t("dashboardPages.subscriptions.editTitle"),
+      createTitle: t("dashboardPages.subscriptions.createTitle"),
+      formDescription: t("dashboardPages.subscriptions.formDescription"),
+      fields: {
+        name: t("dashboardPages.subscriptions.fields.name"),
+        namePlaceholder: t("dashboardPages.subscriptions.fields.namePlaceholder"),
+        cities: t("dashboardPages.subscriptions.fields.cities"),
+        citiesPlaceholder: t("dashboardPages.subscriptions.fields.citiesPlaceholder"),
+        citiesHint: t("dashboardPages.subscriptions.fields.citiesHint"),
+        keywords: t("dashboardPages.subscriptions.fields.keywords"),
+        keywordsPlaceholder: t("dashboardPages.subscriptions.fields.keywordsPlaceholder"),
+        minPrice: t("dashboardPages.subscriptions.fields.minPrice"),
+        maxPrice: t("dashboardPages.subscriptions.fields.maxPrice"),
+        minBeds: t("dashboardPages.subscriptions.fields.minBeds"),
+        maxBeds: t("dashboardPages.subscriptions.fields.maxBeds"),
+        propertyTypes: t("dashboardPages.subscriptions.fields.propertyTypes"),
+        channel: t("dashboardPages.subscriptions.fields.channel"),
+        frequency: t("dashboardPages.subscriptions.fields.frequency"),
+      },
+      actions: {
+        saveChanges: t("dashboardPages.subscriptions.actions.saveChanges"),
+        create: t("dashboardPages.subscriptions.actions.create"),
+        cancel: t("dashboardPages.subscriptions.actions.cancel"),
+        createNew: t("dashboardPages.subscriptions.actions.createNew"),
+        pause: t("dashboardPages.subscriptions.actions.pause"),
+        resume: t("dashboardPages.subscriptions.actions.resume"),
+        edit: t("dashboardPages.subscriptions.actions.edit"),
+        remove: t("dashboardPages.subscriptions.actions.remove"),
+        confirmDelete: t("dashboardPages.subscriptions.actions.confirmDelete"),
+      },
+      listTitle: t("dashboardPages.subscriptions.listTitle"),
+      listDescription: t("dashboardPages.subscriptions.listDescription"),
+      loading: t("dashboardPages.subscriptions.loading"),
+      empty: t("dashboardPages.subscriptions.empty"),
+      defaultName: t("dashboardPages.subscriptions.defaultName"),
+      status: {
+        active: t("dashboardPages.subscriptions.status.active"),
+        paused: t("dashboardPages.subscriptions.status.paused"),
+        expired: t("dashboardPages.subscriptions.status.expired"),
+      },
+      meta: {
+        unlimited: t("dashboardPages.subscriptions.meta.unlimited"),
+        bedroomUnit: t("dashboardPages.subscriptions.meta.bedroomUnit"),
+        channel: t("dashboardPages.subscriptions.meta.channel"),
+        frequency: t("dashboardPages.subscriptions.meta.frequency"),
+        matches: t("dashboardPages.subscriptions.meta.matches"),
+        times: t("dashboardPages.subscriptions.meta.times"),
+        matchCount: (count: number) =>
+          t("dashboardPages.subscriptions.meta.matchCount", { count }),
+      },
+      toasts: {
+        created: t("dashboardPages.subscriptions.toasts.created"),
+        createFailed: t("dashboardPages.subscriptions.toasts.createFailed"),
+        updated: t("dashboardPages.subscriptions.toasts.updated"),
+        updateFailed: t("dashboardPages.subscriptions.toasts.updateFailed"),
+        deleted: t("dashboardPages.subscriptions.toasts.deleted"),
+        deleteFailed: t("dashboardPages.subscriptions.toasts.deleteFailed"),
+      },
+    },
+    cmaStudio: {
+      fallbackPrice: t("dashboardPages.cmaStudio.fallbackPrice"),
+      unnamedListing: t("dashboardPages.cmaStudio.unnamedListing"),
+      sourceLabels: {
+        vector: t("dashboardPages.cmaStudio.sourceLabels.vector"),
+        sqlFallback: t("dashboardPages.cmaStudio.sourceLabels.sqlFallback"),
+      },
+      heroTitle: t("dashboardPages.cmaStudio.heroTitle"),
+      heroDescription: t("dashboardPages.cmaStudio.heroDescription"),
+      prefillLabel: t("dashboardPages.cmaStudio.prefillLabel"),
+      embedding: {
+        pendingSummary: t("dashboardPages.cmaStudio.embedding.pendingSummary"),
+        processing: t("dashboardPages.cmaStudio.embedding.processing"),
+        runNow: t("dashboardPages.cmaStudio.embedding.runNow"),
+        running: t("dashboardPages.cmaStudio.embedding.running"),
+        triggerFailed: t("dashboardPages.cmaStudio.embedding.triggerFailed"),
+      },
+      subjectCard: {
+        title: t("dashboardPages.cmaStudio.subjectCard.title"),
+        description: t("dashboardPages.cmaStudio.subjectCard.description"),
+        searchPlaceholder: t("dashboardPages.cmaStudio.subjectCard.searchPlaceholder"),
+        currentSubject: t("dashboardPages.cmaStudio.subjectCard.currentSubject"),
+        notSelected: t("dashboardPages.cmaStudio.subjectCard.notSelected"),
+        comparableCount: t("dashboardPages.cmaStudio.subjectCard.comparableCount"),
+        generating: t("dashboardPages.cmaStudio.subjectCard.generating"),
+        generate: t("dashboardPages.cmaStudio.subjectCard.generate"),
+        loadingProperties: t("dashboardPages.cmaStudio.subjectCard.loadingProperties"),
+        noProperties: t("dashboardPages.cmaStudio.subjectCard.noProperties"),
+        mlsFallback: t("dashboardPages.cmaStudio.subjectCard.mlsFallback"),
+      },
+      outputCard: {
+        title: t("dashboardPages.cmaStudio.outputCard.title"),
+        description: t("dashboardPages.cmaStudio.outputCard.description"),
+        empty: t("dashboardPages.cmaStudio.outputCard.empty"),
+        subject: t("dashboardPages.cmaStudio.outputCard.subject"),
+        comparables: t("dashboardPages.cmaStudio.outputCard.comparables"),
+        unknownStatus: t("dashboardPages.cmaStudio.outputCard.unknownStatus"),
+        score: t("dashboardPages.cmaStudio.outputCard.score"),
+        propertyFallback: t("dashboardPages.cmaStudio.outputCard.propertyFallback"),
+        openShare: t("dashboardPages.cmaStudio.outputCard.openShare"),
+        shareTitlePrefix: t("dashboardPages.cmaStudio.outputCard.shareTitlePrefix"),
+      },
+      historyCard: {
+        title: t("dashboardPages.cmaStudio.historyCard.title"),
+        description: t("dashboardPages.cmaStudio.historyCard.description"),
+        loading: t("dashboardPages.cmaStudio.historyCard.loading"),
+        empty: t("dashboardPages.cmaStudio.historyCard.empty"),
+        comparableCount: t("dashboardPages.cmaStudio.historyCard.comparableCount"),
+        openShare: t("dashboardPages.cmaStudio.historyCard.openShare"),
+        setSubject: t("dashboardPages.cmaStudio.historyCard.setSubject"),
+        setSubjectSuccess: t("dashboardPages.cmaStudio.historyCard.setSubjectSuccess"),
+      },
+      toasts: {
+        generated: t("dashboardPages.cmaStudio.toasts.generated"),
+        generatedDescription: (count: number, sourceLabel: string) =>
+          t("dashboardPages.cmaStudio.toasts.generatedDescription", {
+            count,
+            sourceLabel,
+          }),
+        failed: t("dashboardPages.cmaStudio.toasts.failed"),
+        selectSubject: t("dashboardPages.cmaStudio.toasts.selectSubject"),
+        noShareListings: t("dashboardPages.cmaStudio.toasts.noShareListings"),
+      },
+    },
+    aiRecommend: {
+      titles: {
+        smartMatch: t("dashboardPages.aiRecommend.titles.smartMatch"),
+        smartMatchDescription: t(
+          "dashboardPages.aiRecommend.titles.smartMatchDescription",
+        ),
+        summaryCopy: t("dashboardPages.aiRecommend.titles.summaryCopy"),
+        summaryCopyDescription: t(
+          "dashboardPages.aiRecommend.titles.summaryCopyDescription",
+        ),
+      },
+      section: {
+        clientInfo: t("dashboardPages.aiRecommend.section.clientInfo"),
+        clientInfoDescription: t(
+          "dashboardPages.aiRecommend.section.clientInfoDescription",
+        ),
+        clientName: t("dashboardPages.aiRecommend.section.clientName"),
+        clientNamePlaceholder: t(
+          "dashboardPages.aiRecommend.section.clientNamePlaceholder",
+        ),
+        budget: t("dashboardPages.aiRecommend.section.budget"),
+        budgetMinPlaceholder: t(
+          "dashboardPages.aiRecommend.section.budgetMinPlaceholder",
+        ),
+        budgetMaxPlaceholder: t(
+          "dashboardPages.aiRecommend.section.budgetMaxPlaceholder",
+        ),
+        budgetHint: t("dashboardPages.aiRecommend.section.budgetHint"),
+        budgetSummary: ({ min, max }: { min?: string; max?: string }) => {
+          if (min && max) {
+            return t("dashboardPages.aiRecommend.section.budgetSummaryRange", {
+              min,
+              max,
+            });
+          }
+          if (min) {
+            return t("dashboardPages.aiRecommend.section.budgetSummaryMinOnly", {
+              min,
+            });
+          }
+          if (max) {
+            return t("dashboardPages.aiRecommend.section.budgetSummaryMaxOnly", {
+              max,
+            });
+          }
+          return "";
+        },
+        requirements: t("dashboardPages.aiRecommend.section.requirements"),
+        requirementsPlaceholder: t(
+          "dashboardPages.aiRecommend.section.requirementsPlaceholder",
+        ),
+        submit: t("dashboardPages.aiRecommend.section.submit"),
+        submitting: t("dashboardPages.aiRecommend.section.submitting"),
+        resultsJump: t("dashboardPages.aiRecommend.section.resultsJump"),
+        emptyTitle: t("dashboardPages.aiRecommend.section.emptyTitle"),
+        emptyDescription: t("dashboardPages.aiRecommend.section.emptyDescription"),
+        resultsTitle: t("dashboardPages.aiRecommend.section.resultsTitle"),
+        selectedCount: t("dashboardPages.aiRecommend.section.selectedCount"),
+        selectedCountSuffix: t(
+          "dashboardPages.aiRecommend.section.selectedCountSuffix",
+        ),
+        matchScore: t("dashboardPages.aiRecommend.section.matchScore"),
+        viewDetails: t("dashboardPages.aiRecommend.section.viewDetails"),
+        aiPitch: t("dashboardPages.aiRecommend.section.aiPitch"),
+        copyPitch: t("dashboardPages.aiRecommend.section.copyPitch"),
+        copied: t("dashboardPages.aiRecommend.section.copied"),
+        generateCma: t("dashboardPages.aiRecommend.section.generateCma"),
+        openShare: t("dashboardPages.aiRecommend.section.openShare"),
+        pitchEmpty: t("dashboardPages.aiRecommend.section.pitchEmpty"),
+        beds: t("dashboardPages.aiRecommend.section.beds"),
+        baths: t("dashboardPages.aiRecommend.section.baths"),
+        sqft: t("dashboardPages.aiRecommend.section.sqft"),
+        notAvailable: t("dashboardPages.aiRecommend.section.notAvailable"),
+      },
+      summary: {
+        found: (count: number, seconds: string) =>
+          t("dashboardPages.aiRecommend.summary.found", { count, seconds }),
+        shareTitle: (name: string) =>
+          t("dashboardPages.aiRecommend.summary.shareTitle", { name }),
+      },
+      toasts: {
+        recommendFailed: t("dashboardPages.aiRecommend.toasts.recommendFailed"),
+        feedbackSubmitted: t(
+          "dashboardPages.aiRecommend.toasts.feedbackSubmitted",
+        ),
+        feedbackDescription: t(
+          "dashboardPages.aiRecommend.toasts.feedbackDescription",
+        ),
+        requiredFields: t("dashboardPages.aiRecommend.toasts.requiredFields"),
+        requiredFieldsDescription: t(
+          "dashboardPages.aiRecommend.toasts.requiredFieldsDescription",
+        ),
+        copied: t("dashboardPages.aiRecommend.toasts.copied"),
+        selectOneListing: t(
+          "dashboardPages.aiRecommend.toasts.selectOneListing",
+        ),
+      },
+      feedbackNotes: {
+        approved: t("dashboardPages.aiRecommend.feedbackNotes.approved"),
+        rejected: t("dashboardPages.aiRecommend.feedbackNotes.rejected"),
+      },
+    },
+    agentDirectory: {
+      accessDeniedTitle: t("dashboardPages.agentDirectory.accessDeniedTitle"),
+      accessDeniedDescription: t(
+        "dashboardPages.agentDirectory.accessDeniedDescription",
+      ),
+      loadFailedTitle: t("dashboardPages.agentDirectory.loadFailedTitle"),
+      loadFailedDescription: t(
+        "dashboardPages.agentDirectory.loadFailedDescription",
+      ),
+      reload: t("dashboardPages.agentDirectory.reload"),
+      title: t("dashboardPages.agentDirectory.title"),
+      totalAgents: (count: string) =>
+        t("dashboardPages.agentDirectory.totalAgents", { count }),
+      loadingTotal: t("dashboardPages.agentDirectory.loadingTotal"),
+      syncAgents: t("dashboardPages.agentDirectory.syncAgents"),
+      syncingAgents: t("dashboardPages.agentDirectory.syncingAgents"),
+      refreshStats: t("dashboardPages.agentDirectory.refreshStats"),
+      buildStats: t("dashboardPages.agentDirectory.buildStats"),
+      exportCsv: t("dashboardPages.agentDirectory.exportCsv"),
+      statsStatusTitle: t("dashboardPages.agentDirectory.statsStatusTitle"),
+      statsMessages: {
+        refreshingReady: t(
+          "dashboardPages.agentDirectory.statsMessages.refreshingReady",
+        ),
+        refreshingCold: t(
+          "dashboardPages.agentDirectory.statsMessages.refreshingCold",
+        ),
+        notReady: t("dashboardPages.agentDirectory.statsMessages.notReady"),
+        stale: t("dashboardPages.agentDirectory.statsMessages.stale"),
+      },
+      lastUpdatedPrefix: t("dashboardPages.agentDirectory.lastUpdatedPrefix"),
+      noStatsSnapshot: t("dashboardPages.agentDirectory.noStatsSnapshot"),
+      searchPlaceholder: t("dashboardPages.agentDirectory.searchPlaceholder"),
+      pageSizeSuffix: t("dashboardPages.agentDirectory.pageSizeSuffix"),
+      emptySearch: t("dashboardPages.agentDirectory.emptySearch"),
+      emptySync: t("dashboardPages.agentDirectory.emptySync"),
+      columns: {
+        agent: t("dashboardPages.agentDirectory.columns.agent"),
+        email: t("dashboardPages.agentDirectory.columns.email"),
+        phone: t("dashboardPages.agentDirectory.columns.phone"),
+        company: t("dashboardPages.agentDirectory.columns.company"),
+        companyContact: t(
+          "dashboardPages.agentDirectory.columns.companyContact",
+        ),
+        status: t("dashboardPages.agentDirectory.columns.status"),
+        listingDeals: t("dashboardPages.agentDirectory.columns.listingDeals"),
+        buyingDeals: t("dashboardPages.agentDirectory.columns.buyingDeals"),
+        totalDeals: t("dashboardPages.agentDirectory.columns.totalDeals"),
+        license: t("dashboardPages.agentDirectory.columns.license"),
+        mlsId: t("dashboardPages.agentDirectory.columns.mlsId"),
+        preferred: t("dashboardPages.agentDirectory.columns.preferred"),
+        mobile: t("dashboardPages.agentDirectory.columns.mobile"),
+        direct: t("dashboardPages.agentDirectory.columns.direct"),
+      },
+      pagination: {
+        summary: (page: number, totalPages: number, total: string) =>
+          t("dashboardPages.agentDirectory.pagination.summary", {
+            page,
+            totalPages,
+            total,
+          }),
+      },
+    },
+  };
+}
