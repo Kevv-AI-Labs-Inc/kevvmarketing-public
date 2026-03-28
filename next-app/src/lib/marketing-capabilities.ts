@@ -261,28 +261,8 @@ export const marketingCapabilities: MarketingCapability[] = [
     alignment: "gap",
   },
   {
-    id: "agent-community",
-    order: 9,
-    label: { zh: "经纪人目录", en: "Agent Directory" },
-    category: "growth-community",
-    icon: Users,
-    description: {
-      zh: "查看经纪人网络、团队成员和基础资源连接。",
-      en: "Manage the agent directory, team coverage, and brokerage network visibility.",
-    },
-    currentModule: { zh: "Agent Directory", en: "Agent Directory" },
-    compareNote: {
-      zh: "当前更像目录和后台，不是完整协作社区，但作为团队工作台是合理的。",
-      en: "It behaves more like a directory and admin panel than a community, which is appropriate for the current workbench stage.",
-    },
-    route: "/agent-directory",
-    routeLabel: { zh: "打开经纪人目录", en: "Open Agent Directory" },
-    status: "partial",
-    alignment: "adapted",
-  },
-  {
     id: "xhs-notes",
-    order: 10,
+    order: 9,
     label: { zh: "小红书笔记", en: "Xiaohongshu Notes" },
     category: "content-production",
     icon: BookImage,
@@ -485,19 +465,6 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
     ],
   },
 ];
-
-export const ownerDashboardSection: MarketingMenuSection = {
-  id: "team-admin",
-  label: { zh: "团队与管理", en: "Team & Admin" },
-  items: [
-    {
-      id: "agent-directory",
-      icon: Users,
-      label: { zh: "经纪人目录", en: "Agent Directory" },
-      path: "/agent-directory",
-    },
-  ],
-};
 
 export function getLocalizedText(locale: Locale, text: LocalizedText): string {
   return text[locale];

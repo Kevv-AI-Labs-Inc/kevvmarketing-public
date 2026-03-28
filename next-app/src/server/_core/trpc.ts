@@ -6,6 +6,5 @@ export {
   router,
   publicProcedure,
   protectedProcedure,
-  ownerProcedure,
   adminProcedure,
 } from "@/server/trpc";

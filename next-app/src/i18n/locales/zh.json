@@ -837,53 +837,6 @@
         "approved": "推荐准确",
         "rejected": "帮助不大"
       }
-    },
-    "agentDirectory": {
-      "accessDeniedTitle": "访问受限",
-      "accessDeniedDescription": "仅平台 Owner 可访问 Agent Directory",
-      "loadFailedTitle": "经纪人目录加载失败",
-      "loadFailedDescription": "这通常是数据库查询过慢或后台统计尚未准备好导致的。你可以先重试，系统也会在后台继续刷新成交统计。",
-      "reload": "重新加载",
-      "title": "经纪人目录",
-      "totalAgents": "{{count}} 位经纪人",
-      "loadingTotal": "加载中…",
-      "syncAgents": "同步经纪人",
-      "syncingAgents": "同步中…",
-      "refreshStats": "刷新成交统计",
-      "buildStats": "构建成交统计",
-      "exportCsv": "导出 CSV",
-      "statsStatusTitle": "经纪人目录成交统计状态",
-      "statsMessages": {
-        "refreshingReady": "成交统计正在后台刷新，列表先展示上一次计算结果。",
-        "refreshingCold": "正在首次构建成交统计，成交列暂时可能显示为 0。",
-        "notReady": "成交统计尚未建立，系统会在后台自动补算。",
-        "stale": "成交统计已过期，系统正在准备刷新最新结果。"
-      },
-      "lastUpdatedPrefix": "上次完成时间：",
-      "noStatsSnapshot": "还没有可用的成交统计快照",
-      "searchPlaceholder": "搜索经纪人姓名、邮箱、公司…",
-      "pageSizeSuffix": "条/页",
-      "emptySearch": "没有找到匹配的经纪人",
-      "emptySync": "暂无数据，请先运行 MLS 同步",
-      "columns": {
-        "agent": "经纪人",
-        "email": "邮箱",
-        "phone": "电话",
-        "company": "公司",
-        "companyContact": "公司联系方式",
-        "status": "状态",
-        "listingDeals": "Listing 成交",
-        "buyingDeals": "Buying 成交",
-        "totalDeals": "总成交",
-        "license": "执照号",
-        "mlsId": "MLS ID",
-        "preferred": "Preferred",
-        "mobile": "Mobile",
-        "direct": "Direct"
-      },
-      "pagination": {
-        "summary": "第 {{page}} / {{totalPages}} 页 · 共 {{total}} 条"
-      }
     }
   },
   "sharePages": {

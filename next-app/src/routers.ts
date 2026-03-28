@@ -16,7 +16,6 @@ import { cmaRouter } from "./server/cma/cmaRouter";
 import { mlsRouter } from "./server/mls/mlsRouter";
 import { aiRouter } from "./server/ai/aiRouter";
 import { vectorRouter } from "./server/vector/vectorRouter";
-import { agentDirectoryRouter } from "./server/agentDirectory/agentDirectoryRouter";
 import { subscriptionRouter } from "./server/subscriptionRouter";
 import { leadCaptureRouter } from "./server/leadCaptureRouter";
 import { profileRouter } from "./server/profileRouter";
@@ -37,7 +36,6 @@ export const appRouter = router({
   cma: cmaRouter,
   ai: aiRouter,
   vector: vectorRouter,
-  agentDirectory: agentDirectoryRouter,
   subscription: subscriptionRouter,
   leads: leadCaptureRouter,
   profile: profileRouter,
