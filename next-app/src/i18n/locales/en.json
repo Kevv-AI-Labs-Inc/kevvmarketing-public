@@ -85,13 +85,13 @@
   },
   "insight": {
     "title": "AI Insights",
-    "hotLead": "🔥 Hot Lead Alert",
-    "repeatedInterest": "👀 Repeated Interest Detected",
-    "followUpReminder": "⏰ Follow-up Reminder",
-    "buySignal": "🎯 Strong Buy Signal",
-    "priceOpportunity": "💰 Price Drop Opportunity",
-    "preferenceMatch": "🏠 Preference Match",
-    "referralOpportunity": "📤 Referral Opportunity",
+    "hotLead": "Hot Lead Alert",
+    "repeatedInterest": "Repeated Interest Detected",
+    "followUpReminder": "Follow-up Reminder",
+    "buySignal": "Strong Buy Signal",
+    "priceOpportunity": "Price Drop Opportunity",
+    "preferenceMatch": "Preference Match",
+    "referralOpportunity": "Referral Opportunity",
     "markRead": "Mark as read",
     "takeAction": "Take action",
     "unread": "Unread",
@@ -157,8 +157,8 @@
     "houseNumber": "House Number",
     "auspicious": "Favorable",
     "inauspicious": "Unfavorable",
-    "goodForMoving": "✅ Good for Moving",
-    "notGoodForMoving": "❌ Not Ideal for Moving"
+    "goodForMoving": "Favorable for Moving",
+    "notGoodForMoving": "Not Ideal for Moving"
   },
   "wechat": {
     "title": "WeChat Share",

@@ -85,13 +85,13 @@
   },
   "insight": {
     "title": "AI 洞察",
-    "hotLead": "🔥 高互动客户提醒",
-    "repeatedInterest": "👀 客户反复关注同一房源",
-    "followUpReminder": "⏰ 客户跟进提醒",
-    "buySignal": "🎯 强购买信号",
-    "priceOpportunity": "💰 降价机会",
-    "preferenceMatch": "🏠 偏好匹配",
-    "referralOpportunity": "📤 转介机会",
+    "hotLead": "高互动客户提醒",
+    "repeatedInterest": "客户反复关注同一房源",
+    "followUpReminder": "客户跟进提醒",
+    "buySignal": "强购买信号",
+    "priceOpportunity": "降价机会",
+    "preferenceMatch": "偏好匹配",
+    "referralOpportunity": "转介机会",
     "markRead": "标记已读",
     "takeAction": "执行操作",
     "unread": "未读",
@@ -157,8 +157,8 @@
     "houseNumber": "门牌号",
     "auspicious": "宜",
     "inauspicious": "忌",
-    "goodForMoving": "✅ 宜搬家",
-    "notGoodForMoving": "❌ 不宜搬家"
+    "goodForMoving": "[宜] 适合搬家",
+    "notGoodForMoving": "[忌] 不宜搬家"
   },
   "wechat": {
     "title": "微信分享",

@@ -66,8 +66,8 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-amber-50/50 via-background to-background">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
+      <div className="flex items-center justify-center min-h-[100dvh] bg-gradient-to-br from-primary/5 via-background to-background" data-dashboard>
+        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full rounded-2xl border border-border bg-card/90 shadow-glass backdrop-blur-sm">
           <div className="flex flex-col items-center gap-6">
             <div className="flex flex-col items-center gap-2">
               <span className="font-serif text-3xl tracking-tight text-primary">{siteConfig.shortName}</span>
@@ -99,7 +99,7 @@ export default function DashboardLayout({
         } as CSSProperties
       }
     >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} data-dashboard>
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -168,7 +168,7 @@ function DashboardLayoutContent({
 
   return (
     <>
-      <div className="relative" ref={sidebarRef}>
+      <div className="relative" ref={sidebarRef} data-dashboard>
         <Sidebar
           collapsible="icon"
           className="border-r-0"
@@ -217,8 +217,8 @@ function DashboardLayoutContent({
                           isActive={isActive}
                           onClick={() => router.push(item.path)}
                           tooltip={getLocalizedText(locale, item.label)}
-                          className={`h-8 rounded-lg transition-colors text-[13px] ${isActive
-                            ? "bg-sidebar-accent font-medium"
+                          className={`relative h-8 rounded-lg transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] text-[13px] ${isActive
+                            ? "bg-sidebar-accent font-medium before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-[3px] before:rounded-full before:bg-primary"
                             : "hover:bg-sidebar-accent/50 font-normal"
                             }`}
                         >
@@ -301,7 +301,7 @@ function DashboardLayoutContent({
 
       <SidebarInset>
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="flex border-b border-border/60 h-14 items-center justify-between bg-card/80 px-2 backdrop-blur-xl sticky top-0 z-40">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">

@@ -56,7 +56,8 @@ export default async function HomePage() {
   const copy = getLandingPageCopy(locale);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-[100dvh] bg-background text-foreground">
+      {/* ── Header ─────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-card/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-8">
           <div className="flex items-center gap-2">
@@ -74,13 +75,13 @@ export default async function HomePage() {
             <LocaleToggleButton variant="ghost" />
             <Link
               href="/login"
-              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm transition hover:bg-accent"
+              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-accent active:scale-[0.98]"
             >
               {copy.header.signIn}
             </Link>
             <Link
               href="/login"
-              className="hidden rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:brightness-110 sm:inline-flex"
+              className="hidden rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 active:scale-[0.98] sm:inline-flex"
             >
               {copy.header.getStartedShort}
             </Link>
@@ -88,81 +89,97 @@ export default async function HomePage() {
         </div>
       </header>
 
+      {/* ── Hero — Split Screen ────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-[-16rem] h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-amber-200/20 blur-[140px]" />
-          <div className="absolute right-[-8rem] top-[6rem] h-[28rem] w-[28rem] rounded-full bg-orange-200/15 blur-[120px]" />
-          <div className="absolute bottom-0 left-[-6rem] h-[24rem] w-[24rem] rounded-full bg-yellow-100/15 blur-[100px]" />
+          <div className="absolute left-[-8rem] top-[-12rem] h-[40rem] w-[40rem] rounded-full bg-primary/10 blur-[140px]" />
+          <div className="absolute right-[-6rem] top-[8rem] h-[28rem] w-[28rem] rounded-full bg-accent/20 blur-[120px]" />
+          <div className="absolute bottom-0 left-1/3 h-[24rem] w-[24rem] rounded-full bg-secondary/30 blur-[100px]" />
         </div>
 
-        <div className="mx-auto max-w-5xl px-5 pb-16 pt-16 text-center md:px-8 md:pb-20 md:pt-24">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            {copy.hero.badge}
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-16 md:px-8 md:pb-24 md:pt-24 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
+          {/* Left — text block */}
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              {copy.hero.badge}
+            </div>
+
+            <h1 className="mt-8 text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.5rem]">
+              {copy.hero.line1}{" "}
+              <span className="bg-gradient-to-r from-primary via-accent-foreground to-primary bg-clip-text text-transparent">
+                {copy.hero.line2}
+              </span>
+              <br />
+              <span className="text-muted-foreground">{copy.hero.line3}</span>
+            </h1>
+
+            <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">{copy.hero.body}</p>
+
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3 text-base font-semibold text-primary-foreground shadow-md transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 active:scale-[0.98]"
+              >
+                {copy.hero.primaryCta} <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a
+                href={siteConfig.projectUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-7 py-3 text-base font-semibold shadow-sm transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-accent active:scale-[0.98]"
+              >
+                {copy.hero.secondaryCta}
+              </a>
+            </div>
           </div>
 
-          <h1 className="mt-8 text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
-            {copy.hero.line1}{" "}
-            <span className="bg-gradient-to-r from-amber-600 via-orange-500 to-amber-700 bg-clip-text text-transparent">
-              {copy.hero.line2}
-            </span>
-            <br />
-            <span className="text-muted-foreground">{copy.hero.line3}</span>
-          </h1>
-
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">{copy.hero.body}</p>
-
-          <div className="mx-auto mt-10 flex max-w-lg items-center justify-center gap-8 sm:gap-12">
-            {copy.stats.map((stat) => (
-              <div key={stat.label} className="text-center">
+          {/* Right — stats grid */}
+          <div className="grid grid-cols-3 gap-4">
+            {copy.stats.map((stat, i) => (
+              <div
+                key={stat.label}
+                className="animate-stagger rounded-2xl border border-border bg-card p-6 shadow-glass"
+                style={{ "--index": i } as React.CSSProperties}
+              >
                 <div className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">{stat.value}</div>
-                <div className="mt-1 text-xs font-medium text-muted-foreground sm:text-sm">{stat.label}</div>
+                <div className="mt-2 text-xs font-medium leading-snug text-muted-foreground sm:text-sm">{stat.label}</div>
               </div>
             ))}
-          </div>
-
-          <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3 text-base font-semibold text-primary-foreground shadow-md transition hover:brightness-110"
-            >
-              {copy.hero.primaryCta} <ArrowRight className="h-4 w-4" />
-            </Link>
-            <a
-              href={siteConfig.projectUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-7 py-3 text-base font-semibold shadow-sm transition hover:bg-accent"
-            >
-              {copy.hero.secondaryCta}
-            </a>
           </div>
         </div>
       </section>
 
+      {/* ── Pillars — Asymmetric Grid ─────────────────────── */}
       <section className="border-t border-border bg-card py-20 md:py-28">
         <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <div className="text-center">
+          <div className="max-w-xl">
             <p className="text-sm font-semibold uppercase tracking-wider text-primary">{copy.whyKevv.eyebrow}</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{copy.whyKevv.title}</h2>
           </div>
 
-          <div className="mt-16 grid gap-8 lg:grid-cols-3">
-            {copy.pillars.map((pillar) => {
+          <div className="mt-16 grid gap-6 lg:grid-cols-2">
+            {copy.pillars.map((pillar, i) => {
               const Icon = pillarIcons[pillar.id];
+              const isFirst = i === 0;
               return (
                 <div
                   key={pillar.id}
-                  className="group relative rounded-2xl border border-border bg-background p-8 shadow-soft transition hover:shadow-elevated"
+                  className={`animate-stagger group relative rounded-2xl border border-border bg-background p-8 shadow-soft transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:shadow-elevated ${isFirst ? "lg:col-span-2" : ""}`}
+                  style={{ "--index": i } as React.CSSProperties}
                 >
-                  <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${pillar.gradient} text-white shadow-sm`}>
-                    <Icon className="h-5 w-5" />
+                  <div className="flex items-start gap-4">
+                    <div className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${pillar.gradient} text-white shadow-sm`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <span className="inline-block rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                        {pillar.badge}
+                      </span>
+                      <h3 className="mt-3 text-xl font-bold tracking-tight">{pillar.title}</h3>
+                      <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{pillar.body}</p>
+                    </div>
                   </div>
-                  <span className="ml-3 inline-block rounded-full border border-border bg-secondary px-2.5 py-0.5 align-top text-[11px] font-semibold text-muted-foreground">
-                    {pillar.badge}
-                  </span>
-                  <h3 className="mt-5 text-xl font-bold tracking-tight">{pillar.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{pillar.body}</p>
                 </div>
               );
             })}
@@ -170,23 +187,25 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── Toolkit — Bento 3-Col Stagger ─────────────────── */}
       <section className="border-t border-border py-20 md:py-28">
         <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <div className="text-center">
+          <div className="max-w-xl">
             <p className="text-sm font-semibold uppercase tracking-wider text-primary">{copy.toolkit.eyebrow}</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{copy.toolkit.title}</h2>
-            <p className="mx-auto mt-4 max-w-xl text-muted-foreground">{copy.toolkit.body}</p>
+            <p className="mt-4 text-muted-foreground">{copy.toolkit.body}</p>
           </div>
 
-          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {copy.tools.map((tool) => {
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {copy.tools.map((tool, i) => {
               const Icon = toolIcons[tool.id];
               return (
                 <div
                   key={tool.id}
-                  className="group flex items-start gap-4 rounded-xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/30 hover:shadow-soft"
+                  className="animate-stagger group flex items-start gap-4 rounded-xl border border-border bg-card p-5 shadow-sm transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:border-primary/30 hover:shadow-soft"
+                  style={{ "--index": i } as React.CSSProperties}
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/8 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/8 text-primary transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] group-hover:bg-primary group-hover:text-primary-foreground">
                     <Icon className="h-4.5 w-4.5" />
                   </div>
                   <div className="min-w-0">
@@ -200,10 +219,11 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── Cross-Border ──────────────────────────────────── */}
       <section className="border-t border-border bg-card py-20 md:py-28">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 md:px-8 lg:grid-cols-2">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
               <Globe className="h-3.5 w-3.5" />
               {copy.crossBorder.badge}
             </div>
@@ -217,7 +237,7 @@ export default async function HomePage() {
             <ul className="mt-6 space-y-3">
               {copy.crossBorderChecklist.map((item) => (
                 <li key={item} className="flex items-start gap-3 text-sm">
-                  <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                     ✓
                   </span>
                   {item}
@@ -227,10 +247,14 @@ export default async function HomePage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {copy.crossBorderCards.map((card) => {
+            {copy.crossBorderCards.map((card, i) => {
               const Icon = crossBorderIcons[card.id];
               return (
-                <div key={card.id} className={`rounded-2xl border p-6 ${card.color} shadow-sm transition hover:shadow-md`}>
+                <div
+                  key={card.id}
+                  className={`animate-stagger rounded-2xl border p-6 ${card.color} shadow-sm transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:shadow-md`}
+                  style={{ "--index": i } as React.CSSProperties}
+                >
                   <Icon className="h-6 w-6" />
                   <h3 className="mt-3 text-sm font-bold">{card.title}</h3>
                   <p className="mt-1.5 text-xs leading-5 opacity-80">{card.desc}</p>
@@ -241,6 +265,7 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── Closing CTA ───────────────────────────────────── */}
       <section className="border-t border-border py-20 md:py-24">
         <div className="mx-auto max-w-3xl px-5 text-center md:px-8">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{copy.closing.title}</h2>
@@ -248,13 +273,13 @@ export default async function HomePage() {
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground shadow-md transition hover:brightness-110"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground shadow-md transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 active:scale-[0.98]"
             >
               {copy.closing.primaryCta} <ArrowRight className="h-4 w-4" />
             </Link>
             <a
               href={`mailto:${siteConfig.supportEmail}`}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-8 py-3.5 text-base font-semibold shadow-sm transition hover:bg-accent"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-8 py-3.5 text-base font-semibold shadow-sm transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-accent active:scale-[0.98]"
             >
               {copy.closing.secondaryCta}
             </a>
@@ -262,6 +287,7 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── Footer ────────────────────────────────────────── */}
       <footer className="border-t border-border bg-card py-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-6 px-5 md:flex-row md:justify-between md:px-8">
           <div className="flex items-center gap-2">

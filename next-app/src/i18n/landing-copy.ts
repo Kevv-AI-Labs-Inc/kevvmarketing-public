@@ -29,22 +29,22 @@ const crossBorderCardConfig = [
   {
     id: "wechat",
     key: "wechat",
-    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    color: "bg-accent/60 text-accent-foreground border-border",
   },
   {
     id: "cultural",
     key: "cultural",
-    color: "bg-amber-50 text-amber-700 border-amber-200",
+    color: "bg-primary/5 text-primary border-primary/20",
   },
   {
     id: "campaigns",
     key: "campaigns",
-    color: "bg-blue-50 text-blue-700 border-blue-200",
+    color: "bg-secondary text-secondary-foreground border-border",
   },
   {
     id: "bilingual-ai",
     key: "bilingualAi",
-    color: "bg-purple-50 text-purple-700 border-purple-200",
+    color: "bg-muted text-muted-foreground border-border",
   },
 ] as const;
 
