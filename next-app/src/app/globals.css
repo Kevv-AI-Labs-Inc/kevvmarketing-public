@@ -189,10 +189,16 @@
     @apply cursor-pointer;
   }
 
-  /* Serif headings for premium feel */
+  /* Serif headings for premium feel — landing only */
   h1 {
     font-family: var(--font-serif, "DM Serif Display"), serif;
     @apply tracking-tight;
+  }
+
+  /* Dashboard routes: force Sans H1 for tool/SaaS context */
+  [data-dashboard] h1,
+  [data-dashboard] h2 {
+    font-family: var(--font-sans, "Geist Sans"), ui-sans-serif, system-ui, sans-serif;
   }
 
   h2,
@@ -242,6 +248,14 @@
     border: 1px solid var(--glass-border);
   }
 
+  /* Liquid Glass — inner highlight for premium depth */
+  .shadow-glass {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 1px 3px hsl(var(--shadow-color) / 0.06),
+      0 8px 24px hsl(var(--shadow-color) / 0.04);
+  }
+
   /* Colored soft shadows */
   .shadow-soft {
     box-shadow:
@@ -265,6 +279,18 @@
   .animate-in-scale {
     animation: fadeInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
+  /* Stagger entrance — use --index CSS var on each child */
+  .animate-stagger {
+    opacity: 0;
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(var(--index, 0) * 80ms);
+  }
+
+  /* Slide in from right */
+  .animate-slide-in-right {
+    animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
 
 /* ─── Keyframes ──────────────────────────────────────────── */
@@ -287,6 +313,28 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulseDot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
   }
 }
 

@@ -148,11 +148,11 @@ export function LoginAuthHub({
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <div className="relative min-h-[100dvh] overflow-hidden bg-background text-foreground">
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-[-18rem] h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-amber-200/30 blur-[120px]" />
-        <div className="absolute right-[-10rem] top-[16rem] h-[24rem] w-[24rem] rounded-full bg-orange-100/25 blur-[100px]" />
-        <div className="absolute left-[-8rem] top-[26rem] h-[20rem] w-[20rem] rounded-full bg-yellow-100/20 blur-[90px]" />
+        <div className="absolute left-1/2 top-[-18rem] h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]" />
+        <div className="absolute right-[-10rem] top-[16rem] h-[24rem] w-[24rem] rounded-full bg-accent/20 blur-[100px]" />
+        <div className="absolute left-[-8rem] top-[26rem] h-[20rem] w-[20rem] rounded-full bg-secondary/25 blur-[90px]" />
       </div>
 
       <div className="mx-auto grid min-h-[calc(100vh-120px)] w-full max-w-7xl items-center gap-8 px-5 py-8 md:px-8 lg:grid-cols-[1.1fr_0.9fr]">
@@ -196,7 +196,7 @@ export function LoginAuthHub({
           </div>
         </section>
 
-        <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-elevated lg:max-w-xl lg:justify-self-end">
+        <div className="w-full rounded-2xl border border-border bg-card/90 p-8 shadow-glass backdrop-blur-sm lg:max-w-xl lg:justify-self-end">
           <div className="mb-4 flex justify-end lg:hidden">
             <LocaleToggleButton />
           </div>
@@ -236,12 +236,12 @@ export function LoginAuthHub({
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-left">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-4 text-left">
                 <div className="flex items-start gap-3">
-                  <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                  <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                   <div>
-                    <p className="text-sm font-semibold text-emerald-800">{copy.noPasswordsTitle}</p>
-                    <p className="mt-1 text-sm leading-6 text-emerald-700">{copy.noPasswordsBody}</p>
+                    <p className="text-sm font-semibold text-foreground">{copy.noPasswordsTitle}</p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{copy.noPasswordsBody}</p>
                   </div>
                 </div>
               </div>
@@ -259,7 +259,7 @@ export function LoginAuthHub({
                     onClick={() => void handleProviderSignIn(provider.id)}
                     disabled={disabled}
                     className={cn(
-                      "group rounded-xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-primary/40 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-55",
+                      "group rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:border-primary/40 hover:bg-accent active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55",
                       provider.configured &&
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
                     )}
