@@ -34,7 +34,7 @@ export function PublicAgentSitePage({ slug }: { slug: string }) {
 
   if (query.isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-neutral-950 text-white">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-neutral-950 text-white">
         <div className="text-sm uppercase tracking-[0.28em] text-white/50">{t("publicAgentSite.loading")}</div>
       </div>
     );
@@ -42,7 +42,7 @@ export function PublicAgentSitePage({ slug }: { slug: string }) {
 
   if (!query.data) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-neutral-950 px-6 text-center text-white">
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-neutral-950 px-6 text-center text-white">
         <div className="text-xs uppercase tracking-[0.36em] text-white/45">{t("publicAgentSite.eyebrow")}</div>
         <h1 className="text-4xl font-semibold tracking-tight">{t("publicAgentSite.notFoundTitle")}</h1>
         <p className="max-w-xl text-white/65">

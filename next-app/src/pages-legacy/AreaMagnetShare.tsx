@@ -169,7 +169,7 @@ export default function AreaMagnetShare({ token, data, trackEvent }: AreaMagnetS
   };
 
   return (
-    <div className="min-h-screen bg-[#0f1512] text-stone-100">
+    <div className="min-h-[100dvh] bg-[#0f1512] text-stone-100">
       <div
         className="absolute inset-x-0 top-0 h-[460px] opacity-90"
         style={{
