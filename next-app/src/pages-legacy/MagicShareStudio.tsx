@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
+import { useT } from "@/i18n";
+import { formatDateTime } from "@/lib/format";
 import {
   Bath,
   BedDouble,
@@ -48,8 +50,8 @@ type MlsListing = {
   thumbnailUrl?: string | null;
 };
 
-function formatPrice(price: string | null | undefined) {
-  if (!price) return "价格待定";
+function formatPrice(price: string | null | undefined, fallback: string) {
+  if (!price) return fallback;
   const num = Number(price);
   if (!Number.isFinite(num)) return price;
   if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`;
@@ -63,13 +65,13 @@ function displayAddress(item: {
   city?: string | null;
   stateOrProvince?: string | null;
   postalCode?: string | null;
-}) {
+}, fallback: string) {
   const full = item.unparsedAddress?.trim();
   if (full) return full;
-  const fallback = [item.listingId, item.city, item.stateOrProvince, item.postalCode]
+  const fb = [item.listingId, item.city, item.stateOrProvince, item.postalCode]
     .filter(Boolean)
     .join(" · ");
-  return fallback || "地址未知";
+  return fb || fallback;
 }
 
 function parsePrefillFromUrl() {
@@ -94,31 +96,6 @@ function parsePrefillFromUrl() {
   };
 }
 
-function formatActivityTime(value: string | null) {
-  if (!value) return "暂无活动";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(parsed);
-}
-
-function describeFollowUpSignal(signal: string) {
-  switch (signal) {
-    case "hot":
-      return "高意向";
-    case "warm":
-      return "值得跟进";
-    case "new":
-      return "刚创建";
-    default:
-      return "待唤醒";
-  }
-}
-
 function followUpTone(signal: string) {
   switch (signal) {
     case "hot":
@@ -132,23 +109,29 @@ function followUpTone(signal: string) {
   }
 }
 
-function describeSessionStatus(status: string) {
-  switch (status) {
-    case "active":
-      return "可访问";
-    case "revoked":
-      return "已撤销";
-    case "expired":
-      return "已过期";
-    default:
-      return status;
-  }
-}
-
 export default function MagicShareStudio() {
+  const { t, locale } = useT();
   const { user } = useAuth();
   const utils = trpc.useUtils();
   const prefill = useMemo(() => parsePrefillFromUrl(), []);
+
+  const describeFollowUpSignal = useCallback((signal: string) => {
+    switch (signal) {
+      case "hot": return t("magicShare.followUpHot");
+      case "warm": return t("magicShare.followUpWarm");
+      case "new": return t("magicShare.followUpNew");
+      default: return t("magicShare.followUpQuiet");
+    }
+  }, [t]);
+
+  const describeSessionStatus = useCallback((status: string) => {
+    switch (status) {
+      case "active": return t("magicShare.statusActive");
+      case "revoked": return t("magicShare.statusRevoked");
+      case "expired": return t("magicShare.statusExpired");
+      default: return status;
+    }
+  }, [t]);
 
   const [search, setSearch] = useState("");
   const [selectedKeys, setSelectedKeys] = useState<string[]>(prefill.listingKeys);
@@ -156,14 +139,13 @@ export default function MagicShareStudio() {
   const [clientName, setClientName] = useState(prefill.clientName);
   const [clientNeeds, setClientNeeds] = useState("");
   const [headerTitle, setHeaderTitle] = useState(
-    prefill.title || (prefill.clientName ? `${prefill.clientName} 的精选房源` : "精选房源推荐")
+    prefill.title || (prefill.clientName ? t("magicShare.clientTitle", { name: prefill.clientName }) : t("magicShare.defaultTitle"))
   );
   const [headerDescription, setHeaderDescription] = useState("");
   const [strategyPointsText, setStrategyPointsText] = useState("");
 
   const PROFILE_KEY = "bbo_agent_profile";
 
-  // Load saved agent profile from localStorage
   const loadSavedProfile = useCallback(() => {
     try {
       const saved = localStorage.getItem(PROFILE_KEY);
@@ -179,7 +161,6 @@ export default function MagicShareStudio() {
   const [agentAvatarUrl, setAgentAvatarUrl] = useState("");
   const [agentCompany, setAgentCompany] = useState("");
 
-  // Auto-load profile on mount
   useEffect(() => {
     const saved = loadSavedProfile();
     if (saved) {
@@ -190,7 +171,6 @@ export default function MagicShareStudio() {
     }
   }, [loadSavedProfile]);
 
-  // Auto-save profile whenever fields change
   useEffect(() => {
     const profile = { agentTitle, agentPhone, agentWechatId, agentCompany };
     const hasValue = Object.values(profile).some((v) => v.trim().length > 0);
@@ -225,10 +205,10 @@ export default function MagicShareStudio() {
       if (data.headerDescription) setHeaderDescription(data.headerDescription);
       if (data.strategyPoints?.length > 0) setStrategyPointsText(data.strategyPoints.join("\n"));
       if (data.headerTitle) setHeaderTitle(data.headerTitle);
-      toast.success("AI 分析完成", { description: "已自动填充标题、分享说明和策略要点" });
+      toast.success(t("magicShare.aiAnalysisDone"), { description: t("magicShare.aiAnalysisDoneDescription") });
     },
     onError: (error) => {
-      toast.error("AI 分析失败", { description: error.message });
+      toast.error(t("magicShare.aiAnalysisFailed"), { description: error.message });
     },
   });
 
@@ -237,12 +217,12 @@ export default function MagicShareStudio() {
 
   const handleAiAutoFill = () => {
     if (selectedListings.length === 0) {
-      toast.error("请先选择至少 1 套房源");
+      toast.error(t("magicShare.selectAtLeastOne"));
       return;
     }
     analyzeForShareMutation.mutate({
       listings: selectedListings.map((item) => ({
-        address: displayAddress(item),
+        address: displayAddress(item, t("listings.addressUnknown")),
         price: item.listPrice ?? undefined,
         beds: item.bedroomsTotal != null ? String(item.bedroomsTotal) : undefined,
         baths: item.bathroomsTotalInteger != null ? String(item.bathroomsTotalInteger) : undefined,
@@ -265,10 +245,10 @@ export default function MagicShareStudio() {
         // Ignore clipboard permission errors.
       }
       await utils.share.listMine.invalidate();
-      toast.success("分享链接已生成", { description: shareUrl });
+      toast.success(t("magicShare.shareLinkGenerated"), { description: shareUrl });
     },
     onError: (error) => {
-      toast.error("生成分享失败", { description: error.message });
+      toast.error(t("magicShare.shareGenerateFailed"), { description: error.message });
     },
   });
 
@@ -279,10 +259,10 @@ export default function MagicShareStudio() {
   const revokeShareMutation = trpc.share.revokeSession.useMutation({
     onSuccess: async () => {
       await utils.share.listMine.invalidate();
-      toast.success("分享链接已撤销");
+      toast.success(t("magicShare.shareLinkRevoked"));
     },
     onError: (error) => {
-      toast.error("撤销失败", { description: error.message });
+      toast.error(t("magicShare.revokeFailed"), { description: error.message });
     },
   });
 
@@ -294,7 +274,7 @@ export default function MagicShareStudio() {
     setSelectedKeys((prev) => {
       if (prev.includes(listingKey)) return prev;
       if (prev.length >= 15) {
-        toast.error("最多选择 15 套房源");
+        toast.error(t("magicShare.maxListings"));
         return prev;
       }
       return [...prev, listingKey];
@@ -319,11 +299,11 @@ export default function MagicShareStudio() {
 
   const handleCreateShare = () => {
     if (selectedListings.length === 0) {
-      toast.error("请先选择至少 1 套房源");
+      toast.error(t("magicShare.selectAtLeastOne"));
       return;
     }
     if (!headerTitle.trim()) {
-      toast.error("请填写分享标题");
+      toast.error(t("magicShare.fillShareTitle"));
       return;
     }
 
@@ -362,9 +342,9 @@ export default function MagicShareStudio() {
     const shareUrl = window.location.origin + sharePath;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success("分享链接已复制", { description: shareUrl });
+      toast.success(t("magicShare.shareLinkCopied"), { description: shareUrl });
     } catch {
-      toast.error("复制失败，请检查浏览器权限");
+      toast.error(t("magicShare.copyFailed"));
     }
   };
 
@@ -377,51 +357,51 @@ export default function MagicShareStudio() {
       <div className="rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/5 via-primary/2 to-transparent p-6 text-foreground shadow-sm md:p-8">
         <div className="flex items-center gap-2 text-sm text-primary">
           <Share2 className="h-4 w-4" />
-          分享工作流
+          {t("magicShare.eyebrow")}
         </div>
-        <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">Magic Share</h1>
+        <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">{t("magicShare.heroTitle")}</h1>
         <p className="mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">
-          专注房源分享服务：统一创建 share session，生成可追踪、可撤销、可复用的客户分享链接。
+          {t("magicShare.heroDescription")}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>
           <CardHeader>
-            <CardTitle>房源选择</CardTitle>
-            <CardDescription>仅支持 MLS 房源，不再支持粘贴外部链接抓取。</CardDescription>
+            <CardTitle>{t("magicShare.listingSelection")}</CardTitle>
+            <CardDescription>{t("magicShare.listingSelectionDescription")}</CardDescription>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-10"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="搜索地址或 Listing ID"
+                placeholder={t("magicShare.searchPlaceholder")}
               />
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-xl border bg-muted/20 p-3">
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-medium">已选房源</p>
+                <p className="text-sm font-medium">{t("magicShare.selectedListings")}</p>
                 <Badge variant="secondary">{selectedKeys.length} / 15</Badge>
               </div>
               {selectedQuery.isLoading ? (
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  正在加载已选房源...
+                  {t("magicShare.loadingSelected")}
                 </div>
               ) : selectedListings.length === 0 ? (
-                <p className="text-sm text-muted-foreground">还没有选中房源</p>
+                <p className="text-sm text-muted-foreground">{t("magicShare.noSelected")}</p>
               ) : (
                 <div className="space-y-2">
                   {selectedListings.map((item, index) => (
                     <div key={item.listingKey} className="rounded-lg border bg-background p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{displayAddress(item)}</p>
+                          <p className="truncate text-sm font-medium">{displayAddress(item, t("listings.addressUnknown"))}</p>
                           <p className="text-xs text-muted-foreground">
-                            {formatPrice(item.listPrice)} · {item.listingId || item.listingKey}
+                            {formatPrice(item.listPrice, t("listings.pricePending"))} · {item.listingId || item.listingKey}
                           </p>
                         </div>
                         <div className="flex items-center gap-1">
@@ -460,16 +440,16 @@ export default function MagicShareStudio() {
             </div>
 
             <div>
-              <p className="mb-2 text-sm font-medium">搜索结果</p>
+              <p className="mb-2 text-sm font-medium">{t("magicShare.searchResults")}</p>
               <ScrollArea className="h-[420px] pr-3">
                 <div className="space-y-2">
                   {searchQuery.isLoading ? (
                     <div className="flex items-center py-8 text-sm text-muted-foreground">
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      正在读取房源...
+                      {t("magicShare.loadingSearch")}
                     </div>
                   ) : searchResults.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">暂无结果</p>
+                    <p className="text-sm text-muted-foreground">{t("magicShare.noResults")}</p>
                   ) : (
                     searchResults.map((item) => {
                       const isSelected = selectedKeySet.has(item.listingKey);
@@ -479,7 +459,7 @@ export default function MagicShareStudio() {
                             {item.thumbnailUrl ? (
                               <img
                                 src={item.thumbnailUrl}
-                                alt={displayAddress(item)}
+                                alt={displayAddress(item, t("listings.addressUnknown"))}
                                 className="h-20 w-28 rounded-md border object-cover"
                               />
                             ) : (
@@ -487,8 +467,8 @@ export default function MagicShareStudio() {
                             )}
 
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold">{displayAddress(item)}</p>
-                              <p className="mt-0.5 text-xs text-muted-foreground">{formatPrice(item.listPrice)}</p>
+                              <p className="truncate text-sm font-semibold">{displayAddress(item, t("listings.addressUnknown"))}</p>
+                              <p className="mt-0.5 text-xs text-muted-foreground">{formatPrice(item.listPrice, t("listings.pricePending"))}</p>
                               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                 {item.bedroomsTotal != null ? (
                                   <span className="inline-flex items-center gap-1">
@@ -512,7 +492,7 @@ export default function MagicShareStudio() {
                               <div className="mt-2 flex items-center justify-between">
                                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                                   <MapPin className="h-3.5 w-3.5" />
-                                  {item.city || item.stateOrProvince || "位置未知"}
+                                  {item.city || item.stateOrProvince || t("magicShare.locationUnknown")}
                                 </span>
                                 <Button
                                   size="sm"
@@ -520,10 +500,10 @@ export default function MagicShareStudio() {
                                   disabled={isSelected}
                                   onClick={() => addListing(item.listingKey)}
                                 >
-                                  {isSelected ? "已加入" : (
+                                  {isSelected ? t("magicShare.added") : (
                                     <>
                                       <Plus className="mr-1 h-3.5 w-3.5" />
-                                      加入
+                                      {t("magicShare.add")}
                                     </>
                                   )}
                                 </Button>
@@ -542,28 +522,27 @@ export default function MagicShareStudio() {
 
         <Card>
           <CardHeader>
-            <CardTitle>分享配置</CardTitle>
-            <CardDescription>填写必要信息，AI 帮你自动生成文案，然后一键分享。</CardDescription>
+            <CardTitle>{t("magicShare.shareConfig")}</CardTitle>
+            <CardDescription>{t("magicShare.shareConfigDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Essential fields only */}
             <div className="space-y-2">
-              <p className="text-sm font-medium">客户名称</p>
-              <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="客户姓名" />
+              <p className="text-sm font-medium">{t("magicShare.clientName")}</p>
+              <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder={t("magicShare.clientNamePlaceholder")} />
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">客户需求描述</p>
+              <p className="text-sm font-medium">{t("magicShare.clientNeeds")}</p>
               <Textarea
                 rows={3}
                 value={clientNeeds}
                 onChange={(e) => setClientNeeds(e.target.value)}
-                placeholder="例如：预算区间、户型偏好、通勤需求、学区要求..."
+                placeholder={t("magicShare.clientNeedsPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">分享标题 *</p>
+              <p className="text-sm font-medium">{t("magicShare.shareTitle")}</p>
               <Input value={headerTitle} onChange={(e) => setHeaderTitle(e.target.value)} />
             </div>
 
@@ -577,33 +556,33 @@ export default function MagicShareStudio() {
               {analyzeForShareMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  AI 正在分析房源...
+                  {t("magicShare.aiAnalyzing")}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4" />
-                  ✨ AI 一键填充文案
+                  {t("magicShare.aiAutoFill")}
                 </>
               )}
             </Button>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">分享说明</p>
+              <p className="text-sm font-medium">{t("magicShare.shareDescription")}</p>
               <Textarea
                 rows={3}
                 value={headerDescription}
                 onChange={(e) => setHeaderDescription(e.target.value)}
-                placeholder="点击上方 AI 按钮自动生成，或手动编辑..."
+                placeholder={t("magicShare.shareDescriptionPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">策略要点（每行一条）</p>
+              <p className="text-sm font-medium">{t("magicShare.strategyPoints")}</p>
               <Textarea
                 rows={3}
                 value={strategyPointsText}
                 onChange={(e) => setStrategyPointsText(e.target.value)}
-                placeholder="点击上方 AI 按钮自动生成，或手动编辑..."
+                placeholder={t("magicShare.strategyPlaceholder")}
               />
             </div>
 
@@ -614,30 +593,30 @@ export default function MagicShareStudio() {
               onClick={() => setShowAdvanced(!showAdvanced)}
             >
               <Settings className="h-4 w-4" />
-              经纪人信息 & 高级设置
+              {t("magicShare.advancedSettings")}
               <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
             </button>
 
             {showAdvanced && (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 rounded-lg border p-3 bg-muted/10">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">经纪人头衔</p>
+                  <p className="text-sm font-medium">{t("magicShare.agentTitle")}</p>
                   <Input value={agentTitle} onChange={(e) => setAgentTitle(e.target.value)} placeholder="Your Local Listing Strategist" />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">联系电话</p>
+                  <p className="text-sm font-medium">{t("magicShare.agentPhone")}</p>
                   <Input value={agentPhone} onChange={(e) => setAgentPhone(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">联系邮箱</p>
+                  <p className="text-sm font-medium">{t("magicShare.agentEmail")}</p>
                   <Input value={agentEmail} onChange={(e) => setAgentEmail(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">微信号</p>
+                  <p className="text-sm font-medium">{t("magicShare.wechatId")}</p>
                   <Input value={agentWechatId} onChange={(e) => setAgentWechatId(e.target.value)} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <p className="text-sm font-medium">头像 URL</p>
+                  <p className="text-sm font-medium">{t("magicShare.avatarUrl")}</p>
                   <Input value={agentAvatarUrl} onChange={(e) => setAgentAvatarUrl(e.target.value)} />
                 </div>
               </div>
@@ -652,19 +631,19 @@ export default function MagicShareStudio() {
               {createShareMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  正在生成分享链接...
+                  {t("magicShare.generating")}
                 </>
               ) : (
                 <>
                   <Share2 className="h-4 w-4" />
-                  生成 Magic Share
+                  {t("magicShare.generate")}
                 </>
               )}
             </Button>
 
             {generatedShareUrl ? (
               <div className="rounded-xl border bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">分享链接</p>
+                <p className="text-xs text-muted-foreground">{t("magicShare.shareLink")}</p>
                 <p className="break-all text-sm font-medium">{generatedShareUrl}</p>
                 <div className="mt-3 flex gap-2">
                   <Button
@@ -673,7 +652,7 @@ export default function MagicShareStudio() {
                     onClick={() => navigator.clipboard.writeText(generatedShareUrl)}
                   >
                     <Copy className="mr-2 h-4 w-4" />
-                    复制
+                    {t("magicShare.copy")}
                   </Button>
                   <Button
                     variant="outline"
@@ -681,7 +660,7 @@ export default function MagicShareStudio() {
                     onClick={() => window.open(generatedShareUrl, "_blank", "noopener,noreferrer")}
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    打开
+                    {t("magicShare.open")}
                   </Button>
                 </div>
               </div>
@@ -693,11 +672,11 @@ export default function MagicShareStudio() {
       <Card>
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle>My Shares</CardTitle>
-            <CardDescription>查看最近生成的分享链接、互动热度和撤销状态，优先跟进高意向客户。</CardDescription>
+            <CardTitle>{t("magicShare.myShares")}</CardTitle>
+            <CardDescription>{t("magicShare.mySharesDescription")}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{mySharesQuery.data?.length ?? 0} 条</Badge>
+            <Badge variant="secondary">{t("magicShare.count", { count: String(mySharesQuery.data?.length ?? 0) })}</Badge>
             <Button
               variant="outline"
               size="sm"
@@ -707,9 +686,9 @@ export default function MagicShareStudio() {
               {mySharesQuery.isFetching ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  刷新中
+                  {t("magicShare.refreshing")}
                 </>
-              ) : "刷新"}
+              ) : t("magicShare.refresh")}
             </Button>
           </div>
         </CardHeader>
@@ -717,11 +696,11 @@ export default function MagicShareStudio() {
           {mySharesQuery.isLoading ? (
             <div className="flex items-center py-8 text-sm text-muted-foreground">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              正在读取历史分享...
+              {t("magicShare.loadingShares")}
             </div>
           ) : (mySharesQuery.data?.length ?? 0) === 0 ? (
             <div className="rounded-2xl border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
-              还没有历史分享。先生成第一条 Magic Share，再回来查看互动表现。
+              {t("magicShare.emptyShares")}
             </div>
           ) : (
             <div className="grid gap-4 xl:grid-cols-2">
@@ -736,9 +715,9 @@ export default function MagicShareStudio() {
                   <div key={share.token} className="rounded-2xl border bg-muted/10 p-4 shadow-sm">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">{share.title || "未命名分享"}</p>
+                        <p className="truncate text-sm font-semibold">{share.title || t("magicShare.untitledShare")}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {(share.clientName || "未指定客户") + " · " + share.sharePath}
+                          {(share.clientName || t("magicShare.noClient")) + " · " + share.sharePath}
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -753,22 +732,22 @@ export default function MagicShareStudio() {
 
                     <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                       <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">浏览</p>
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("magicShare.views")}</p>
                         <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
                           <Eye className="h-4 w-4 text-muted-foreground" />
                           {share.viewCount}
                         </div>
                       </div>
                       <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">房源</p>
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("magicShare.listingsLabel")}</p>
                         <p className="mt-2 text-lg font-semibold">{share.listingCount}</p>
                       </div>
                       <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">详情打开</p>
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("magicShare.detailOpens")}</p>
                         <p className="mt-2 text-lg font-semibold">{share.eventCounts.listingOpen}</p>
                       </div>
                       <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">有效互动</p>
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("magicShare.engagements")}</p>
                         <p className="mt-2 text-lg font-semibold">{engagementCount}</p>
                       </div>
                     </div>
@@ -776,18 +755,18 @@ export default function MagicShareStudio() {
                     <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock3 className="h-3.5 w-3.5" />
                       {share.lastActivityAt
-                        ? "最近活动 " + formatActivityTime(share.lastActivityAt)
-                        : "创建于 " + formatActivityTime(share.createdAt)}
+                        ? t("magicShare.lastActivity") + " " + formatDateTime(share.lastActivityAt, locale)
+                        : t("magicShare.createdAt") + " " + formatDateTime(share.createdAt, locale)}
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" onClick={() => handleCopyShareLink(share.sharePath)}>
                         <Copy className="mr-2 h-4 w-4" />
-                        复制链接
+                        {t("magicShare.copyLink")}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => handleOpenShare(share.sharePath)}>
                         <ExternalLink className="mr-2 h-4 w-4" />
-                        打开分享页
+                        {t("magicShare.openSharePage")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -797,7 +776,7 @@ export default function MagicShareStudio() {
                         onClick={() => revokeShareMutation.mutate({ token: share.token })}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        撤销
+                        {t("magicShare.revoke")}
                       </Button>
                     </div>
                   </div>

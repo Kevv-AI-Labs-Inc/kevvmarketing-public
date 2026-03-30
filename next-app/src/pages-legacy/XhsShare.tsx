@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { useT } from "@/i18n";
 import {
   BookImage,
   Check,
@@ -62,9 +63,9 @@ interface XhsResult {
 
 export default function XhsSharePage() {
   const { user } = useAuth();
+  const { t } = useT();
   const [copied, setCopied] = useState(false);
 
-  // Form
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [price, setPrice] = useState("");
@@ -75,15 +76,14 @@ export default function XhsSharePage() {
   const [highlights, setHighlights] = useState("");
   const [customPrompt, setCustomPrompt] = useState("");
 
-  // Result
   const [result, setResult] = useState<XhsResult | null>(null);
 
   const generateMutation = trpc.content.xhsGenerate.useMutation({
     onSuccess: (data) => {
       setResult(data);
-      toast.success("小红书笔记已生成");
+      toast.success(t("xhsShare.success"));
     },
-    onError: (err) => toast.error("生成失败", { description: err.message }),
+    onError: (err) => toast.error(t("xhsShare.failed"), { description: err.message }),
   });
 
   const handleGenerate = () => {
@@ -114,29 +114,25 @@ export default function XhsSharePage() {
     try {
       await navigator.clipboard.writeText(fullText);
       setCopied(true);
-      toast.success("已复制到剪贴板", {
-        description: "打开小红书后粘贴即可",
+      toast.success(t("xhsShare.clipboardSuccess"), {
+        description: t("xhsShare.clipboardDescription"),
       });
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      toast.error("复制失败，请手动复制");
+      toast.error(t("xhsShare.clipboardFailed"));
     }
-  }, [result]);
+  }, [result, t]);
 
   const openXhs = useCallback(() => {
-    // Try deep link first (mobile), fallback to web
     const deepLink = "xhsdiscover://";
     const webUrl = "https://www.xiaohongshu.com/explore";
 
-    // On mobile, try deep link
     if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
       window.location.href = deepLink;
-      // Fallback after delay
       setTimeout(() => {
         window.open(webUrl, "_blank");
       }, 1500);
     } else {
-      // Desktop: open creator platform
       window.open("https://creator.xiaohongshu.com/publish/publish", "_blank");
     }
   }, []);
@@ -147,14 +143,13 @@ export default function XhsSharePage() {
       <div className="rounded-3xl border border-red-500/10 bg-gradient-to-br from-red-500/5 via-red-500/2 to-transparent p-6 text-foreground shadow-sm md:p-8">
         <div className="flex items-center gap-2 text-sm text-red-500">
           <BookImage className="h-4 w-4" />
-          小红书内容工厂
+          {t("xhsShare.eyebrow")}
         </div>
         <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">
-          一键生成小红书笔记
+          {t("xhsShare.heroTitle")}
         </h1>
         <p className="mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">
-          输入房源信息，AI
-          自动生成符合小红书格式的图文笔记。一键复制文案、下载配图，直接发布到小红书。
+          {t("xhsShare.heroDescription")}
         </p>
       </div>
 
@@ -165,16 +160,16 @@ export default function XhsSharePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Sparkles className="h-4 w-4 text-primary" />
-              房源信息
+              {t("xhsShare.propertyInfo")}
             </CardTitle>
             <CardDescription>
-              填入房源数据，AI 将生成小红书风格的营销笔记
+              {t("xhsShare.propertyInfoDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>地址</Label>
+                <Label>{t("xhsShare.address")}</Label>
                 <Input
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
@@ -182,7 +177,7 @@ export default function XhsSharePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>城市</Label>
+                <Label>{t("xhsShare.city")}</Label>
                 <Input
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
@@ -193,7 +188,7 @@ export default function XhsSharePage() {
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="space-y-1.5">
-                <Label>价格</Label>
+                <Label>{t("xhsShare.price")}</Label>
                 <Input
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
@@ -201,7 +196,7 @@ export default function XhsSharePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>类型</Label>
+                <Label>{t("xhsShare.type")}</Label>
                 <Input
                   value={propertyType}
                   onChange={(e) => setPropertyType(e.target.value)}
@@ -209,7 +204,7 @@ export default function XhsSharePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>卧室</Label>
+                <Label>{t("xhsShare.bedrooms")}</Label>
                 <Input
                   type="number"
                   value={beds}
@@ -218,7 +213,7 @@ export default function XhsSharePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>浴室</Label>
+                <Label>{t("xhsShare.bathrooms")}</Label>
                 <Input
                   type="number"
                   value={baths}
@@ -230,7 +225,7 @@ export default function XhsSharePage() {
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>面积 (sqft)</Label>
+                <Label>{t("xhsShare.area")}</Label>
                 <Input
                   type="number"
                   value={sqft}
@@ -239,22 +234,22 @@ export default function XhsSharePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>房屋亮点</Label>
+                <Label>{t("xhsShare.highlights")}</Label>
                 <Input
                   value={highlights}
                   onChange={(e) => setHighlights(e.target.value)}
-                  placeholder="近好学区、泳池、全新装修"
+                  placeholder={t("xhsShare.highlightsPlaceholder")}
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label>补充要求（可选）</Label>
+              <Label>{t("xhsShare.customPrompt")}</Label>
               <Textarea
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 rows={2}
-                placeholder="例如：强调投资回报率、适合首次购房"
+                placeholder={t("xhsShare.customPromptPlaceholder")}
               />
             </div>
 
@@ -269,7 +264,7 @@ export default function XhsSharePage() {
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              {generateMutation.isPending ? "AI 生成中..." : "生成小红书笔记"}
+              {generateMutation.isPending ? t("xhsShare.generating") : t("xhsShare.generate")}
             </Button>
           </CardContent>
         </Card>
@@ -281,31 +276,27 @@ export default function XhsSharePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <XhsIcon className="h-5 w-5 text-red-500" />
-              笔记预览
+              {t("xhsShare.preview")}
             </CardTitle>
             <CardDescription>
               {result
-                ? "预览生成的小红书笔记内容"
-                : "输入房源信息后点击生成"}
+                ? t("xhsShare.previewReady")
+                : t("xhsShare.previewEmpty")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {result ? (
               <div className="space-y-4">
-                {/* Preview area */}
                 <ScrollArea className="max-h-[400px]">
                   <div className="rounded-xl border bg-white dark:bg-zinc-950 p-5 space-y-3">
-                    {/* Title */}
                     <h2 className="text-lg font-bold leading-snug">
                       {result.title}
                     </h2>
 
-                    {/* Body */}
                     <div className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/80">
                       {result.body}
                     </div>
 
-                    {/* Hashtags */}
                     {result.hashtags.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-2 border-t">
                         {result.hashtags.map((tag) => (
@@ -320,12 +311,11 @@ export default function XhsSharePage() {
                       </div>
                     )}
 
-                    {/* Photo tips */}
                     {result.photoTips.length > 0 && (
                       <div className="border-t pt-3">
                         <p className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
                           <ImageIcon className="h-3 w-3" />
-                          推荐配图
+                          {t("xhsShare.recommendedPhotos")}
                         </p>
                         <div className="flex flex-wrap gap-1.5">
                           {result.photoTips.map((tip) => (
@@ -343,7 +333,6 @@ export default function XhsSharePage() {
                   </div>
                 </ScrollArea>
 
-                {/* Action buttons */}
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <Button
                     onClick={copyAll}
@@ -356,7 +345,7 @@ export default function XhsSharePage() {
                     ) : (
                       <ClipboardCopy className="h-4 w-4" />
                     )}
-                    {copied ? "已复制 ✓" : "一键复制全文"}
+                    {copied ? t("xhsShare.copied") : t("xhsShare.copyAll")}
                   </Button>
                   <Button
                     onClick={openXhs}
@@ -365,20 +354,20 @@ export default function XhsSharePage() {
                     size="lg"
                   >
                     <ExternalLink className="h-4 w-4" />
-                    打开小红书发布
+                    {t("xhsShare.openXhs")}
                   </Button>
                 </div>
 
                 <p className="text-[11px] text-center text-muted-foreground">
-                  复制文案 → 打开小红书 → 从相册选图 → 粘贴文案 → 发布
+                  {t("xhsShare.workflow")}
                 </p>
               </div>
             ) : (
               <div className="text-center py-16 text-muted-foreground">
                 <BookImage className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                <p className="text-sm">填入房源信息后点击生成</p>
+                <p className="text-sm">{t("xhsShare.emptyPrompt")}</p>
                 <p className="text-xs mt-1 opacity-60">
-                  AI 将自动生成标题、正文、话题标签和选图建议
+                  {t("xhsShare.emptyDescription")}
                 </p>
               </div>
             )}

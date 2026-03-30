@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useT } from "@/i18n";
 import {
   agentSiteTemplateOptions,
   buildAgentSlug,
@@ -131,6 +132,7 @@ function createEmptyFormState(): FormState {
 }
 
 export function AgentSiteDashboard() {
+  const { t } = useT();
   const query = trpc.profile.getMine.useQuery();
   const saveMutation = trpc.profile.upsertMine.useMutation();
   const utils = trpc.useUtils();
@@ -192,9 +194,9 @@ export function AgentSiteDashboard() {
       });
 
       await utils.profile.getMine.invalidate();
-      toast.success("Agent site updated.");
+      toast.success(t("agentSiteDashboard.updated"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save profile.");
+      toast.error(error instanceof Error ? error.message : t("agentSiteDashboard.saveFailed"));
     }
   };
 
@@ -241,30 +243,38 @@ export function AgentSiteDashboard() {
         }
       : null;
 
+  const visibilityFields: Array<[string, string]> = [
+    ["showPhone", t("agentSiteDashboard.showPhone")],
+    ["showEmail", t("agentSiteDashboard.showEmail")],
+    ["showTransactions", t("agentSiteDashboard.showTransactions")],
+    ["showAwards", t("agentSiteDashboard.showAwards")],
+    ["showTestimonials", t("agentSiteDashboard.showTestimonials")],
+    ["showAddress", t("agentSiteDashboard.showAddress")],
+  ];
+
   return (
     <div className="space-y-8 px-6 py-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="text-xs uppercase tracking-[0.32em] text-muted-foreground">
-            Agent Site
+            {t("agentSiteDashboard.eyebrow")}
           </div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Public profile + AI chat</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">{t("agentSiteDashboard.heroTitle")}</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            This module owns the public agent page, contact form, page analytics, and chat-driven
-            lead capture.
+            {t("agentSiteDashboard.heroDescription")}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
           {query.data?.publicUrl ? (
             <Button asChild variant="outline">
               <Link href={query.data.publicUrl} target="_blank">
-                Open public page
+                {t("agentSiteDashboard.openPublicPage")}
                 <ExternalLink className="h-4 w-4" />
               </Link>
             </Button>
           ) : null}
           <Button disabled={saveMutation.isPending || query.isLoading} onClick={() => void handleSave()}>
-            {saveMutation.isPending ? "Saving..." : "Save & publish"}
+            {saveMutation.isPending ? t("agentSiteDashboard.saving") : t("agentSiteDashboard.savePublish")}
           </Button>
         </div>
       </div>
@@ -276,7 +286,7 @@ export function AgentSiteDashboard() {
               <Globe className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Profile views (30d)</div>
+              <div className="text-sm text-muted-foreground">{t("agentSiteDashboard.profileViews30d")}</div>
               <div className="text-2xl font-semibold">{query.data?.analytics.profileViews ?? 0}</div>
             </div>
           </CardContent>
@@ -287,7 +297,7 @@ export function AgentSiteDashboard() {
               <MessagesSquare className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Chat messages (30d)</div>
+              <div className="text-sm text-muted-foreground">{t("agentSiteDashboard.chatMessages30d")}</div>
               <div className="text-2xl font-semibold">{query.data?.analytics.chatMessages ?? 0}</div>
             </div>
           </CardContent>
@@ -298,7 +308,7 @@ export function AgentSiteDashboard() {
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Inquiries (30d)</div>
+              <div className="text-sm text-muted-foreground">{t("agentSiteDashboard.inquiries30d")}</div>
               <div className="text-2xl font-semibold">{query.data?.analytics.inquiries ?? 0}</div>
             </div>
           </CardContent>
@@ -309,258 +319,81 @@ export function AgentSiteDashboard() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Core identity</CardTitle>
+              <CardTitle>{t("agentSiteDashboard.coreIdentity")}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <Input
-                placeholder="Public slug"
-                value={form.slug}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, slug: buildAgentSlug(event.target.value) }))
-                }
-              />
+              <Input placeholder={t("agentSiteDashboard.publicSlug")} value={form.slug} onChange={(event) => setForm((current) => ({ ...current, slug: buildAgentSlug(event.target.value) }))} />
               <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  placeholder="Name"
-                  value={form.name}
-                  onChange={(event) =>
-                    setForm((current) => {
-                      const name = event.target.value;
-                      return {
-                        ...current,
-                        name,
-                        slug:
-                          current.slug === "agent-profile" || current.slug.length === 0
-                            ? buildAgentSlug(name)
-                            : current.slug,
-                      };
-                    })
-                  }
-                />
-                <Input
-                  placeholder="Email"
-                  type="email"
-                  value={form.email}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, email: event.target.value }))
-                  }
-                />
+                <Input placeholder={t("agentSiteDashboard.name")} value={form.name} onChange={(event) => setForm((current) => { const name = event.target.value; return { ...current, name, slug: current.slug === "agent-profile" || current.slug.length === 0 ? buildAgentSlug(name) : current.slug }; })} />
+                <Input placeholder={t("agentSiteDashboard.email")} type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  placeholder="Phone"
-                  value={form.phone}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, phone: event.target.value }))
-                  }
-                />
-                <Input
-                  placeholder="Title"
-                  value={form.title}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, title: event.target.value }))
-                  }
-                />
+                <Input placeholder={t("agentSiteDashboard.phone")} value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
+                <Input placeholder={t("agentSiteDashboard.title")} value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  placeholder="Brokerage"
-                  value={form.brokerage}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, brokerage: event.target.value }))
-                  }
-                />
-                <Input
-                  placeholder="License state"
-                  value={form.licenseState}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, licenseState: event.target.value }))
-                  }
-                />
+                <Input placeholder={t("agentSiteDashboard.brokerage")} value={form.brokerage} onChange={(event) => setForm((current) => ({ ...current, brokerage: event.target.value }))} />
+                <Input placeholder={t("agentSiteDashboard.licenseState")} value={form.licenseState} onChange={(event) => setForm((current) => ({ ...current, licenseState: event.target.value }))} />
               </div>
-              <Input
-                placeholder="Office address"
-                value={form.officeAddress}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, officeAddress: event.target.value }))
-                }
-              />
-              <Textarea
-                placeholder="Brand story / market positioning"
-                rows={5}
-                value={form.bio}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, bio: event.target.value }))
-                }
-              />
+              <Input placeholder={t("agentSiteDashboard.officeAddress")} value={form.officeAddress} onChange={(event) => setForm((current) => ({ ...current, officeAddress: event.target.value }))} />
+              <Textarea placeholder={t("agentSiteDashboard.bio")} rows={5} value={form.bio} onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Funnel links and visual setup</CardTitle>
+              <CardTitle>{t("agentSiteDashboard.funnelLinks")}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  placeholder="Booking URL"
-                  value={form.bookingUrl}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, bookingUrl: event.target.value }))
-                  }
-                />
-                <Input
-                  placeholder="Photo URL"
-                  value={form.photoUrl}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, photoUrl: event.target.value }))
-                  }
-                />
+                <Input placeholder={t("agentSiteDashboard.bookingUrl")} value={form.bookingUrl} onChange={(event) => setForm((current) => ({ ...current, bookingUrl: event.target.value }))} />
+                <Input placeholder={t("agentSiteDashboard.photoUrl")} value={form.photoUrl} onChange={(event) => setForm((current) => ({ ...current, photoUrl: event.target.value }))} />
               </div>
-              <Input
-                placeholder="Hero image URL"
-                value={form.heroImageUrl}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, heroImageUrl: event.target.value }))
-                }
-              />
+              <Input placeholder={t("agentSiteDashboard.heroImageUrl")} value={form.heroImageUrl} onChange={(event) => setForm((current) => ({ ...current, heroImageUrl: event.target.value }))} />
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2 text-sm">
-                  <span className="text-muted-foreground">Template</span>
-                  <select
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
-                    value={form.templateId}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, templateId: event.target.value }))
-                    }
-                  >
+                  <span className="text-muted-foreground">{t("agentSiteDashboard.template")}</span>
+                  <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs" value={form.templateId} onChange={(event) => setForm((current) => ({ ...current, templateId: event.target.value }))}>
                     {agentSiteTemplateOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label}
-                      </option>
+                      <option key={option.id} value={option.id}>{option.label}</option>
                     ))}
                   </select>
                 </label>
-                <Input
-                  placeholder="Color scheme label"
-                  value={form.colorScheme}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, colorScheme: event.target.value }))
-                  }
-                />
+                <Input placeholder={t("agentSiteDashboard.colorScheme")} value={form.colorScheme} onChange={(event) => setForm((current) => ({ ...current, colorScheme: event.target.value }))} />
               </div>
-              <Input
-                placeholder="Years of experience"
-                value={form.yearsExperience}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, yearsExperience: event.target.value }))
-                }
-              />
+              <Input placeholder={t("agentSiteDashboard.yearsExperience")} value={form.yearsExperience} onChange={(event) => setForm((current) => ({ ...current, yearsExperience: event.target.value }))} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Structured sections</CardTitle>
+              <CardTitle>{t("agentSiteDashboard.structuredSections")}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <Textarea
-                placeholder="Service areas, comma separated"
-                rows={3}
-                value={form.serviceAreasText}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, serviceAreasText: event.target.value }))
-                }
-              />
-              <Textarea
-                placeholder="Specialties, comma separated"
-                rows={3}
-                value={form.specialtiesText}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, specialtiesText: event.target.value }))
-                }
-              />
-              <Textarea
-                placeholder="Languages, comma separated"
-                rows={2}
-                value={form.languagesText}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, languagesText: event.target.value }))
-                }
-              />
-              <Textarea
-                placeholder="Awards, comma separated"
-                rows={2}
-                value={form.awardsText}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, awardsText: event.target.value }))
-                }
-              />
-              <Textarea
-                placeholder="Testimonials. One per line: Name | Quote | Rating"
-                rows={4}
-                value={form.testimonialsText}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, testimonialsText: event.target.value }))
-                }
-              />
-              <Textarea
-                placeholder="Transactions. One per line: Address | City | Price | Type"
-                rows={4}
-                value={form.transactionsText}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, transactionsText: event.target.value }))
-                }
-              />
+              <Textarea placeholder={t("agentSiteDashboard.serviceAreas")} rows={3} value={form.serviceAreasText} onChange={(event) => setForm((current) => ({ ...current, serviceAreasText: event.target.value }))} />
+              <Textarea placeholder={t("agentSiteDashboard.specialties")} rows={3} value={form.specialtiesText} onChange={(event) => setForm((current) => ({ ...current, specialtiesText: event.target.value }))} />
+              <Textarea placeholder={t("agentSiteDashboard.languages")} rows={2} value={form.languagesText} onChange={(event) => setForm((current) => ({ ...current, languagesText: event.target.value }))} />
+              <Textarea placeholder={t("agentSiteDashboard.awards")} rows={2} value={form.awardsText} onChange={(event) => setForm((current) => ({ ...current, awardsText: event.target.value }))} />
+              <Textarea placeholder={t("agentSiteDashboard.testimonials")} rows={4} value={form.testimonialsText} onChange={(event) => setForm((current) => ({ ...current, testimonialsText: event.target.value }))} />
+              <Textarea placeholder={t("agentSiteDashboard.transactions")} rows={4} value={form.transactionsText} onChange={(event) => setForm((current) => ({ ...current, transactionsText: event.target.value }))} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Socials and visibility</CardTitle>
+              <CardTitle>{t("agentSiteDashboard.socialsVisibility")}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  placeholder="Instagram URL"
-                  value={form.instagramUrl}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, instagramUrl: event.target.value }))
-                  }
-                />
-                <Input
-                  placeholder="LinkedIn URL"
-                  value={form.linkedinUrl}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, linkedinUrl: event.target.value }))
-                  }
-                />
+                <Input placeholder={t("agentSiteDashboard.instagramUrl")} value={form.instagramUrl} onChange={(event) => setForm((current) => ({ ...current, instagramUrl: event.target.value }))} />
+                <Input placeholder={t("agentSiteDashboard.linkedinUrl")} value={form.linkedinUrl} onChange={(event) => setForm((current) => ({ ...current, linkedinUrl: event.target.value }))} />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  placeholder="Website URL"
-                  value={form.websiteUrl}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, websiteUrl: event.target.value }))
-                  }
-                />
-                <Input
-                  placeholder="WeChat"
-                  value={form.wechatUrl}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, wechatUrl: event.target.value }))
-                  }
-                />
+                <Input placeholder={t("agentSiteDashboard.websiteUrl")} value={form.websiteUrl} onChange={(event) => setForm((current) => ({ ...current, websiteUrl: event.target.value }))} />
+                <Input placeholder={t("agentSiteDashboard.wechat")} value={form.wechatUrl} onChange={(event) => setForm((current) => ({ ...current, wechatUrl: event.target.value }))} />
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                {[
-                  ["showPhone", "Show phone"],
-                  ["showEmail", "Show email"],
-                  ["showTransactions", "Show transactions"],
-                  ["showAwards", "Show awards"],
-                  ["showTestimonials", "Show testimonials"],
-                  ["showAddress", "Show address"],
-                ].map(([field, label]) => (
+                {visibilityFields.map(([field, label]) => (
                   <label className="flex items-center gap-3 rounded-xl border p-3" key={field}>
                     <input
                       checked={form[field as keyof FormState] as boolean}
@@ -584,22 +417,22 @@ export function AgentSiteDashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Publish targets</span>
+                <span>{t("agentSiteDashboard.publishTargets")}</span>
                 <Badge variant="secondary">
-                  {query.data?.isPersisted ? "Live profile" : "Draft profile"}
+                  {query.data?.isPersisted ? t("agentSiteDashboard.liveProfile") : t("agentSiteDashboard.draftProfile")}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="rounded-xl border bg-muted/30 p-4">
                 <div className="text-xs uppercase tracking-[0.28em] text-muted-foreground">
-                  Public route
+                  {t("agentSiteDashboard.publicRoute")}
                 </div>
                 <div className="mt-2 font-medium">{query.data?.publicUrl ?? `/agents/${form.slug}`}</div>
               </div>
               <div className="rounded-xl border bg-muted/30 p-4">
                 <div className="text-xs uppercase tracking-[0.28em] text-muted-foreground">
-                  Home Value route
+                  {t("agentSiteDashboard.homeValueRoute")}
                 </div>
                 <div className="mt-2 font-medium">
                   {query.data?.homeValueUrl ?? `/agents/${form.slug}/home-value`}
@@ -610,7 +443,7 @@ export function AgentSiteDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent captured leads</CardTitle>
+              <CardTitle>{t("agentSiteDashboard.recentCapturedLeads")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {query.data?.recentLeads.length ? (
@@ -618,24 +451,23 @@ export function AgentSiteDashboard() {
                   <div className="rounded-xl border p-4" key={lead.id}>
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="font-medium">{lead.name || "Anonymous lead"}</div>
+                        <div className="font-medium">{lead.name || t("agentSiteDashboard.anonymousLead")}</div>
                         <div className="text-sm text-muted-foreground">
-                          {lead.email || lead.phone || "No direct contact stored"}
+                          {lead.email || lead.phone || t("agentSiteDashboard.noDirectContact")}
                         </div>
                       </div>
                       <Badge variant="secondary">{lead.source}</Badge>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span>score: {lead.score}</span>
-                      <span>intent: {lead.intent || "n/a"}</span>
-                      <span>area: {lead.area || "n/a"}</span>
+                      <span>{t("agentSiteDashboard.score")}: {lead.score}</span>
+                      <span>{t("agentSiteDashboard.intent")}: {lead.intent || t("agentSiteDashboard.na")}</span>
+                      <span>{t("agentSiteDashboard.area")}: {lead.area || t("agentSiteDashboard.na")}</span>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-                  No agent-site leads yet. Once the public page is live, chat and form leads will
-                  appear here.
+                  {t("agentSiteDashboard.noLeadsYet")}
                 </div>
               )}
             </CardContent>
