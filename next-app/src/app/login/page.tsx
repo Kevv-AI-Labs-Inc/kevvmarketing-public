@@ -14,7 +14,7 @@ export default function LoginPage() {
   const microsoftConfigured = isMicrosoftAuthConfigured();
 
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+    <Suspense fallback={<div className="min-h-[100dvh] bg-background" />}>
       <LoginPageClient
         googleConfigured={googleConfigured}
         microsoftConfigured={microsoftConfigured}

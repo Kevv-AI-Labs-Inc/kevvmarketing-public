@@ -23,7 +23,7 @@ export function LegalDocumentPage({
   loginLabel,
 }: LegalDocumentPageProps) {
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-[100dvh] bg-background text-foreground">
       <div className="mx-auto flex max-w-4xl flex-col gap-10 px-5 py-12 md:px-8 md:py-16">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
