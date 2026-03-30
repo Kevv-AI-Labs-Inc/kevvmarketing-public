@@ -31,7 +31,7 @@ function MagicLinkHandler() {
 
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background text-foreground">
         <div className="text-center">
           <p className="text-lg font-medium text-destructive">
             {t("magicLogin.invalidLink")}
@@ -45,7 +45,7 @@ function MagicLinkHandler() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-background text-foreground">
       <div className="flex items-center gap-3">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
         <p className="text-lg">{t("magicLogin.verifying")}</p>
@@ -58,7 +58,7 @@ export default function MagicLinkPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex min-h-[100dvh] items-center justify-center bg-background">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       }

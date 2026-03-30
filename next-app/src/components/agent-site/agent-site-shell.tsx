@@ -95,7 +95,7 @@ export function AgentSiteShell({
   };
 
   return (
-    <div className={cn("min-h-screen overflow-x-hidden", theme.page)}>
+    <div className={cn("min-h-[100dvh] overflow-x-hidden", theme.page)}>
       <div className={cn("relative isolate overflow-hidden bg-gradient-to-br", theme.hero)}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_24%)]" />
         <div className="relative mx-auto max-w-7xl px-6 py-8 lg:px-10">

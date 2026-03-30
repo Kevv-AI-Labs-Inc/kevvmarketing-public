@@ -256,7 +256,7 @@ export default function ListingShare({ token }: ListingShareProps) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#101412] px-6 text-stone-100">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#101412] px-6 text-stone-100">
         <div className="flex flex-col items-center gap-4 text-center">
           <Loader2 className="h-10 w-10 animate-spin text-emerald-300" />
           <p className="text-sm text-stone-300">{pick(copy.loading)}</p>
@@ -267,7 +267,7 @@ export default function ListingShare({ token }: ListingShareProps) {
 
   if (error || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#101412] px-6 text-stone-100">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#101412] px-6 text-stone-100">
         <div className="max-w-md rounded-[28px] border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-black/30">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/10">
             <Route className="h-7 w-7 text-emerald-300" />
@@ -284,7 +284,7 @@ export default function ListingShare({ token }: ListingShareProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1412] text-stone-100">
+    <div className="min-h-[100dvh] bg-[#0f1412] text-stone-100">
       <div
         className="absolute inset-x-0 top-0 h-[420px] opacity-80"
         style={{

@@ -110,3 +110,4 @@ temp/
 .agent/
 .agents/
 skills-lock.json
+.gstack/

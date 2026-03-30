@@ -196,7 +196,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
 
   if (contextQuery.isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#08131d] text-white">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#08131d] text-white">
         <div className="text-xs uppercase tracking-[0.36em] text-white/55">{c.loading}</div>
       </div>
     );
@@ -204,7 +204,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
 
   if (!contextQuery.data) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#08131d] px-6 text-center text-white">
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-[#08131d] px-6 text-center text-white">
         <h1 className="text-4xl font-semibold tracking-tight">{c.notFoundTitle}</h1>
         <p className="max-w-xl text-white/65">
           {c.notFoundDescription}
@@ -216,7 +216,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
   const profile = contextQuery.data;
 
   return (
-    <div className="min-h-screen bg-[#f3f6f8] text-slate-900">
+    <div className="min-h-[100dvh] bg-[#f3f6f8] text-slate-900">
       <div className="relative overflow-hidden bg-[#08131d] text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(44,205,197,0.24),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent_22%)]" />
         <div className="relative mx-auto max-w-6xl px-6 py-8 lg:px-10">
