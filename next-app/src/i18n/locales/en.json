@@ -150,15 +150,69 @@
   },
   "cultural": {
     "title": "Feng Shui / Calendar",
+    "subtitle": "Property feng shui analysis and Chinese almanac to find auspicious dates for your clients.",
     "lunarCalendar": "Lunar Calendar",
+    "calendarDescription": "View auspicious and inauspicious days for moving, signing, and open houses.",
     "movingDates": "Auspicious Moving Dates",
     "propertyNotes": "Property Cultural Notes",
     "direction": "Direction",
     "houseNumber": "House Number",
     "auspicious": "Favorable",
     "inauspicious": "Unfavorable",
+    "neutral": "Neutral",
     "goodForMoving": "Favorable for Moving",
-    "notGoodForMoving": "Not Ideal for Moving"
+    "notGoodForMoving": "Not Ideal for Moving",
+    "fengShuiTitle": "Feng Shui Analysis",
+    "fengShuiDescription": "Enter a property address and facing direction for feng shui guidance.",
+    "addressLabel": "Property Address",
+    "addressPlaceholder": "e.g. 123 Main St, Flushing, NY",
+    "directionLabel": "Facing Direction",
+    "analyze": "Analyze Feng Shui",
+    "analysisResult": "Analysis Result",
+    "elementTitle": "Wu Xing Element"
+  },
+  "wechatShare": {
+    "title": "WeChat Share",
+    "subtitle": "Create share links optimized for WeChat and track who opens them.",
+    "cardSettingsTitle": "Share Card Settings",
+    "cardSettingsDescription": "Configure the title, description, and thumbnail for your WeChat share card.",
+    "shareTitle": "Share Title",
+    "shareTitlePlaceholder": "e.g. Flushing 2BR Luxury Condo",
+    "shareDesc": "Description",
+    "shareDescPlaceholder": "e.g. Move-in ready, near subway, school district",
+    "shareUrl": "Target URL",
+    "thumbnail": "Thumbnail Image",
+    "uploadThumbnail": "Click to upload",
+    "generateLink": "Generate Share Link",
+    "jssdkTitle": "WeChat JSSDK Status",
+    "configured": "Connected",
+    "configuredDesc": "Your WeChat Official Account is linked. Share cards will display with custom title, description, and thumbnail.",
+    "notConfigured": "Not Configured",
+    "notConfiguredDesc": "WeChat Official Account is not linked. Share links will still work, but won't display a custom card preview.",
+    "previewTitle": "WeChat Card Preview",
+    "previewDescription": "This is how your share card will appear inside a WeChat conversation.",
+    "previewNote": "Actual appearance may vary depending on WeChat version and device.",
+    "trackingTitle": "Share Link Tracking",
+    "trackingDescription": "See who viewed your shared links, including visitor count and profiles.",
+    "views": "views",
+    "uniqueVisitors": "unique visitors",
+    "recentVisitors": "Recent visitor profiles",
+    "linkCopied": "Link copied to clipboard",
+    "howItWorksTitle": "How it works",
+    "howItWorks": {
+      "step1": {
+        "title": "Create a share link",
+        "desc": "Enter the listing details and generate a tracking-enabled link."
+      },
+      "step2": {
+        "title": "Share via WeChat",
+        "desc": "Send the link in WeChat chats or Moments. The card preview shows your custom title and thumbnail."
+      },
+      "step3": {
+        "title": "Track visitors",
+        "desc": "See viewer counts, unique visitors, and WeChat profile data of people who opened the link."
+      }
+    }
   },
   "wechat": {
     "title": "WeChat Share",
@@ -169,12 +223,66 @@
   },
   "crossBorder": {
     "title": "Cross-Border Buyer",
+    "subtitle": "Tools for serving international buyers: currency conversion, RMB listings, and compliance guides.",
     "templates": "Pre-built Templates",
     "itin": "ITIN / Tax ID",
     "wireTransfer": "Wire Transfer Compliance",
     "firpta": "FIRPTA Tax",
     "mortgage": "Mortgage Options",
-    "dripStatus": "Auto Follow-up Status"
+    "dripStatus": "Auto Follow-up Status",
+    "converterTitle": "Currency Converter",
+    "converterDescription": "Convert between USD and CNY for quick listing price references.",
+    "rateLabel": "Exchange rate",
+    "rateNote": "Reference only",
+    "processTitle": "Purchase Process for Foreign Buyers",
+    "processDescription": "Step-by-step guide for international buyers purchasing US property.",
+    "process": {
+      "step1": {
+        "title": "ITIN Application",
+        "desc": "Apply for an Individual Taxpayer Identification Number if no SSN is available."
+      },
+      "step2": {
+        "title": "Pre-Approval",
+        "desc": "Get pre-approved with a lender that supports foreign national mortgages."
+      },
+      "step3": {
+        "title": "Wire Transfer",
+        "desc": "Transfer funds via compliant international wire. Follow FinCEN and AML requirements."
+      },
+      "step4": {
+        "title": "Contract & Closing",
+        "desc": "Sign the purchase agreement. Attorney review may be required in some states."
+      },
+      "step5": {
+        "title": "FIRPTA Withholding",
+        "desc": "Seller pays 15% FIRPTA withholding if not a US tax resident. Reclaim via tax filing."
+      }
+    },
+    "rmbListingsTitle": "Properties in RMB",
+    "rmbListingsDescription": "Sample listings with estimated RMB pricing for international buyer reference.",
+    "beds": "beds",
+    "baths": "baths",
+    "viewDetail": "View details",
+    "complianceTitle": "Compliance Reference",
+    "complianceDescription": "Key regulatory and tax information for cross-border real estate transactions.",
+    "compliance": {
+      "itin": {
+        "title": "ITIN / Tax ID",
+        "desc": "Foreign buyers without SSN need an ITIN to file US taxes and complete property purchases."
+      },
+      "wireTransfer": {
+        "title": "Wire Transfer Compliance",
+        "desc": "International wires must comply with FinCEN reporting. Amounts over $10,000 trigger CTR filings."
+      },
+      "firpta": {
+        "title": "FIRPTA Tax Withholding",
+        "desc": "Foreign sellers face 15% withholding on gross sale price. Can be reduced to 10% if under $1M and buyer will reside."
+      },
+      "mortgage": {
+        "title": "Foreign National Mortgage",
+        "desc": "Several US lenders offer mortgages to foreign nationals. Typically requires 30-40% down payment and US bank account."
+      }
+    }
   },
   "common": {
     "save": "Save",
