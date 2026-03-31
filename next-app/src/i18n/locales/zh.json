@@ -150,15 +150,69 @@
   },
   "cultural": {
     "title": "风水 / 黄历",
+    "subtitle": "为客户提供房产风水分析和黄历吉日查询。",
     "lunarCalendar": "农历日历",
+    "calendarDescription": "查看搬家、签约、看房的宜忌日期。",
     "movingDates": "搬家吉日",
     "propertyNotes": "房产文化注释",
     "direction": "朝向",
     "houseNumber": "门牌号",
     "auspicious": "宜",
     "inauspicious": "忌",
-    "goodForMoving": "[宜] 适合搬家",
-    "notGoodForMoving": "[忌] 不宜搬家"
+    "neutral": "中性",
+    "goodForMoving": "宜搬家",
+    "notGoodForMoving": "忌搬家",
+    "fengShuiTitle": "风水分析",
+    "fengShuiDescription": "输入房产地址和朝向，获取风水指南。",
+    "addressLabel": "房产地址",
+    "addressPlaceholder": "例：123 Main St, Flushing, NY",
+    "directionLabel": "房屋朝向",
+    "analyze": "分析风水",
+    "analysisResult": "分析结果",
+    "elementTitle": "五行属性"
+  },
+  "wechatShare": {
+    "title": "微信分享",
+    "subtitle": "创建微信优化分享链接，追踪谁打开了你的分享。",
+    "cardSettingsTitle": "分享卡片设置",
+    "cardSettingsDescription": "配置微信分享卡片的标题、描述和缩略图。",
+    "shareTitle": "分享标题",
+    "shareTitlePlaceholder": "例：法拉盛 2BR 精装公寓",
+    "shareDesc": "描述",
+    "shareDescPlaceholder": "例：拎包入住、近地铁、学区房",
+    "shareUrl": "目标链接",
+    "thumbnail": "缩略图",
+    "uploadThumbnail": "点击上传",
+    "generateLink": "生成分享链接",
+    "jssdkTitle": "微信 JSSDK 状态",
+    "configured": "已连接",
+    "configuredDesc": "微信公众号已接入。分享卡片可展示自定义标题、描述和缩略图。",
+    "notConfigured": "未配置",
+    "notConfiguredDesc": "微信公众号未接入。分享链接仍可使用，但无法展示自定义卡片预览。",
+    "previewTitle": "微信卡片预览",
+    "previewDescription": "你的分享卡片在微信聊天中的实际效果预览。",
+    "previewNote": "实际显示效果可能因微信版本和设备而异。",
+    "trackingTitle": "分享链接追踪",
+    "trackingDescription": "查看谁查看了你的分享链接，包括访客数量和资料。",
+    "views": "次查看",
+    "uniqueVisitors": "独立访客",
+    "recentVisitors": "最近访客头像",
+    "linkCopied": "链接已复制",
+    "howItWorksTitle": "使用流程",
+    "howItWorks": {
+      "step1": {
+        "title": "创建分享链接",
+        "desc": "填写房源信息，生成带追踪功能的链接。"
+      },
+      "step2": {
+        "title": "转发到微信",
+        "desc": "在微信聊天或朋友圈中分享链接，卡片会展示自定义标题和缩略图。"
+      },
+      "step3": {
+        "title": "追踪访客",
+        "desc": "查看查看次数、独立访客数量和打开链接的微信用户资料。"
+      }
+    }
   },
   "wechat": {
     "title": "微信分享",
@@ -169,12 +223,66 @@
   },
   "crossBorder": {
     "title": "跨境买家",
+    "subtitle": "服务海外买家的工具：汇率换算、人民币标价房源和合规指南。",
     "templates": "预置模板",
     "itin": "ITIN/税号",
     "wireTransfer": "汇款合规",
     "firpta": "FIRPTA 税务",
     "mortgage": "贷款方案",
-    "dripStatus": "自动跟进状态"
+    "dripStatus": "自动跟进状态",
+    "converterTitle": "汇率换算",
+    "converterDescription": "美元与人民币换算，快速了解房价参考。",
+    "rateLabel": "汇率",
+    "rateNote": "仅供参考",
+    "processTitle": "海外买家购房流程",
+    "processDescription": "海外买家在美国购房的分步指南。",
+    "process": {
+      "step1": {
+        "title": "申请 ITIN",
+        "desc": "如果没有 SSN，需申请个人纳税识别号（ITIN）。"
+      },
+      "step2": {
+        "title": "贷款预批",
+        "desc": "找到支持海外买家贷款的银行，获取预批函。"
+      },
+      "step3": {
+        "title": "国际汇款",
+        "desc": "通过合规渠道国际汇款。需遵守 FinCEN 和反洗钱规定。"
+      },
+      "step4": {
+        "title": "签约过户",
+        "desc": "签署购房合同。部分州要求律师审核。"
+      },
+      "step5": {
+        "title": "FIRPTA 预扣税",
+        "desc": "非美国税务居民卖房需缴纳 15% FIRPTA 预扣税，可通过报税申请退回。"
+      }
+    },
+    "rmbListingsTitle": "人民币标价房源",
+    "rmbListingsDescription": "示例房源提供人民币估价，方便海外买家参考。",
+    "beds": "房",
+    "baths": "卫",
+    "viewDetail": "查看详情",
+    "complianceTitle": "合规参考",
+    "complianceDescription": "跨境房产交易的关键法规和税务信息。",
+    "compliance": {
+      "itin": {
+        "title": "ITIN / 纳税识别号",
+        "desc": "没有 SSN 的海外买家需要 ITIN 来报税和完成购房。"
+      },
+      "wireTransfer": {
+        "title": "汇款合规",
+        "desc": "国际汇款须遵守 FinCEN 报告要求。超过 $10,000 的交易会触发 CTR 申报。"
+      },
+      "firpta": {
+        "title": "FIRPTA 预扣税",
+        "desc": "外国卖家需缴纳售价 15% 的预扣税。若低于 $100 万且买家将自住，可降至 10%。"
+      },
+      "mortgage": {
+        "title": "海外买家贷款",
+        "desc": "多家美国银行提供外国人贷款。通常需要 30-40% 首付和美国银行账户。"
+      }
+    }
   },
   "common": {
     "save": "保存",
