@@ -11,6 +11,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import { useT } from "@/i18n";
 import {
     Bath,
     BedDouble,
@@ -42,8 +43,8 @@ type MlsListing = {
     thumbnailUrl?: string | null;
 };
 
-function formatPrice(price: string | null | undefined) {
-    if (!price) return "价格待定";
+function formatPrice(price: string | null | undefined, fallback: string) {
+    if (!price) return fallback;
     const num = Number(price);
     if (!Number.isFinite(num)) return price;
     if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`;
@@ -56,23 +57,24 @@ function displayAddress(item: {
     listingId?: string | null;
     city?: string | null;
     stateOrProvince?: string | null;
-}) {
+}, fallback: string) {
     const full = item.unparsedAddress?.trim();
     if (full) return full;
-    return [item.city, item.stateOrProvince].filter(Boolean).join(", ") || item.listingId || "地址未知";
+    return [item.city, item.stateOrProvince].filter(Boolean).join(", ") || item.listingId || fallback;
 }
 
-function timeAgo(dateStr: string | null | undefined) {
+function timeAgo(dateStr: string | null | undefined, justNowLabel: string) {
     if (!dateStr) return "";
     const diff = Date.now() - new Date(dateStr).getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
-    if (hours < 1) return "刚刚";
+    if (hours < 1) return justNowLabel;
     if (hours < 24) return `${hours}h ago`;
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
 }
 
 export default function NewListings() {
+    const { t } = useT();
     const [hours, setHours] = useState("24");
     const [selectedListing, setSelectedListing] = useState<MlsListing | null>(null);
 
@@ -87,7 +89,6 @@ export default function NewListings() {
         { refetchInterval: 5 * 60 * 1000 }
     );
 
-    // Fetch media for the selected listing
     const detailQuery = trpc.mls.getPropertyById.useQuery(
         { listingKey: selectedListing?.listingKey ?? "" },
         { enabled: !!selectedListing }
@@ -110,38 +111,36 @@ export default function NewListings() {
 
     return (
         <div className="space-y-6 pb-8">
-            {/* Hero header */}
             <div className="rounded-3xl border border-orange-400/20 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent p-6 text-foreground shadow-sm md:p-8">
                 <div className="flex items-center gap-2 text-sm text-orange-500">
                     <Flame className="h-4 w-4" />
-                    最新上市
+                    {t("newListings.eyebrow")}
                 </div>
                 <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">
-                    New Listings
+                    {t("newListings.heroTitle")}
                 </h1>
                 <p className="mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">
-                    过去 {recentHours} 小时内刚 Active 的房源。实时关注最新机会。
+                    {t("newListings.heroDescription", { hours: String(recentHours) })}
                 </p>
             </div>
 
-            {/* Filters + stats */}
             <div className="flex flex-wrap items-center gap-3">
                 <Select value={hours} onValueChange={setHours}>
                     <SelectTrigger className="w-40">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="6">最近 6 小时</SelectItem>
-                        <SelectItem value="12">最近 12 小时</SelectItem>
-                        <SelectItem value="24">最近 24 小时</SelectItem>
-                        <SelectItem value="48">最近 48 小时</SelectItem>
-                        <SelectItem value="72">最近 3 天</SelectItem>
+                        <SelectItem value="6">{t("newListings.last6h")}</SelectItem>
+                        <SelectItem value="12">{t("newListings.last12h")}</SelectItem>
+                        <SelectItem value="24">{t("newListings.last24h")}</SelectItem>
+                        <SelectItem value="48">{t("newListings.last48h")}</SelectItem>
+                        <SelectItem value="72">{t("newListings.last3d")}</SelectItem>
                     </SelectContent>
                 </Select>
 
                 <Badge variant="secondary" className="gap-1">
                     <Flame className="h-3 w-3" />
-                    {stats.total} 套新房源
+                    {t("newListings.newCount", { count: String(stats.total) })}
                 </Badge>
 
                 {stats.topCities.slice(0, 3).map(([city, count]) => (
@@ -152,18 +151,17 @@ export default function NewListings() {
             </div>
 
             <div className="flex gap-6">
-                {/* Listing grid */}
                 <div className="flex-1 min-w-0">
                     {listingsQuery.isLoading ? (
                         <div className="flex items-center justify-center py-16 text-muted-foreground">
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            正在获取最新房源...
+                            {t("newListings.loading")}
                         </div>
                     ) : listings.length === 0 ? (
                         <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
                             <Flame className="mx-auto h-8 w-8 mb-3 opacity-30" />
-                            <p>过去 {recentHours} 小时内没有新上市房源</p>
-                            <p className="text-xs mt-1">试试扩大时间范围</p>
+                            <p>{t("newListings.noResults", { hours: String(recentHours) })}</p>
+                            <p className="text-xs mt-1">{t("newListings.expandTimeRange")}</p>
                         </div>
                     ) : (
                         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -176,12 +174,11 @@ export default function NewListings() {
                                         }`}
                                     onClick={() => setSelectedListing(item)}
                                 >
-                                    {/* Thumbnail */}
                                     {item.thumbnailUrl ? (
                                         <div className="relative">
                                             <img
                                                 src={item.thumbnailUrl}
-                                                alt={displayAddress(item)}
+                                                alt={displayAddress(item, t("newListings.addressUnknown"))}
                                                 className="h-36 w-full object-cover"
                                             />
                                             <Badge className="absolute top-2 left-2 gap-1 bg-orange-500/90 text-white border-0 text-[10px]">
@@ -202,10 +199,10 @@ export default function NewListings() {
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
                                                 <p className="font-semibold text-sm truncate">
-                                                    {formatPrice(item.listPrice)}
+                                                    {formatPrice(item.listPrice, t("newListings.pricePending"))}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                                    {displayAddress(item)}
+                                                    {displayAddress(item, t("newListings.addressUnknown"))}
                                                 </p>
                                             </div>
                                         </div>
@@ -238,7 +235,7 @@ export default function NewListings() {
                                             </span>
                                             <span className="inline-flex items-center gap-1 text-[11px] text-orange-500">
                                                 <Clock className="h-3 w-3" />
-                                                {timeAgo(item.modificationTimestamp)}
+                                                {timeAgo(item.modificationTimestamp, t("newListings.justNow"))}
                                             </span>
                                         </div>
                                     </CardContent>
@@ -248,12 +245,11 @@ export default function NewListings() {
                     )}
                 </div>
 
-                {/* Detail panel */}
                 {selectedListing && (
                     <div className="hidden lg:block w-[380px] shrink-0">
                         <Card className="sticky top-4">
                             <div className="flex items-center justify-between p-4 border-b">
-                                <h3 className="font-semibold text-sm">房源详情</h3>
+                                <h3 className="font-semibold text-sm">{t("newListings.listingDetail")}</h3>
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -265,7 +261,6 @@ export default function NewListings() {
                             </div>
                             <ScrollArea className="h-[calc(100vh-200px)]">
                                 <div className="p-4 space-y-4">
-                                    {/* Thumbnail */}
                                     {selectedListing.thumbnailUrl && (
                                         <img
                                             src={selectedListing.thumbnailUrl}
@@ -274,10 +269,9 @@ export default function NewListings() {
                                         />
                                     )}
 
-                                    {/* Key stats */}
                                     <div>
-                                        <p className="font-bold text-lg">{formatPrice(selectedListing.listPrice)}</p>
-                                        <p className="text-sm text-muted-foreground">{displayAddress(selectedListing)}</p>
+                                        <p className="font-bold text-lg">{formatPrice(selectedListing.listPrice, t("newListings.pricePending"))}</p>
+                                        <p className="text-sm text-muted-foreground">{displayAddress(selectedListing, t("newListings.addressUnknown"))}</p>
                                         <p className="text-xs text-muted-foreground mt-1">
                                             {[selectedListing.city, selectedListing.stateOrProvince, selectedListing.postalCode]
                                                 .filter(Boolean)
@@ -311,13 +305,12 @@ export default function NewListings() {
 
                                     <Badge className="gap-1 bg-orange-500/90 text-white border-0">
                                         <Clock className="h-3 w-3" />
-                                        Listed {timeAgo(selectedListing.modificationTimestamp)}
+                                        Listed {timeAgo(selectedListing.modificationTimestamp, t("newListings.justNow"))}
                                     </Badge>
 
-                                    {/* Public remarks */}
                                     {(detailQuery.data as any)?.publicRemarks && (
                                         <div>
-                                            <p className="text-xs font-semibold text-muted-foreground mb-1">描述</p>
+                                            <p className="text-xs font-semibold text-muted-foreground mb-1">{t("newListings.description")}</p>
                                             <p className="text-sm leading-relaxed">
                                                 {(detailQuery.data as any).publicRemarks}
                                             </p>

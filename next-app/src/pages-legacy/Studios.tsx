@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
+import { useT } from "@/i18n";
 import {
   renderSlideshowVideo,
   resolveVideoDimensions,
@@ -55,8 +56,8 @@ type ListingDetail = ListingSearchItem & {
   media?: ListingMedia[];
 };
 
-function formatPrice(value: string | null | undefined) {
-  if (!value) return "价格待定";
+function formatPrice(value: string | null | undefined, fallback: string) {
+  if (!value) return fallback;
   const number = Number(value);
   if (!Number.isFinite(number)) return value;
   if (number >= 1_000_000) return `$${(number / 1_000_000).toFixed(2)}M`;
@@ -70,15 +71,16 @@ function displayAddress(item: {
   city?: string | null;
   stateOrProvince?: string | null;
   postalCode?: string | null;
-}) {
+}, fallback: string) {
   const full = item.unparsedAddress?.trim();
   if (full) return full;
   return [item.listingId, item.city, item.stateOrProvince, item.postalCode]
     .filter(Boolean)
-    .join(" · ") || "地址未知";
+    .join(" · ") || fallback;
 }
 
 export default function Studios() {
+  const { t } = useT();
   const [search, setSearch] = useState("");
   const [selectedListingKey, setSelectedListingKey] = useState("");
   const [provider, setProvider] = useState<StudioProvider>("local");
@@ -93,14 +95,13 @@ export default function Studios() {
   const [downloadFileName, setDownloadFileName] = useState("");
   const [cloudTaskInfo, setCloudTaskInfo] = useState<string>("");
 
-  // ─── User Image Uploads ────────────────────────────────
   const [uploadedImages, setUploadedImages] = useState<{ url: string; filename: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadImageMutation = trpc.studio.uploadImage.useMutation({
     onError: (error) => {
-      toast.error("图片上传失败", { description: error.message });
+      toast.error(t("studios.uploadFailed"), { description: error.message });
     },
   });
 
@@ -109,7 +110,7 @@ export default function Studios() {
       (f) => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024
     );
     if (fileArray.length === 0) {
-      toast.error("请选择有效的图片文件（最大 10MB）");
+      toast.error(t("studios.invalidFile"));
       return;
     }
 
@@ -141,10 +142,10 @@ export default function Studios() {
 
     if (results.length > 0) {
       setUploadedImages((prev) => [...prev, ...results]);
-      toast.success(`成功上传 ${results.length} 张图片`);
+      toast.success(t("studios.uploadSuccess", { count: String(results.length) }));
     }
     setUploading(false);
-  }, [uploadImageMutation]);
+  }, [uploadImageMutation, t]);
 
   const removeUploadedImage = (index: number) => {
     setUploadedImages((prev) => prev.filter((_, i) => i !== index));
@@ -164,7 +165,7 @@ export default function Studios() {
 
   const createCloudVideoTaskMutation = trpc.studio.createCloudVideoTask.useMutation({
     onError: (error) => {
-      toast.error("云端视频任务创建失败", { description: error.message });
+      toast.error(t("studios.cloudTaskFailed"), { description: error.message });
     },
   });
 
@@ -178,7 +179,6 @@ export default function Studios() {
     return Array.from(new Set(urls));
   }, [selectedListing]);
 
-  // Merge MLS images + uploaded images for video generation
   const imageUrls = useMemo(() => {
     return [...mlsImageUrls, ...uploadedImages.map((img) => img.url)];
   }, [mlsImageUrls, uploadedImages]);
@@ -220,17 +220,17 @@ export default function Studios() {
 
   const startGenerateVideo = async () => {
     if (!selectedListing) {
-      toast.error("请先选择一套房源");
+      toast.error(t("studios.selectListing"));
       return;
     }
     if (imageUrls.length === 0) {
-      toast.error("当前房源没有可用图片");
+      toast.error(t("studios.noAvailableImages"));
       return;
     }
 
     const perImageSeconds = Number.parseFloat(secondsPerImage);
     if (!Number.isFinite(perImageSeconds) || perImageSeconds <= 0) {
-      toast.error("每张图片时长不合法");
+      toast.error(t("studios.invalidDuration"));
       return;
     }
 
@@ -253,11 +253,11 @@ export default function Studios() {
             setProgressPercent(progress.percent);
             if (progress.phase === "loading") {
               setProgressText(
-                `加载图片 ${progress.loadedImages}/${progress.totalImages}`
+                t("studios.loadingImagesProgress", { loaded: String(progress.loadedImages), total: String(progress.totalImages) })
               );
             } else {
               setProgressText(
-                `渲染帧 ${progress.renderedFrames}/${progress.totalFrames}`
+                t("studios.renderingFrames", { rendered: String(progress.renderedFrames), total: String(progress.totalFrames) })
               );
             }
           },
@@ -272,13 +272,13 @@ export default function Studios() {
         setDownloadUrl(objectUrl);
         setDownloadFileName(fileName);
         setProgressPercent(100);
-        setProgressText(`完成：${result.imageCount} 张图片已合成视频`);
-        toast.success("视频已生成，可直接下载");
+        setProgressText(t("studios.videoComplete", { count: String(result.imageCount) }));
+        toast.success(t("studios.videoGenerated"));
         return;
       }
 
       if (!providerEnabled) {
-        toast.error("当前云端视频模型未配置", {
+        toast.error(t("studios.cloudNotConfigured"), {
           description: providerNote,
         });
         return;
@@ -286,7 +286,7 @@ export default function Studios() {
 
       const response = await createCloudVideoTaskMutation.mutateAsync({
         provider,
-        title: displayAddress(selectedListing),
+        title: displayAddress(selectedListing, t("studios.addressUnknown")),
         prompt: stylePrompt.trim() || undefined,
         imageUrls,
         aspectRatio,
@@ -294,25 +294,25 @@ export default function Studios() {
       });
 
       if (response.downloadUrl) {
-        setCloudTaskInfo(`云端已完成，可下载：${response.downloadUrl}`);
+        setCloudTaskInfo(t("studios.cloudComplete", { url: response.downloadUrl }));
         setDownloadUrl(response.downloadUrl);
         setDownloadFileName(
           `${selectedListing.listingKey}-${provider}-${Date.now()}.mp4`
         );
         setProgressPercent(100);
-        setProgressText("云端任务已完成");
-        toast.success("云端视频已生成，可下载");
+        setProgressText(t("studios.cloudTaskComplete"));
+        toast.success(t("studios.cloudVideoGenerated"));
       } else {
         setProgressPercent(35);
-        setProgressText("云端任务已创建，等待处理");
+        setProgressText(t("studios.cloudTaskCreated"));
         setCloudTaskInfo(
-          `任务已提交（Provider: ${response.provider}，Job ID: ${response.jobId ?? "unknown"}）`
+          t("studios.taskSubmitted", { provider: response.provider, jobId: response.jobId ?? "unknown" })
         );
-        toast.success("云端任务已创建，请稍后轮询下载链接");
+        toast.success(t("studios.cloudTaskSuccess"));
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "视频生成失败";
-      toast.error("视频生成失败", { description: message });
+      const message = error instanceof Error ? error.message : t("studios.videoFailed");
+      toast.error(t("studios.videoFailed"), { description: message });
     } finally {
       setRendering(false);
     }
@@ -323,13 +323,13 @@ export default function Studios() {
       <div className="rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/5 via-primary/2 to-transparent p-6 text-foreground shadow-sm md:p-8">
         <div className="flex items-center gap-2 text-sm text-primary">
           <Clapperboard className="h-4 w-4" />
-          内容生产
+          {t("studios.eyebrow")}
         </div>
         <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">
-          Studios
+          {t("studios.heroTitle")}
         </h1>
         <p className="mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">
-          把 MLS 图库一键转成可下载视频。默认本地即时合成，也支持 Sora / 即梦云端视频模型。
+          {t("studios.heroDescription")}
         </p>
       </div>
 
@@ -338,13 +338,13 @@ export default function Studios() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-4 w-4" />
-              1. 选择房源
+              {t("studios.step1Title")}
             </CardTitle>
-            <CardDescription>搜索 MLS Listing，并自动抓取该房源全部图片。</CardDescription>
+            <CardDescription>{t("studios.step1Description")}</CardDescription>
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="搜索地址或 Listing ID"
+              placeholder={t("studios.searchPlaceholder")}
             />
           </CardHeader>
           <CardContent>
@@ -353,10 +353,10 @@ export default function Studios() {
                 {listingsQuery.isLoading ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    正在读取房源...
+                    {t("studios.loadingListings")}
                   </div>
                 ) : listingResults.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">没有搜索结果</p>
+                  <p className="text-sm text-muted-foreground">{t("studios.noSearchResults")}</p>
                 ) : (
                   listingResults.map((item) => {
                     const active = selectedListingKey === item.listingKey;
@@ -374,7 +374,7 @@ export default function Studios() {
                           {item.thumbnailUrl ? (
                             <img
                               src={item.thumbnailUrl}
-                              alt={displayAddress(item)}
+                              alt={displayAddress(item, t("studios.addressUnknown"))}
                               className="h-16 w-24 rounded-md border object-cover"
                             />
                           ) : (
@@ -382,10 +382,10 @@ export default function Studios() {
                           )}
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">
-                              {displayAddress(item)}
+                              {displayAddress(item, t("studios.addressUnknown"))}
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {formatPrice(item.listPrice)} · {item.listingKey}
+                              {formatPrice(item.listPrice, t("studios.pricePending"))} · {item.listingKey}
                             </p>
                             <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
                               {item.bedroomsTotal != null ? <span>{item.bedroomsTotal} bd</span> : null}
@@ -411,13 +411,13 @@ export default function Studios() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
-              2. 生成视频
+              {t("studios.step2Title")}
             </CardTitle>
-            <CardDescription>选择模型与参数，生成可下载视频文件。</CardDescription>
+            <CardDescription>{t("studios.step2Description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>视频模型</Label>
+              <Label>{t("studios.videoModel")}</Label>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {(["local", "sora", "jimeng"] as StudioProvider[]).map((item) => {
                   const enabled =
@@ -434,8 +434,8 @@ export default function Studios() {
                       onClick={() => setProvider(item)}
                     >
                       <Cloud className="h-4 w-4 mr-2" />
-                      {item === "local" ? "Local" : item === "sora" ? "Sora" : "即梦"}
-                      {!enabled ? <Badge className="ml-2" variant="secondary">未配置</Badge> : null}
+                      {item === "local" ? "Local" : item === "sora" ? "Sora" : "Jimeng"}
+                      {!enabled ? <Badge className="ml-2" variant="secondary">{t("studios.notConfigured")}</Badge> : null}
                     </Button>
                   );
                 })}
@@ -447,7 +447,7 @@ export default function Studios() {
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
-                <Label>比例</Label>
+                <Label>{t("studios.ratio")}</Label>
                 <Input
                   value={aspectRatio}
                   onChange={(event) => {
@@ -460,7 +460,7 @@ export default function Studios() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>每图时长 (秒)</Label>
+                <Label>{t("studios.secondsPerImage")}</Label>
                 <Input
                   value={secondsPerImage}
                   onChange={(event) => setSecondsPerImage(event.target.value)}
@@ -468,18 +468,18 @@ export default function Studios() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>图片总数</Label>
+                <Label>{t("studios.totalImages")}</Label>
                 <Input value={String(imageUrls.length)} readOnly />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label>风格提示词（云端模型可选）</Label>
+              <Label>{t("studios.stylePrompt")}</Label>
               <Textarea
                 value={stylePrompt}
                 onChange={(event) => setStylePrompt(event.target.value)}
                 rows={4}
-                placeholder="例如：cinematic luxury real-estate short, smooth transition, modern typography"
+                placeholder={t("studios.stylePromptPlaceholder")}
               />
             </div>
 
@@ -492,12 +492,12 @@ export default function Studios() {
               {rendering ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  正在生成...
+                  {t("studios.generating")}
                 </>
               ) : (
                 <>
                   <Clapperboard className="h-4 w-4 mr-2" />
-                  生成视频
+                  {t("studios.generateVideo")}
                 </>
               )}
             </Button>
@@ -505,7 +505,7 @@ export default function Studios() {
             <div className="space-y-2">
               <Progress value={progressPercent} />
               <p className="text-xs text-muted-foreground">
-                {progressText || "准备就绪"}
+                {progressText || t("studios.ready")}
               </p>
             </div>
 
@@ -524,7 +524,7 @@ export default function Studios() {
                 rel={downloadUrl.startsWith("http") ? "noreferrer" : undefined}
               >
                 <Download className="h-4 w-4 mr-2" />
-                下载视频
+                {t("studios.downloadVideo")}
               </a>
             ) : null}
           </CardContent>
@@ -536,10 +536,10 @@ export default function Studios() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
-            上传自定义图片
+            {t("studios.uploadCustomImages")}
           </CardTitle>
           <CardDescription>
-            上传人物照片或其他素材，与 MLS 图片混合生成视频。
+            {t("studios.uploadDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -569,20 +569,20 @@ export default function Studios() {
             {uploading ? (
               <>
                 <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                <p className="text-sm text-muted-foreground">正在上传...</p>
+                <p className="text-sm text-muted-foreground">{t("studios.uploading")}</p>
               </>
             ) : (
               <>
                 <Upload className="h-8 w-8 text-muted-foreground/60 mb-2" />
-                <p className="text-sm font-medium">点击或拖拽上传图片</p>
-                <p className="text-xs text-muted-foreground mt-1">支持 JPG / PNG / WebP，单张最大 10MB</p>
+                <p className="text-sm font-medium">{t("studios.clickOrDragUpload")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("studios.uploadFormats")}</p>
               </>
             )}
           </div>
 
           {uploadedImages.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">已上传 ({uploadedImages.length})</p>
+              <p className="text-sm font-medium">{t("studios.uploaded", { count: String(uploadedImages.length) })}</p>
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
                 {uploadedImages.map((img, index) => (
                   <div key={img.filename} className="relative overflow-hidden rounded-lg border bg-muted/20 group">
@@ -611,21 +611,21 @@ export default function Studios() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="h-4 w-4" />
-            图库预览
+            {t("studios.galleryPreview")}
           </CardTitle>
           <CardDescription>
-            当前房源：{selectedListing ? displayAddress(selectedListing) : "未选择"}
-            {uploadedImages.length > 0 && ` + ${uploadedImages.length} 张自定义图片`}
+            {selectedListing ? t("studios.currentListing", { address: displayAddress(selectedListing, t("studios.addressUnknown")) }) : t("studios.noSelection")}
+            {uploadedImages.length > 0 && t("studios.customImages", { count: String(uploadedImages.length) })}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {listingDetailQuery.isLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              正在加载房源图片...
+              {t("studios.loadingImages")}
             </div>
           ) : imageUrls.length === 0 ? (
-            <p className="text-sm text-muted-foreground">该房源暂无可用图片</p>
+            <p className="text-sm text-muted-foreground">{t("studios.noImages")}</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               {imageUrls.map((url, index) => (

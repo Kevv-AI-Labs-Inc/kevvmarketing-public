@@ -40,6 +40,7 @@ import {
     Map as MapIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/i18n";
 
 const PAGE_SIZE = 24;
 
@@ -50,8 +51,8 @@ const STATUS_COLORS: Record<string, string> = {
     Closed: "bg-gray-500/10 text-gray-700 border-gray-200",
 };
 
-function formatPrice(price: string | null | undefined) {
-    if (!price) return "价格未定";
+function formatPrice(price: string | null | undefined, fallback: string) {
+    if (!price) return fallback;
     const num = parseFloat(price);
     if (isNaN(num)) return price;
     if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`;
@@ -65,15 +66,15 @@ function getDisplayAddress(property: {
     city?: string | null;
     stateOrProvince?: string | null;
     postalCode?: string | null;
-}) {
+}, fallback: string) {
     const primary = property.unparsedAddress?.trim();
     if (primary) return primary;
 
-    const fallback = [property.listingId, property.city, property.stateOrProvince, property.postalCode]
+    const fb = [property.listingId, property.city, property.stateOrProvince, property.postalCode]
         .filter(Boolean)
         .join(" · ");
 
-    return fallback || "地址未知";
+    return fb || fallback;
 }
 
 function parseCoordinate(value: unknown, type: "lat" | "lng") {
@@ -89,6 +90,7 @@ function parseCoordinate(value: unknown, type: "lat" | "lng") {
 }
 
 export default function Listings() {
+    const { t } = useT();
     const router = useRouter();
     const [search, setSearch] = useState("");
     const [city, setCity] = useState("");
@@ -135,7 +137,7 @@ export default function Listings() {
         const params = new URLSearchParams();
         params.set("listingKeys", keys);
         params.set("source", "listings");
-        params.set("title", `带看路线 · ${selectedKeys.size} 套房源`);
+        params.set("title", t("listings.tourRouteTitle", { count: String(selectedKeys.size) }));
         router.push(`/magic-share?${params.toString()}`);
     };
 
@@ -182,7 +184,6 @@ export default function Listings() {
                 const lat = parseCoordinate(property.latitude, "lat");
                 const lng = parseCoordinate(property.longitude, "lng");
                 if (lat === null || lng === null) return [];
-                // Treat (0,0) as invalid for MLS listings to avoid fake "ocean markers".
                 if (Math.abs(lat) < 1e-8 && Math.abs(lng) < 1e-8) return [];
                 return [{ property, lat, lng }];
             }),
@@ -212,7 +213,6 @@ export default function Listings() {
             duplicateCounter.set(key, seen + 1);
             if (seen === 0) return { lat, lng };
 
-            // Spread identical coordinates in a tiny spiral so each listing stays clickable.
             const radiusMeters = 10 + seen * 4;
             const angle = (seen * 137.5 * Math.PI) / 180;
             const latOffset = (radiusMeters / 111_320) * Math.cos(angle);
@@ -232,7 +232,7 @@ export default function Listings() {
             if (AdvancedMarkerElement) {
                 const markerEl = document.createElement("button");
                 markerEl.type = "button";
-                markerEl.textContent = formatPrice(property.listPrice);
+                markerEl.textContent = formatPrice(property.listPrice, t("listings.pricePending"));
                 markerEl.style.cssText = [
                     "background:#ffffff",
                     "color:#0f172a",
@@ -258,7 +258,7 @@ export default function Listings() {
                 const marker = new AdvancedMarkerElement({
                     map,
                     position,
-                    title: getDisplayAddress(property),
+                    title: getDisplayAddress(property, t("listings.addressUnknown")),
                     content: markerEl,
                 });
 
@@ -270,9 +270,9 @@ export default function Listings() {
                 const marker = new gmaps.Marker({
                     map,
                     position,
-                    title: getDisplayAddress(property),
+                    title: getDisplayAddress(property, t("listings.addressUnknown")),
                     label: {
-                        text: formatPrice(property.listPrice),
+                        text: formatPrice(property.listPrice, t("listings.pricePending")),
                         color: "#0f172a",
                         fontSize: "12px",
                         fontWeight: "700",
@@ -330,7 +330,7 @@ export default function Listings() {
         params.set("listingKeys", listingKey);
         params.set("source", "listings");
         if (address && address.trim().length > 0) {
-            params.set("title", `精选推荐 · ${address.trim()}`);
+            params.set("title", t("listings.shareTitle", { address: address.trim() }));
         }
         router.push(`/magic-share?${params.toString()}`);
     };
@@ -340,9 +340,9 @@ export default function Listings() {
             <div className="space-y-6 pb-8">
                 {/* Header */}
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-3xl font-bold tracking-tight">房源列表</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">{t("listings.title")}</h1>
                     <p className="text-muted-foreground">
-                        浏览和搜索 MLS 房源数据
+                        {t("listings.subtitle")}
                     </p>
                 </div>
 
@@ -351,7 +351,7 @@ export default function Listings() {
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="搜索地址或 Listing ID..."
+                            placeholder={t("listings.searchPlaceholder")}
                             value={search}
                             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
                             className="pl-10"
@@ -363,7 +363,7 @@ export default function Listings() {
                         className="gap-2"
                     >
                         <SlidersHorizontal className="h-4 w-4" />
-                        筛选
+                        {t("listings.filter")}
                         {hasActiveFilters && (
                             <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
                                 !
@@ -376,7 +376,7 @@ export default function Listings() {
                         className="gap-2"
                     >
                         <Route className="h-4 w-4" />
-                        {isSelectMode ? "取消选房" : "选房带看"}
+                        {isSelectMode ? t("listings.cancelSelect") : t("listings.selectForTour")}
                     </Button>
                     <Button
                         variant={showMapView ? "default" : "outline"}
@@ -384,7 +384,7 @@ export default function Listings() {
                         className="gap-2"
                     >
                         <MapIcon className="h-4 w-4" />
-                        {showMapView ? "隐藏地图" : "地图模式"}
+                        {showMapView ? t("listings.hideMap") : t("listings.mapMode")}
                     </Button>
                 </div>
 
@@ -394,15 +394,15 @@ export default function Listings() {
                         <CardContent className="pt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                                 <div>
-                                    <label className="text-sm font-medium mb-1.5 block">城市</label>
+                                    <label className="text-sm font-medium mb-1.5 block">{t("listings.city")}</label>
                                     <Input
-                                        placeholder="例如 Irvine"
+                                        placeholder={t("listings.cityPlaceholder")}
                                         value={city}
                                         onChange={(e) => { setCity(e.target.value); setPage(0); }}
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1.5 block">最低价格 ($)</label>
+                                    <label className="text-sm font-medium mb-1.5 block">{t("listings.minPrice")}</label>
                                     <Input
                                         type="number"
                                         placeholder="0"
@@ -411,42 +411,42 @@ export default function Listings() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1.5 block">最高价格 ($)</label>
+                                    <label className="text-sm font-medium mb-1.5 block">{t("listings.maxPrice")}</label>
                                     <Input
                                         type="number"
-                                        placeholder="不限"
+                                        placeholder={t("listings.noLimit")}
                                         value={maxPrice}
                                         onChange={(e) => { setMaxPrice(e.target.value); setPage(0); }}
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1.5 block">房产类型</label>
+                                    <label className="text-sm font-medium mb-1.5 block">{t("listings.propertyType")}</label>
                                     <Select value={propertyType} onValueChange={(v) => { setPropertyType(v); setPage(0); }}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">全部类型</SelectItem>
-                                            <SelectItem value="Single Family">独栋别墅</SelectItem>
-                                            <SelectItem value="Condominium">公寓</SelectItem>
-                                            <SelectItem value="Townhouse">联排别墅</SelectItem>
-                                            <SelectItem value="Multi Family">多户住宅</SelectItem>
-                                            <SelectItem value="Land">土地</SelectItem>
+                                            <SelectItem value="all">{t("listings.allTypes")}</SelectItem>
+                                            <SelectItem value="Single Family">{t("listings.singleFamily")}</SelectItem>
+                                            <SelectItem value="Condominium">{t("listings.condominium")}</SelectItem>
+                                            <SelectItem value="Townhouse">{t("listings.townhouse")}</SelectItem>
+                                            <SelectItem value="Multi Family">{t("listings.multiFamily")}</SelectItem>
+                                            <SelectItem value="Land">{t("listings.land")}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1.5 block">状态</label>
+                                    <label className="text-sm font-medium mb-1.5 block">{t("listings.statusLabel")}</label>
                                     <Select value={status} onValueChange={(v) => { setStatus(v); setPage(0); }}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">全部状态</SelectItem>
-                                            <SelectItem value="Active">在售</SelectItem>
-                                            <SelectItem value="Pending">待定</SelectItem>
-                                            <SelectItem value="Sold">已售</SelectItem>
-                                            <SelectItem value="Closed">已关闭</SelectItem>
+                                            <SelectItem value="all">{t("listings.allStatuses")}</SelectItem>
+                                            <SelectItem value="Active">{t("listings.active")}</SelectItem>
+                                            <SelectItem value="Pending">{t("listings.pending")}</SelectItem>
+                                            <SelectItem value="Sold">{t("listings.sold")}</SelectItem>
+                                            <SelectItem value="Closed">{t("listings.closed")}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -455,7 +455,7 @@ export default function Listings() {
                                 <div className="mt-4 flex justify-end">
                                     <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5">
                                         <X className="h-3.5 w-3.5" />
-                                        清除筛选
+                                        {t("listings.clearFilters")}
                                     </Button>
                                 </div>
                             )}
@@ -467,17 +467,17 @@ export default function Listings() {
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-3">
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        <p className="text-muted-foreground">加载房源数据...</p>
+                        <p className="text-muted-foreground">{t("listings.loading")}</p>
                     </div>
                 ) : !properties || properties.length === 0 ? (
                     /* Empty State */
                     <div className="flex flex-col items-center justify-center py-20 gap-3">
                         <Building2 className="h-12 w-12 text-muted-foreground/50" />
-                        <p className="text-lg font-medium">没有找到房源</p>
-                        <p className="text-muted-foreground text-sm">尝试调整搜索条件或筛选器</p>
+                        <p className="text-lg font-medium">{t("listings.noResults")}</p>
+                        <p className="text-muted-foreground text-sm">{t("listings.adjustFilters")}</p>
                         {hasActiveFilters && (
                             <Button variant="outline" size="sm" onClick={clearFilters}>
-                                清除所有筛选
+                                {t("listings.clearAll")}
                             </Button>
                         )}
                     </div>
@@ -487,9 +487,9 @@ export default function Listings() {
                             <Card>
                                 <CardContent className="pt-6 space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <p className="text-sm font-medium">地图模式（当前筛选结果）</p>
+                                        <p className="text-sm font-medium">{t("listings.mapTitle")}</p>
                                         <Badge variant="secondary">
-                                            坐标可用 {coordinateReadyProperties.length} / {properties.length}
+                                            {t("listings.coordinateAvailable", { available: String(coordinateReadyProperties.length), total: String(properties.length) })}
                                         </Badge>
                                     </div>
                                     <MapView
@@ -502,7 +502,7 @@ export default function Listings() {
                                     />
                                     {coordinateReadyProperties.length === 0 && (
                                         <p className="text-sm text-muted-foreground">
-                                            当前页房源没有可用经纬度，暂时无法在地图上标注。
+                                            {t("listings.noCoordinates")}
                                         </p>
                                     )}
                                 </CardContent>
@@ -512,7 +512,7 @@ export default function Listings() {
                         {/* Results Count */}
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-muted-foreground">
-                                显示第 {page * PAGE_SIZE + 1} - {page * PAGE_SIZE + properties.length} 条结果
+                                {t("listings.showingResults", { from: String(page * PAGE_SIZE + 1), to: String(page * PAGE_SIZE + properties.length) })}
                                 {isFetching && <Loader2 className="inline-block ml-2 h-3 w-3 animate-spin" />}
                             </p>
                         </div>
@@ -542,7 +542,7 @@ export default function Listings() {
                                             {property.thumbnailUrl && !(brokenThumbnailByListingKey as Record<string, boolean>)[property.listingKey ?? ''] ? (
                                                 <img
                                                     src={property.thumbnailUrl}
-                                                    alt={getDisplayAddress(property)}
+                                                    alt={getDisplayAddress(property, t("listings.addressUnknown"))}
                                                     className="h-full w-full object-cover"
                                                     onError={() =>
                                                         setBrokenThumbnailByListingKey(prev => ({
@@ -566,7 +566,7 @@ export default function Listings() {
                                             {/* Price */}
                                             <div className="absolute bottom-3 left-3">
                                                 <span className="text-lg font-bold bg-black/70 text-white px-3 py-1 rounded-lg backdrop-blur-sm">
-                                                    {formatPrice(property.listPrice)}
+                                                    {formatPrice(property.listPrice, t("listings.pricePending"))}
                                                 </span>
                                             </div>
                                         </div>
@@ -577,7 +577,7 @@ export default function Listings() {
                                                 <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                                                 <div className="min-w-0">
                                                     <p className="font-medium text-sm leading-tight truncate">
-                                                        {getDisplayAddress(property)}
+                                                        {getDisplayAddress(property, t("listings.addressUnknown"))}
                                                     </p>
                                                     <p className="text-xs text-muted-foreground truncate">
                                                         {[property.city, property.stateOrProvince, property.postalCode]
@@ -592,13 +592,13 @@ export default function Listings() {
                                                 {property.bedroomsTotal != null && (
                                                     <span className="flex items-center gap-1">
                                                         <BedDouble className="h-3.5 w-3.5" />
-                                                        {property.bedroomsTotal}房
+                                                        {property.bedroomsTotal}{t("listings.beds")}
                                                     </span>
                                                 )}
                                                 {property.bathroomsTotalInteger != null && (
                                                     <span className="flex items-center gap-1">
                                                         <Bath className="h-3.5 w-3.5" />
-                                                        {property.bathroomsTotalInteger}卫
+                                                        {property.bathroomsTotalInteger}{t("listings.baths")}
                                                     </span>
                                                 )}
                                                 {property.livingArea && (
@@ -630,10 +630,10 @@ export default function Listings() {
                                 className="gap-1.5"
                             >
                                 <ChevronLeft className="h-4 w-4" />
-                                上一页
+                                {t("listings.prevPage")}
                             </Button>
                             <span className="text-sm text-muted-foreground">
-                                第 {page + 1} 页
+                                {t("listings.page", { page: String(page + 1) })}
                             </span>
                             <Button
                                 variant="outline"
@@ -642,7 +642,7 @@ export default function Listings() {
                                 onClick={() => setPage((p) => p + 1)}
                                 className="gap-1.5"
                             >
-                                下一页
+                                {t("listings.nextPage")}
                                 <ChevronRight className="h-4 w-4" />
                             </Button>
                         </div>
@@ -653,21 +653,21 @@ export default function Listings() {
                 {isSelectMode && selectedKeys.size > 0 && (
                     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-primary/20 bg-background/80 px-5 py-3 shadow-xl backdrop-blur-md">
                         <Badge variant="secondary" className="text-sm px-3 py-1">
-                            已选 {selectedKeys.size} 套
+                            {t("listings.selected", { count: String(selectedKeys.size) })}
                         </Badge>
                         <Button
                             className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
                             onClick={goToTourRoute}
                         >
                             <Route className="h-4 w-4" />
-                            生成带看路线
+                            {t("listings.generateTourRoute")}
                         </Button>
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setSelectedKeys(new Set())}
                         >
-                            全部取消
+                            {t("listings.deselectAll")}
                         </Button>
                     </div>
                 )}
@@ -681,20 +681,20 @@ export default function Listings() {
             >
                 <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>{propertyDetails ? getDisplayAddress(propertyDetails) : "房源详情"}</DialogTitle>
+                        <DialogTitle>{propertyDetails ? getDisplayAddress(propertyDetails, t("listings.addressUnknown")) : t("listings.listingDetails")}</DialogTitle>
                         <DialogDescription>
-                            {propertyDetails?.listingId ? `Listing ID: ${propertyDetails.listingId}` : "点击房源查看完整信息"}
+                            {propertyDetails?.listingId ? `Listing ID: ${propertyDetails.listingId}` : t("listings.clickToView")}
                         </DialogDescription>
                     </DialogHeader>
 
                     {isLoadingDetails ? (
                         <div className="flex items-center justify-center py-12 text-muted-foreground">
                             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                            正在加载详情...
+                            {t("listings.loadingDetails")}
                         </div>
                     ) : !propertyDetails ? (
                         <div className="py-8 text-center text-muted-foreground">
-                            暂无详情数据
+                            {t("listings.noDetails")}
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -710,7 +710,7 @@ export default function Listings() {
                                     {!detailImageBroken && mainImageUrl ? (
                                         <img
                                             src={mainImageUrl}
-                                            alt={getDisplayAddress(propertyDetails)}
+                                            alt={getDisplayAddress(propertyDetails, t("listings.addressUnknown"))}
                                             className="w-full h-64 object-cover rounded-lg border"
                                             onError={() => {
                                                 setBrokenDetailImageUrls((prev) => {
@@ -725,7 +725,7 @@ export default function Listings() {
                                         />
                                     ) : (
                                         <div className="w-full h-64 rounded-lg border bg-muted/40 flex items-center justify-center text-muted-foreground">
-                                            主图加载失败
+                                            {t("listings.mainImageFailed")}
                                         </div>
                                     )}
                                     <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
@@ -747,19 +747,19 @@ export default function Listings() {
                                 </div>
                                 ) : (
                                 <div className="h-52 rounded-lg border bg-muted/40 flex items-center justify-center text-muted-foreground">
-                                    暂无图片
+                                    {t("listings.noPhotos")}
                                 </div>
                                 );
                             })()}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div className="p-3 rounded-lg border">
-                                    <p className="text-xs text-muted-foreground">挂牌价</p>
-                                    <p className="text-lg font-semibold">{formatPrice(propertyDetails.listPrice)}</p>
+                                    <p className="text-xs text-muted-foreground">{t("listings.listPrice")}</p>
+                                    <p className="text-lg font-semibold">{formatPrice(propertyDetails.listPrice, t("listings.pricePending"))}</p>
                                 </div>
                                 <div className="p-3 rounded-lg border">
-                                    <p className="text-xs text-muted-foreground">地址</p>
-                                    <p className="font-medium">{getDisplayAddress(propertyDetails)}</p>
+                                    <p className="text-xs text-muted-foreground">{t("listings.address")}</p>
+                                    <p className="font-medium">{getDisplayAddress(propertyDetails, t("listings.addressUnknown"))}</p>
                                     <p className="text-sm text-muted-foreground">
                                         {[propertyDetails.city, propertyDetails.stateOrProvince, propertyDetails.postalCode]
                                             .filter(Boolean)
@@ -776,10 +776,10 @@ export default function Listings() {
                                     <Badge variant="outline">{propertyDetails.standardStatus}</Badge>
                                 ) : null}
                                 {propertyDetails.bedroomsTotal != null ? (
-                                    <Badge variant="outline">{propertyDetails.bedroomsTotal} 房</Badge>
+                                    <Badge variant="outline">{propertyDetails.bedroomsTotal} {t("listings.beds")}</Badge>
                                 ) : null}
                                 {propertyDetails.bathroomsTotalInteger != null ? (
-                                    <Badge variant="outline">{propertyDetails.bathroomsTotalInteger} 卫</Badge>
+                                    <Badge variant="outline">{propertyDetails.bathroomsTotalInteger} {t("listings.baths")}</Badge>
                                 ) : null}
                                 {propertyDetails.livingArea ? (
                                     <Badge variant="outline">{Number(propertyDetails.livingArea).toLocaleString()} sqft</Badge>
@@ -787,9 +787,9 @@ export default function Listings() {
                             </div>
 
                             <div className="rounded-lg border p-3">
-                                <p className="text-xs text-muted-foreground mb-1">Public Remarks</p>
+                                <p className="text-xs text-muted-foreground mb-1">{t("listings.publicRemarks")}</p>
                                 <p className="text-sm leading-relaxed">
-                                    {propertyDetails.publicRemarks || "暂无备注"}
+                                    {propertyDetails.publicRemarks || t("listings.noRemarks")}
                                 </p>
                             </div>
 
@@ -799,7 +799,7 @@ export default function Listings() {
                                     onClick={() => goToCmaStudio(propertyDetails.listingKey ?? '')}
                                 >
                                     <BarChart3 className="mr-2 h-4 w-4" />
-                                    生成 CMA
+                                    {t("listings.generateCma")}
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -811,7 +811,7 @@ export default function Listings() {
                                     }
                                 >
                                     <Share2 className="mr-2 h-4 w-4" />
-                                    带入分享页
+                                    {t("listings.addToShare")}
                                 </Button>
                             </div>
                         </div>
