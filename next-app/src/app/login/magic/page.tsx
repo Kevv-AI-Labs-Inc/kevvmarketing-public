@@ -6,8 +6,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { DEFAULT_AUTHENTICATED_PATH } from "@/const";
+import { useT } from "@/i18n";
 
 function MagicLinkHandler() {
+  const { t } = useT();
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
@@ -29,13 +31,13 @@ function MagicLinkHandler() {
 
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background text-foreground">
         <div className="text-center">
           <p className="text-lg font-medium text-destructive">
-            Missing or invalid sign-in link.
+            {t("magicLogin.invalidLink")}
           </p>
           <a href="/login" className="mt-4 inline-block text-primary hover:underline">
-            Back to login
+            {t("magicLogin.backToLogin")}
           </a>
         </div>
       </div>
@@ -43,10 +45,10 @@ function MagicLinkHandler() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-background text-foreground">
       <div className="flex items-center gap-3">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <p className="text-lg">Verifying your sign-in link...</p>
+        <p className="text-lg">{t("magicLogin.verifying")}</p>
       </div>
     </div>
   );
@@ -56,7 +58,7 @@ export default function MagicLinkPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex min-h-[100dvh] items-center justify-center bg-background">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       }

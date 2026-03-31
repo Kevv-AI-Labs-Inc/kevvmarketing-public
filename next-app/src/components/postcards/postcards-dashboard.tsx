@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useT } from "@/i18n";
 import { trpc } from "@/lib/trpc";
 
 const sampleCsv = `first_name,last_name,address,city,state,zip,tags
@@ -16,6 +17,7 @@ Jamie,Lee,123 Main St,Los Angeles,CA,90001,just_listed|sphere
 Morgan,Diaz,44 Elm Ave,Austin,TX,78701,open_house`;
 
 export function PostcardsDashboard() {
+  const { t } = useT();
   const workspaceQuery = trpc.postcard.getWorkspace.useQuery();
   const utils = trpc.useUtils();
   const importMutation = trpc.postcard.importCsv.useMutation();
@@ -59,10 +61,10 @@ export function PostcardsDashboard() {
   const handleImport = async () => {
     try {
       const result = await importMutation.mutateAsync({ csvText });
-      toast.success(`Imported ${result.importedRows} contacts`);
+      toast.success(t("postcardsDashboard.importSuccess", { count: String(result.importedRows) }));
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Import failed.");
+      toast.error(error instanceof Error ? error.message : t("postcardsDashboard.importFailed"));
     }
   };
 
@@ -80,7 +82,7 @@ export function PostcardsDashboard() {
           .map((item) => item.trim())
           .filter(Boolean),
       });
-      toast.success("Manual contact saved.");
+      toast.success(t("postcardsDashboard.manualSaved"));
       setManualContact({
         fullName: "",
         addressLine1: "",
@@ -92,7 +94,7 @@ export function PostcardsDashboard() {
       });
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create contact.");
+      toast.error(error instanceof Error ? error.message : t("postcardsDashboard.manualFailed"));
     }
   };
 
@@ -102,7 +104,7 @@ export function PostcardsDashboard() {
     );
 
     if (!activeTemplate) {
-      toast.error("Choose a template first.");
+      toast.error(t("postcardsDashboard.chooseTemplate"));
       return;
     }
 
@@ -112,15 +114,15 @@ export function PostcardsDashboard() {
         templateName: activeTemplate.name,
         language: "en",
       });
-      toast.success("Suggested postcard copy generated.");
+      toast.success(t("postcardsDashboard.copyGenerated"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Copy generation failed.");
+      toast.error(error instanceof Error ? error.message : t("postcardsDashboard.copyFailed"));
     }
   };
 
   const handleCreateCampaign = async () => {
     if (!activeSelectedTemplateId) {
-      toast.error("Choose a template.");
+      toast.error(t("postcardsDashboard.chooseTemplateShort"));
       return;
     }
 
@@ -130,10 +132,10 @@ export function PostcardsDashboard() {
         templateId: activeSelectedTemplateId,
         contactIds: activeSelectedContactIds,
       });
-      toast.success("Draft campaign created.");
+      toast.success(t("postcardsDashboard.draftCreated"));
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create campaign.");
+      toast.error(error instanceof Error ? error.message : t("postcardsDashboard.createFailed"));
     }
   };
 
@@ -147,17 +149,17 @@ export function PostcardsDashboard() {
             ? new Date(scheduledAt).toISOString()
             : undefined,
       });
-      toast.success(sendStrategy === "scheduled" ? "Campaign scheduled." : "Campaign launched.");
+      toast.success(sendStrategy === "scheduled" ? t("postcardsDashboard.campaignScheduled") : t("postcardsDashboard.campaignLaunched"));
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Launch failed.");
+      toast.error(error instanceof Error ? error.message : t("postcardsDashboard.launchFailed"));
     }
   };
 
   if (workspaceQuery.isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading postcards workspace...</div>
+        <div className="text-sm text-muted-foreground">{t("postcardsDashboard.loading")}</div>
       </div>
     );
   }
@@ -167,12 +169,11 @@ export function PostcardsDashboard() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="text-xs uppercase tracking-[0.32em] text-muted-foreground">
-            Postcards
+            {t("postcardsDashboard.eyebrow")}
           </div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Direct mail activation</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">{t("postcardsDashboard.heroTitle")}</h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Import addresses into the unified contact spine, choose a template, quote the send,
-            and launch mock postcard fulfillment without leaving Kevv Marketing.
+            {t("postcardsDashboard.heroDescription")}
           </p>
         </div>
       </div>
@@ -184,7 +185,7 @@ export function PostcardsDashboard() {
               <Mailbox className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Total contacts</div>
+              <div className="text-sm text-muted-foreground">{t("postcardsDashboard.totalContacts")}</div>
               <div className="text-2xl font-semibold">{workspaceQuery.data?.stats.totalContacts ?? 0}</div>
             </div>
           </CardContent>
@@ -195,7 +196,7 @@ export function PostcardsDashboard() {
               <Upload className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Verified</div>
+              <div className="text-sm text-muted-foreground">{t("postcardsDashboard.verified")}</div>
               <div className="text-2xl font-semibold">
                 {workspaceQuery.data?.stats.verifiedContacts ?? 0}
               </div>
@@ -208,7 +209,7 @@ export function PostcardsDashboard() {
               <Send className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Deliverability</div>
+              <div className="text-sm text-muted-foreground">{t("postcardsDashboard.deliverability")}</div>
               <div className="text-2xl font-semibold">
                 {workspaceQuery.data?.stats.deliverabilityRate ?? 0}%
               </div>
@@ -221,7 +222,7 @@ export function PostcardsDashboard() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Import contacts</CardTitle>
+              <CardTitle>{t("postcardsDashboard.importContacts")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
@@ -230,32 +231,32 @@ export function PostcardsDashboard() {
                 onChange={(event) => setCsvText(event.target.value)}
               />
               <Button disabled={importMutation.isPending} onClick={() => void handleImport()}>
-                {importMutation.isPending ? "Importing..." : "Import CSV contacts"}
+                {importMutation.isPending ? t("postcardsDashboard.importing") : t("postcardsDashboard.importCsv")}
               </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Manual contact</CardTitle>
+              <CardTitle>{t("postcardsDashboard.manualContact")}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               <Input
-                placeholder="Full name"
+                placeholder={t("postcardsDashboard.fullName")}
                 value={manualContact.fullName}
                 onChange={(event) =>
                   setManualContact((current) => ({ ...current, fullName: event.target.value }))
                 }
               />
               <Input
-                placeholder="Address line 1"
+                placeholder={t("postcardsDashboard.addressLine1")}
                 value={manualContact.addressLine1}
                 onChange={(event) =>
                   setManualContact((current) => ({ ...current, addressLine1: event.target.value }))
                 }
               />
               <Input
-                placeholder="Address line 2"
+                placeholder={t("postcardsDashboard.addressLine2")}
                 value={manualContact.addressLine2}
                 onChange={(event) =>
                   setManualContact((current) => ({ ...current, addressLine2: event.target.value }))
@@ -263,21 +264,21 @@ export function PostcardsDashboard() {
               />
               <div className="grid gap-4 md:grid-cols-3">
                 <Input
-                  placeholder="City"
+                  placeholder={t("postcardsDashboard.city")}
                   value={manualContact.city}
                   onChange={(event) =>
                     setManualContact((current) => ({ ...current, city: event.target.value }))
                   }
                 />
                 <Input
-                  placeholder="State"
+                  placeholder={t("postcardsDashboard.state")}
                   value={manualContact.state}
                   onChange={(event) =>
                     setManualContact((current) => ({ ...current, state: event.target.value.toUpperCase() }))
                   }
                 />
                 <Input
-                  placeholder="ZIP"
+                  placeholder={t("postcardsDashboard.zip")}
                   value={manualContact.postalCode}
                   onChange={(event) =>
                     setManualContact((current) => ({ ...current, postalCode: event.target.value }))
@@ -285,14 +286,14 @@ export function PostcardsDashboard() {
                 />
               </div>
               <Input
-                placeholder="Tags (comma separated)"
+                placeholder={t("postcardsDashboard.tags")}
                 value={manualContact.tags}
                 onChange={(event) =>
                   setManualContact((current) => ({ ...current, tags: event.target.value }))
                 }
               />
               <Button disabled={manualMutation.isPending} onClick={() => void handleManualCreate()}>
-                {manualMutation.isPending ? "Saving..." : "Save manual contact"}
+                {manualMutation.isPending ? t("postcardsDashboard.saving") : t("postcardsDashboard.saveManual")}
               </Button>
             </CardContent>
           </Card>
@@ -301,7 +302,7 @@ export function PostcardsDashboard() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Template library + copy</CardTitle>
+              <CardTitle>{t("postcardsDashboard.templateLibrary")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid gap-3 md:grid-cols-2">
@@ -328,7 +329,7 @@ export function PostcardsDashboard() {
               <div className="rounded-2xl border bg-muted/20 p-4">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Sparkles className="h-4 w-4" />
-                  Suggested postcard copy
+                  {t("postcardsDashboard.suggestedCopy")}
                 </div>
                 <Textarea
                   className="mt-3"
@@ -342,7 +343,7 @@ export function PostcardsDashboard() {
                   disabled={copyMutation.isPending}
                   onClick={() => void handleGenerateCopy()}
                 >
-                  {copyMutation.isPending ? "Generating..." : "Generate postcard copy"}
+                  {copyMutation.isPending ? t("postcardsDashboard.generating") : t("postcardsDashboard.generateCopy")}
                 </Button>
                 {copyMutation.data ? (
                   <div className="mt-4 rounded-2xl bg-background p-4 text-sm">
@@ -357,11 +358,11 @@ export function PostcardsDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Create and launch campaign</CardTitle>
+              <CardTitle>{t("postcardsDashboard.createLaunch")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Input
-                placeholder="Campaign name"
+                placeholder={t("postcardsDashboard.campaignName")}
                 value={campaignName}
                 onChange={(event) => setCampaignName(event.target.value)}
               />
@@ -380,7 +381,7 @@ export function PostcardsDashboard() {
                       type="checkbox"
                     />
                     <div>
-                      <div className="font-medium">{contact.name || "Current Resident"}</div>
+                      <div className="font-medium">{contact.name || t("postcardsDashboard.currentResident")}</div>
                       <div className="text-sm text-muted-foreground">
                         {contact.addressLine1}, {contact.city}, {contact.state} {contact.postalCode}
                       </div>
@@ -390,7 +391,7 @@ export function PostcardsDashboard() {
               </div>
               <div className="grid gap-4 md:grid-cols-[200px_1fr]">
                 <label className="space-y-2 text-sm">
-                  <span className="text-muted-foreground">Send mode</span>
+                  <span className="text-muted-foreground">{t("postcardsDashboard.sendMode")}</span>
                   <select
                     className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
                     value={sendStrategy}
@@ -398,12 +399,12 @@ export function PostcardsDashboard() {
                       setSendStrategy(event.target.value as "send_now" | "scheduled")
                     }
                   >
-                    <option value="send_now">Send now</option>
-                    <option value="scheduled">Schedule</option>
+                    <option value="send_now">{t("postcardsDashboard.sendNow")}</option>
+                    <option value="scheduled">{t("postcardsDashboard.schedule")}</option>
                   </select>
                 </label>
                 <label className="space-y-2 text-sm">
-                  <span className="text-muted-foreground">Scheduled time</span>
+                  <span className="text-muted-foreground">{t("postcardsDashboard.scheduledTime")}</span>
                   <Input
                     disabled={sendStrategy !== "scheduled"}
                     type="datetime-local"
@@ -416,14 +417,14 @@ export function PostcardsDashboard() {
                 disabled={createCampaignMutation.isPending}
                 onClick={() => void handleCreateCampaign()}
               >
-                {createCampaignMutation.isPending ? "Creating..." : "Create draft campaign"}
+                {createCampaignMutation.isPending ? t("postcardsDashboard.creating") : t("postcardsDashboard.createDraft")}
               </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Campaign board</CardTitle>
+              <CardTitle>{t("postcardsDashboard.campaignBoard")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {workspaceQuery.data?.campaigns.length ? (
@@ -433,16 +434,16 @@ export function PostcardsDashboard() {
                       <div>
                         <div className="font-medium">{campaign.name}</div>
                         <div className="mt-1 text-sm text-muted-foreground">
-                          {campaign.templateName} · {campaign.recipientCount} recipients
+                          {campaign.templateName} · {campaign.recipientCount} {t("postcardsDashboard.recipients")}
                         </div>
                       </div>
                       <Badge variant="secondary">{campaign.status}</Badge>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <span>Total: ${(campaign.totalCents / 100).toFixed(2)}</span>
-                      <span>Submitted: {campaign.submittedCount}</span>
-                      <span>Delivered: {campaign.deliveredCount}</span>
-                      <span>Failed: {campaign.failedCount}</span>
+                      <span>{t("postcardsDashboard.total")}: ${(campaign.totalCents / 100).toFixed(2)}</span>
+                      <span>{t("postcardsDashboard.submitted")}: {campaign.submittedCount}</span>
+                      <span>{t("postcardsDashboard.delivered")}: {campaign.deliveredCount}</span>
+                      <span>{t("postcardsDashboard.failed")}: {campaign.failedCount}</span>
                     </div>
                     {campaign.status === "draft" || campaign.status === "failed" ? (
                       <Button
@@ -450,14 +451,14 @@ export function PostcardsDashboard() {
                         disabled={launchCampaignMutation.isPending}
                         onClick={() => void handleLaunchCampaign(campaign.id)}
                       >
-                        {launchCampaignMutation.isPending ? "Queueing..." : sendStrategy === "scheduled" ? "Schedule campaign" : "Launch campaign"}
+                        {launchCampaignMutation.isPending ? t("postcardsDashboard.queueing") : sendStrategy === "scheduled" ? t("postcardsDashboard.scheduleCampaign") : t("postcardsDashboard.launchCampaign")}
                       </Button>
                     ) : null}
                   </div>
                 ))
               ) : (
                 <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">
-                  No postcard campaigns yet.
+                  {t("postcardsDashboard.noCampaigns")}
                 </div>
               )}
             </CardContent>

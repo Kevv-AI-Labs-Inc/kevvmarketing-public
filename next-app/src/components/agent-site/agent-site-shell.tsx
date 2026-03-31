@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n";
 import type { AgentProfile } from "@/lib/db/schema";
 
 type AgentSiteShellProps = {
@@ -74,6 +75,7 @@ export function AgentSiteShell({
   preview = false,
   interactive = true,
 }: AgentSiteShellProps) {
+  const { t } = useT();
   const theme =
     templateTheme[(profile.templateId as keyof typeof templateTheme) ?? "classic"] ??
     templateTheme.classic;
@@ -93,7 +95,7 @@ export function AgentSiteShell({
   };
 
   return (
-    <div className={cn("min-h-screen overflow-x-hidden", theme.page)}>
+    <div className={cn("min-h-[100dvh] overflow-x-hidden", theme.page)}>
       <div className={cn("relative isolate overflow-hidden bg-gradient-to-br", theme.hero)}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_24%)]" />
         <div className="relative mx-auto max-w-7xl px-6 py-8 lg:px-10">
@@ -105,7 +107,7 @@ export function AgentSiteShell({
               <div className="mt-2 text-2xl font-semibold tracking-tight">{profile.name}</div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{profile.templateId ?? "classic"} template</Badge>
+              <Badge variant="secondary">{profile.templateId ?? "classic"} {t("agentSiteShell.template")}</Badge>
               <Badge variant="secondary">{profile.tier}</Badge>
             </div>
           </div>
@@ -121,23 +123,22 @@ export function AgentSiteShell({
                   ))}
                 </div>
                 <h1 className="max-w-4xl text-5xl font-semibold tracking-tight sm:text-6xl">
-                  {profile.title || "AI-first real estate advisor"}
+                  {profile.title || t("agentSiteShell.aiFallbackTitle")}
                 </h1>
                 <p className={cn("max-w-3xl text-lg leading-8", theme.muted)}>
-                  {profile.bio ||
-                    "Turn your public page into a real lead engine: market context, instant chat, and next-step conversion without losing brand control."}
+                  {profile.bio || t("agentSiteShell.aiFallbackBio")}
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Button asChild className={theme.accent}>
                     <Link href={`/agents/${profile.slug}/home-value`}>
-                      Get My Home Value
+                      {t("agentSiteShell.getMyHomeValue")}
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
                   {profile.bookingUrl ? (
                     <Button asChild variant="outline" className="border-white/20 bg-transparent text-current hover:bg-white/10">
                       <a href={profile.bookingUrl} rel="noreferrer" target="_blank">
-                        Book a strategy call
+                        {t("agentSiteShell.bookStrategyCall")}
                       </a>
                     </Button>
                   ) : null}
@@ -147,25 +148,25 @@ export function AgentSiteShell({
               <div className="grid gap-4 sm:grid-cols-3">
                 <Card className={theme.panel}>
                   <CardContent className="space-y-2 p-5">
-                    <div className="text-xs uppercase tracking-[0.28em] text-white/45">Experience</div>
+                    <div className="text-xs uppercase tracking-[0.28em] text-white/45">{t("agentSiteShell.experience")}</div>
                     <div className="text-2xl font-semibold">
-                      {profile.yearsExperience ? `${profile.yearsExperience}+ yrs` : "High-touch"}
+                      {profile.yearsExperience ? `${profile.yearsExperience}+ ${t("agentSiteShell.yrs")}` : t("agentSiteShell.highTouch")}
                     </div>
-                    <div className={theme.muted}>Guidance for buyer, seller, and relocation conversations.</div>
+                    <div className={theme.muted}>{t("agentSiteShell.experienceDescription")}</div>
                   </CardContent>
                 </Card>
                 <Card className={theme.panel}>
                   <CardContent className="space-y-2 p-5">
-                    <div className="text-xs uppercase tracking-[0.28em] text-white/45">Languages</div>
+                    <div className="text-xs uppercase tracking-[0.28em] text-white/45">{t("agentSiteShell.languagesLabel")}</div>
                     <div className="text-2xl font-semibold">{languages.length || 1}</div>
                     <div className={theme.muted}>{languages.join(" / ") || "English"}</div>
                   </CardContent>
                 </Card>
                 <Card className={theme.panel}>
                   <CardContent className="space-y-2 p-5">
-                    <div className="text-xs uppercase tracking-[0.28em] text-white/45">Live CTAs</div>
+                    <div className="text-xs uppercase tracking-[0.28em] text-white/45">{t("agentSiteShell.liveCtas")}</div>
                     <div className="text-2xl font-semibold">3</div>
-                    <div className={theme.muted}>Chat, inquiry form, and Home Value funnel work together.</div>
+                    <div className={theme.muted}>{t("agentSiteShell.ctasDescription")}</div>
                   </CardContent>
                 </Card>
               </div>
@@ -192,7 +193,7 @@ export function AgentSiteShell({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-6">
                     <div className="text-xs uppercase tracking-[0.28em] text-white/50">
-                      Public funnel
+                      {t("agentSiteShell.publicFunnel")}
                     </div>
                     <div className="mt-2 text-2xl font-semibold">{profile.name}</div>
                     <div className={cn("mt-1 flex flex-col gap-2 text-sm", theme.muted)}>
@@ -231,12 +232,11 @@ export function AgentSiteShell({
                 <CardContent className="space-y-4 p-6">
                   <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-white/45">
                     <Building2 className="h-4 w-4" />
-                    Positioning
+                    {t("agentSiteShell.positioning")}
                   </div>
-                  <h2 className="text-2xl font-semibold">Why clients use this page</h2>
+                  <h2 className="text-2xl font-semibold">{t("agentSiteShell.whyClients")}</h2>
                   <p className={theme.muted}>
-                    This is not a static biography. It is the front door for AI chat,
-                    seller valuation, and structured lead capture.
+                    {t("agentSiteShell.whyClientsDescription")}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {specialties.slice(0, 6).map((specialty) => (
@@ -251,13 +251,13 @@ export function AgentSiteShell({
                 <CardContent className="space-y-4 p-6">
                   <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-white/45">
                     <CalendarClock className="h-4 w-4" />
-                    Conversion path
+                    {t("agentSiteShell.conversionPath")}
                   </div>
-                  <h2 className="text-2xl font-semibold">One page, three entry points</h2>
+                  <h2 className="text-2xl font-semibold">{t("agentSiteShell.threeEntryPoints")}</h2>
                   <div className={cn("space-y-3 text-sm", theme.muted)}>
-                    <p>1. Read positioning and recent proof.</p>
-                    <p>2. Start AI chat or send a direct inquiry.</p>
-                    <p>3. Move seller traffic into the Home Value funnel.</p>
+                    <p>{t("agentSiteShell.step1")}</p>
+                    <p>{t("agentSiteShell.step2")}</p>
+                    <p>{t("agentSiteShell.step3")}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -267,7 +267,7 @@ export function AgentSiteShell({
               <section className="space-y-5">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-white/45">
                   <Sparkles className="h-4 w-4" />
-                  Recent transactions
+                  {t("agentSiteShell.recentTransactions")}
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   {transactions.slice(0, 6).map((transaction, index) => (
@@ -290,7 +290,7 @@ export function AgentSiteShell({
               <section className="space-y-5">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-white/45">
                   <Star className="h-4 w-4" />
-                  Testimonials
+                  {t("agentSiteShell.testimonialsLabel")}
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   {testimonials.slice(0, 4).map((testimonial, index) => (
@@ -314,7 +314,7 @@ export function AgentSiteShell({
               <section className="space-y-5">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-white/45">
                   <Globe2 className="h-4 w-4" />
-                  Recognition
+                  {t("agentSiteShell.recognition")}
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {awards.map((award) => (
@@ -331,15 +331,14 @@ export function AgentSiteShell({
             <Card className={theme.panel}>
               <CardContent className="space-y-5 p-6">
                 <div className="text-xs uppercase tracking-[0.28em] text-white/45">
-                  Seller CTA
+                  {t("agentSiteShell.sellerCta")}
                 </div>
-                <h2 className="text-2xl font-semibold">Turn owners into structured seller leads</h2>
+                <h2 className="text-2xl font-semibold">{t("agentSiteShell.sellerCtaTitle")}</h2>
                 <p className={theme.muted}>
-                  Route homeowners into a branded valuation experience, then sync those leads back
-                  into your unified Kevv contact spine.
+                  {t("agentSiteShell.sellerCtaDescription")}
                 </p>
                 <Button asChild className={theme.accent}>
-                  <Link href={`/agents/${profile.slug}/home-value`}>Open Home Value funnel</Link>
+                  <Link href={`/agents/${profile.slug}/home-value`}>{t("agentSiteShell.openHomeValueFunnel")}</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -348,11 +347,11 @@ export function AgentSiteShell({
               <Card className={theme.panel}>
                 <CardContent className="space-y-5 p-6">
                   <div className="text-xs uppercase tracking-[0.28em] text-white/45">
-                    Direct inquiry
+                    {t("agentSiteShell.directInquiry")}
                   </div>
-                  <h2 className="text-2xl font-semibold">Contact {profile.name.split(" ")[0]}</h2>
+                  <h2 className="text-2xl font-semibold">{t("agentSiteShell.contactAgent", { name: profile.name.split(" ")[0] })}</h2>
                   <p className={theme.muted}>
-                    Send an inquiry that goes straight into the unified leads workspace.
+                    {t("agentSiteShell.inquiryDescription")}
                   </p>
                   <AgentSiteContactForm
                     accentClassName={theme.accent}
@@ -365,11 +364,10 @@ export function AgentSiteShell({
               <Card className={theme.panel}>
                 <CardContent className="space-y-4 p-6">
                   <div className="text-xs uppercase tracking-[0.28em] text-white/45">
-                    Preview notes
+                    {t("agentSiteShell.previewNotes")}
                   </div>
                   <p className={theme.muted}>
-                    This preview shares the same visual system as the public page. Chat and inquiry
-                    are disabled here, but the public route will activate them.
+                    {t("agentSiteShell.previewDescription")}
                   </p>
                 </CardContent>
               </Card>
