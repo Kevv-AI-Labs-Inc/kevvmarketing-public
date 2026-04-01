@@ -9,31 +9,56 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
+import { useT } from "@/i18n";
+
+// ─── Status helpers ───────────────────────────────────────────────────────────
+
+const STATUS_OPTIONS = [
+  "new",
+  "contacted",
+  "qualified",
+  "converted",
+  "lost",
+  "archived",
+] as const;
+type ContactStatus = (typeof STATUS_OPTIONS)[number];
+
+const STATUS_COLORS: Record<ContactStatus, string> = {
+  new: "bg-blue-500/10 text-blue-600 border-blue-200",
+  contacted: "bg-amber-500/10 text-amber-600 border-amber-200",
+  qualified: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
+  converted: "bg-violet-500/10 text-violet-600 border-violet-200",
+  lost: "bg-rose-500/10 text-rose-500 border-rose-200",
+  archived: "bg-neutral-500/10 text-neutral-500 border-neutral-200",
+};
+
+const SCORE_COLORS: Record<string, string> = {
+  hot: "bg-rose-500/10 text-rose-600",
+  warm: "bg-amber-500/10 text-amber-600",
+  cold: "bg-sky-500/10 text-sky-600",
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function LeadsDashboard() {
+  const { t } = useT();
   const utils = trpc.useUtils();
   const [query, setQuery] = useState("");
   const [source, setSource] = useState("");
   const [status, setStatus] = useState("");
   const [selectedLeadIds, setSelectedLeadIds] = useState<number[]>([]);
-  const [campaignName, setCampaignName] = useState("High Intent Seller Follow-up");
+  const [campaignName, setCampaignName] = useState("");
   const [templateId, setTemplateId] = useState<number | null>(null);
   const [dripCampaignId, setDripCampaignId] = useState<number | null>(null);
 
   const dashboardQuery = trpc.leads.dashboard.useQuery({
     query: query || undefined,
     source: source || undefined,
-    status: (status || undefined) as
-      | "new"
-      | "contacted"
-      | "qualified"
-      | "converted"
-      | "lost"
-      | "archived"
-      | undefined,
+    status: (status || undefined) as ContactStatus | undefined,
   });
   const updateStatusMutation = trpc.leads.updateStatus.useMutation();
-  const createPostcardDraftMutation = trpc.leads.createPostcardDraftFromContacts.useMutation();
+  const createPostcardDraftMutation =
+    trpc.leads.createPostcardDraftFromContacts.useMutation();
   const enrollInDripMutation = trpc.leads.enrollInDrip.useMutation();
 
   const leads = dashboardQuery.data?.leads ?? [];
@@ -47,41 +72,54 @@ export function LeadsDashboard() {
     await utils.leads.list.invalidate();
   };
 
-  const handleStatusUpdate = async (contactId: number, nextStatus: "new" | "contacted" | "qualified" | "converted" | "lost" | "archived") => {
+  // ── Handlers ────────────────────────────────────────────────────────────────
+
+  const handleStatusUpdate = async (
+    contactId: number,
+    nextStatus: ContactStatus
+  ) => {
     try {
       await updateStatusMutation.mutateAsync({
         contactId,
         status: nextStatus,
       });
-      toast.success("Lead status updated.");
+      toast.success(t("leadsDashboard.statusUpdated"));
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Status update failed.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("leadsDashboard.statusUpdateFailed")
+      );
     }
   };
 
   const handleCreatePostcardDraft = async () => {
     if (!activeTemplateId || selectedLeadIds.length === 0) {
-      toast.error("Select leads and a postcard template.");
+      toast.error(t("leadsDashboard.selectLeadsAndTemplate"));
       return;
     }
 
     try {
       await createPostcardDraftMutation.mutateAsync({
-        name: campaignName,
+        name: campaignName || "Follow-up Campaign",
         templateId: activeTemplateId,
         contactIds: selectedLeadIds,
       });
-      toast.success("Postcard draft campaign created.");
+      toast.success(t("leadsDashboard.postcardDraftCreated"));
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create postcard draft.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("leadsDashboard.postcardDraftFailed")
+      );
     }
   };
 
   const handleEnrollInDrip = async () => {
     if (!activeDripCampaignId || selectedLeadIds.length === 0) {
-      toast.error("Select leads and a drip campaign.");
+      toast.error(t("leadsDashboard.selectLeadsAndDrip"));
       return;
     }
 
@@ -90,34 +128,52 @@ export function LeadsDashboard() {
         campaignId: activeDripCampaignId,
         contactIds: selectedLeadIds,
       });
-      toast.success(`Enrolled ${result.enrolled} lead(s) into drip.`);
+      toast.success(
+        t("leadsDashboard.enrolled").replace(
+          "{count}",
+          String(result.enrolled)
+        )
+      );
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to enroll leads.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("leadsDashboard.enrollFailed")
+      );
     }
   };
+
+  // ── Loading state ───────────────────────────────────────────────────────────
 
   if (dashboardQuery.isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading leads workspace...</div>
+        <div className="text-sm text-muted-foreground">
+          {t("leadsDashboard.loading")}
+        </div>
       </div>
     );
   }
 
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-8 px-6 py-8">
+      {/* Hero header */}
       <div>
         <div className="text-xs uppercase tracking-[0.32em] text-muted-foreground">
-          Leads
+          {t("leadsDashboard.eyebrow")}
         </div>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Unified leads and automation</h1>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+          {t("leadsDashboard.title")}
+        </h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Agent site chat and forms, Home Value, Area Magnet, and postcard imports all land in the
-          same contact spine. Use this page to qualify, route, and activate leads.
+          {t("leadsDashboard.description")}
         </p>
       </div>
 
+      {/* Source breakdown cards */}
       <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         {dashboardQuery.data?.sourceBreakdown.map((item) => (
           <Card key={item.source}>
@@ -131,15 +187,18 @@ export function LeadsDashboard() {
         ))}
       </div>
 
+      {/* Main two-column layout */}
       <div className="grid gap-8 xl:grid-cols-[1.08fr_0.92fr]">
+        {/* Left: Filters + lead inbox */}
         <div className="space-y-6">
+          {/* Filters */}
           <Card>
             <CardHeader>
-              <CardTitle>Lead filters</CardTitle>
+              <CardTitle>{t("leadsDashboard.filters")}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
               <Input
-                placeholder="Search leads"
+                placeholder={t("leadsDashboard.searchPlaceholder")}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
@@ -148,7 +207,7 @@ export function LeadsDashboard() {
                 value={source}
                 onChange={(event) => setSource(event.target.value)}
               >
-                <option value="">All sources</option>
+                <option value="">{t("leadsDashboard.allSources")}</option>
                 {dashboardQuery.data?.sourceBreakdown.map((item) => (
                   <option key={item.source} value={item.source}>
                     {item.source}
@@ -160,24 +219,28 @@ export function LeadsDashboard() {
                 value={status}
                 onChange={(event) => setStatus(event.target.value)}
               >
-                <option value="">All statuses</option>
-                {["new", "contacted", "qualified", "converted", "lost", "archived"].map((item) => (
+                <option value="">{t("leadsDashboard.allStatuses")}</option>
+                {STATUS_OPTIONS.map((item) => (
                   <option key={item} value={item}>
-                    {item}
+                    {t(`leadsDashboard.status.${item}`)}
                   </option>
                 ))}
               </select>
             </CardContent>
           </Card>
 
+          {/* Lead inbox */}
           <Card>
             <CardHeader>
-              <CardTitle>Lead inbox</CardTitle>
+              <CardTitle>{t("leadsDashboard.inbox")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {leads.length ? (
                 leads.map((lead) => (
-                  <div className="rounded-2xl border p-4" key={lead.id}>
+                  <div
+                    className="rounded-2xl border p-4 transition-colors hover:bg-muted/20"
+                    key={lead.id}
+                  >
                     <div className="flex items-start justify-between gap-4">
                       <label className="flex items-start gap-3">
                         <input
@@ -190,18 +253,50 @@ export function LeadsDashboard() {
                             )
                           }
                           type="checkbox"
+                          className="mt-1 accent-primary"
                         />
                         <div>
-                          <div className="font-medium">{lead.name || "Unnamed lead"}</div>
-                          <div className="mt-1 text-sm text-muted-foreground">
-                            {lead.email || lead.phone || "No direct contact method"}
+                          <div className="font-medium">
+                            {lead.name || t("leadsDashboard.unnamedLead")}
                           </div>
-                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <div className="mt-1 text-sm text-muted-foreground">
+                            {lead.email ||
+                              lead.phone ||
+                              t("leadsDashboard.noContact")}
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs">
                             <Badge variant="secondary">{lead.source}</Badge>
-                            <Badge variant="secondary">{lead.status}</Badge>
-                            <span>intent: {lead.intent || "n/a"}</span>
-                            <span>score: {lead.score}</span>
-                            <span>engagement: {lead.engagementScore}</span>
+                            <Badge
+                              variant="outline"
+                              className={
+                                STATUS_COLORS[lead.status as ContactStatus] ??
+                                ""
+                              }
+                            >
+                              {t(
+                                `leadsDashboard.status.${lead.status}` as Parameters<typeof t>[0]
+                              )}
+                            </Badge>
+                            {lead.score && (
+                              <Badge
+                                variant="outline"
+                                className={SCORE_COLORS[lead.score] ?? ""}
+                              >
+                                {t("leadsDashboard.score")}:{" "}
+                                {lead.score}
+                              </Badge>
+                            )}
+                            {lead.intent && (
+                              <span className="text-muted-foreground">
+                                {t("leadsDashboard.intent")}: {lead.intent}
+                              </span>
+                            )}
+                            {lead.engagementScore > 0 && (
+                              <span className="text-muted-foreground">
+                                {t("leadsDashboard.engagement")}:{" "}
+                                {lead.engagementScore}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </label>
@@ -211,19 +306,13 @@ export function LeadsDashboard() {
                         onChange={(event) =>
                           void handleStatusUpdate(
                             lead.id,
-                            event.target.value as
-                              | "new"
-                              | "contacted"
-                              | "qualified"
-                              | "converted"
-                              | "lost"
-                              | "archived"
+                            event.target.value as ContactStatus
                           )
                         }
                       >
-                        {["new", "contacted", "qualified", "converted", "lost", "archived"].map((item) => (
+                        {STATUS_OPTIONS.map((item) => (
                           <option key={item} value={item}>
-                            {item}
+                            {t(`leadsDashboard.status.${item}`)}
                           </option>
                         ))}
                       </select>
@@ -232,24 +321,26 @@ export function LeadsDashboard() {
                 ))
               ) : (
                 <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">
-                  No leads match the current filters.
+                  {t("leadsDashboard.noLeads")}
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
+        {/* Right: Action panels */}
         <div className="space-y-6">
+          {/* Postcard */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mailbox className="h-4 w-4" />
-                Lead to postcard
+                {t("leadsDashboard.postcardTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Input
-                placeholder="Campaign name"
+                placeholder={t("leadsDashboard.campaignNamePlaceholder")}
                 value={campaignName}
                 onChange={(event) => setCampaignName(event.target.value)}
               />
@@ -257,7 +348,9 @@ export function LeadsDashboard() {
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
                 value={activeTemplateId ?? ""}
                 onChange={(event) =>
-                  setTemplateId(event.target.value ? Number(event.target.value) : null)
+                  setTemplateId(
+                    event.target.value ? Number(event.target.value) : null
+                  )
                 }
               >
                 {postcardTemplates.map((template) => (
@@ -270,16 +363,19 @@ export function LeadsDashboard() {
                 disabled={createPostcardDraftMutation.isPending}
                 onClick={() => void handleCreatePostcardDraft()}
               >
-                {createPostcardDraftMutation.isPending ? "Creating..." : "Create postcard draft"}
+                {createPostcardDraftMutation.isPending
+                  ? t("leadsDashboard.creating")
+                  : t("leadsDashboard.createDraft")}
               </Button>
             </CardContent>
           </Card>
 
+          {/* Drip */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Workflow className="h-4 w-4" />
-                Lead to drip
+                {t("leadsDashboard.dripTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -287,7 +383,9 @@ export function LeadsDashboard() {
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
                 value={activeDripCampaignId ?? ""}
                 onChange={(event) =>
-                  setDripCampaignId(event.target.value ? Number(event.target.value) : null)
+                  setDripCampaignId(
+                    event.target.value ? Number(event.target.value) : null
+                  )
                 }
               >
                 {dripOptions.map((campaign) => (
@@ -296,17 +394,23 @@ export function LeadsDashboard() {
                   </option>
                 ))}
               </select>
-              <Button disabled={enrollInDripMutation.isPending} onClick={() => void handleEnrollInDrip()}>
-                {enrollInDripMutation.isPending ? "Enrolling..." : "Enroll selected leads"}
+              <Button
+                disabled={enrollInDripMutation.isPending}
+                onClick={() => void handleEnrollInDrip()}
+              >
+                {enrollInDripMutation.isPending
+                  ? t("leadsDashboard.enrolling")
+                  : t("leadsDashboard.enrollDrip")}
               </Button>
             </CardContent>
           </Card>
 
+          {/* AI Insights */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
-                Recent insights
+                {t("leadsDashboard.insightsTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -324,23 +428,22 @@ export function LeadsDashboard() {
                 ))
               ) : (
                 <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">
-                  No insights yet.
+                  {t("leadsDashboard.noInsights")}
                 </div>
               )}
             </CardContent>
           </Card>
 
+          {/* Workspace note */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Inbox className="h-4 w-4" />
-                Workspace note
+                {t("leadsDashboard.workspaceNote")}
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm leading-7 text-muted-foreground">
-              This workspace now treats `agent_site_chat`, `agent_site_form`, `home_value`,
-              `area_magnet`, and `postcard_import` as one operating surface. Qualification,
-              activation, and automation all start from the same contact record.
+              {t("leadsDashboard.workspaceNoteContent")}
             </CardContent>
           </Card>
         </div>

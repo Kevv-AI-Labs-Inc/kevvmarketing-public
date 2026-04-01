@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   agentProfiles,
+  homeValueLinks,
   shareLeads,
   shareSessionEvents,
   shareSessions,
@@ -1490,6 +1491,201 @@ export const shareRouter = router({
       const activityBySession = await buildSessionActivityMap(db, rows);
       return rows.map((row) => serializeSessionRow(row, activityBySession.get(row.id)));
     }),
+
+  /**
+   * Unified share center — merges:
+   *  1. shareSessions (listing_share, area_magnet)
+   *  2. homeValueLinks
+   *  3. agent public profile (as a permanent "share")
+   */
+  listUnified: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
+    }
+
+    await ensureShareTables(db);
+
+    type UnifiedShareItem = {
+      id: string;
+      shareType: "listing_share" | "area_magnet" | "home_value" | "agent_site";
+      title: string;
+      description: string;
+      sharePath: string;
+      status: string;
+      ogImageUrl: string | null;
+      viewCount: number;
+      leadCount: number;
+      createdAt: string;
+      expiresAt: string | null;
+      lastActivityAt: string | null;
+      followUpSignal: string;
+      clientName: string | null;
+      eventCounts: {
+        total: number;
+        listingOpen: number;
+        contactClick: number;
+        wechatCopy: number;
+        tourInterest: number;
+        routeRequest: number;
+        leadSubmit: number;
+      };
+      listingCount: number;
+    };
+
+    const items: UnifiedShareItem[] = [];
+
+    // ── 1. shareSessions (listing_share + area_magnet) ──
+    const shareRows = await db
+      .select({
+        id: shareSessions.id,
+        token: shareSessions.token,
+        status: shareSessions.status,
+        sessionType: shareSessions.sessionType,
+        title: shareSessions.title,
+        clientName: shareSessions.clientName,
+        listingKeys: shareSessions.listingKeys,
+        magnetScope: shareSessions.magnetScope,
+        tourPlan: shareSessions.tourPlan,
+        viewCount: shareSessions.viewCount,
+        lastViewedAt: shareSessions.lastViewedAt,
+        createdAt: shareSessions.createdAt,
+        expiresAt: shareSessions.expiresAt,
+        agentBranding: shareSessions.agentBranding,
+      })
+      .from(shareSessions)
+      .where(eq(shareSessions.createdByOpenId, ctx.user.openId))
+      .orderBy(desc(shareSessions.createdAt))
+      .limit(100);
+
+    const activityBySession = await buildSessionActivityMap(db, shareRows);
+
+    for (const row of shareRows) {
+      const summary = activityBySession.get(row.id);
+      const keys = asStringArray(row.listingKeys);
+      const branding = asRecord(row.agentBranding);
+      const leadCount = summary?.leadCount ?? 0;
+
+      items.push({
+        id: `share_${row.id}`,
+        shareType: row.sessionType as "listing_share" | "area_magnet",
+        title: row.title || "Untitled Share",
+        description: row.clientName
+          ? `${row.clientName} · ${keys.length} listings`
+          : `${keys.length} listings`,
+        sharePath: `/s/${row.token}`,
+        status: row.status,
+        ogImageUrl: (typeof branding?.avatarUrl === "string" ? branding.avatarUrl : null),
+        viewCount: row.viewCount,
+        leadCount,
+        createdAt: row.createdAt.toISOString(),
+        expiresAt: row.expiresAt?.toISOString() ?? null,
+        lastActivityAt: summary?.lastActivityAt?.toISOString() ?? row.lastViewedAt?.toISOString() ?? null,
+        followUpSignal: summary?.followUpSignal ?? (Date.now() - row.createdAt.getTime() <= 24 * 60 * 60 * 1000 ? "new" : "quiet"),
+        clientName: row.clientName,
+        eventCounts: {
+          total: summary?.totalEvents ?? 0,
+          listingOpen: summary?.listingOpenCount ?? 0,
+          contactClick: summary?.contactClickCount ?? 0,
+          wechatCopy: summary?.wechatCopyCount ?? 0,
+          tourInterest: summary?.tourInterestCount ?? 0,
+          routeRequest: summary?.routeRequestCount ?? 0,
+          leadSubmit: leadCount,
+        },
+        listingCount: keys.length,
+      });
+    }
+
+    // ── 2. homeValueLinks ──
+    try {
+      const hvLinks = await db
+        .select()
+        .from(homeValueLinks)
+        .where(eq(homeValueLinks.userId, ctx.user.id))
+        .orderBy(desc(homeValueLinks.createdAt))
+        .limit(50);
+
+      for (const link of hvLinks) {
+        items.push({
+          id: `hv_${link.id}`,
+          shareType: "home_value",
+          title: link.label || link.ogTitle || "Home Value Link",
+          description: link.ogDescription || `Source: ${link.source}`,
+          sharePath: `/hv/${link.token}`,
+          status: link.status,
+          ogImageUrl: link.ogImageUrl ?? null,
+          viewCount: link.viewCount,
+          leadCount: link.leadCount,
+          createdAt: link.createdAt.toISOString(),
+          expiresAt: null,
+          lastActivityAt: link.updatedAt.toISOString(),
+          followUpSignal: link.leadCount > 0 ? "hot" : link.viewCount > 0 ? "warm" : "new",
+          clientName: null,
+          eventCounts: {
+            total: link.viewCount + link.valuationCount + link.leadCount,
+            listingOpen: 0,
+            contactClick: 0,
+            wechatCopy: 0,
+            tourInterest: 0,
+            routeRequest: 0,
+            leadSubmit: link.leadCount,
+          },
+          listingCount: 0,
+        });
+      }
+    } catch {
+      // homeValueLinks table may not exist yet — skip silently
+    }
+
+    // ── 3. agentProfile (permanent share) ──
+    try {
+      const [profile] = await db
+        .select({
+          id: agentProfiles.id,
+          slug: agentProfiles.slug,
+          name: agentProfiles.name,
+          title: agentProfiles.title,
+          photoUrl: agentProfiles.photoUrl,
+          status: agentProfiles.status,
+          createdAt: agentProfiles.createdAt,
+          lastPublishedAt: agentProfiles.lastPublishedAt,
+        })
+        .from(agentProfiles)
+        .where(eq(agentProfiles.userId, ctx.user.id))
+        .limit(1);
+
+      if (profile && profile.status === "active") {
+        items.push({
+          id: `agent_${profile.id}`,
+          shareType: "agent_site",
+          title: profile.name,
+          description: profile.title || "Agent Public Profile",
+          sharePath: `/agents/${profile.slug}`,
+          status: "active",
+          ogImageUrl: profile.photoUrl ?? null,
+          viewCount: 0,
+          leadCount: 0,
+          createdAt: profile.createdAt.toISOString(),
+          expiresAt: null,
+          lastActivityAt: profile.lastPublishedAt?.toISOString() ?? profile.createdAt.toISOString(),
+          followUpSignal: "new",
+          clientName: null,
+          eventCounts: { total: 0, listingOpen: 0, contactClick: 0, wechatCopy: 0, tourInterest: 0, routeRequest: 0, leadSubmit: 0 },
+          listingCount: 0,
+        });
+      }
+    } catch {
+      // agent profile may not exist — skip
+    }
+
+    // Sort by createdAt desc
+    items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return items;
+  }),
 
   revokeSession: protectedProcedure
     .input(z.object({ token: z.string().trim().min(8).max(128) }))

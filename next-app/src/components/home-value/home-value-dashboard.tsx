@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useT } from "@/i18n";
 import { formatCurrency } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
+import { CampaignLinksSection } from "./campaign-links-section";
 
 export function HomeValueDashboard() {
   const { t, locale } = useT();
@@ -87,6 +88,8 @@ export function HomeValueDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <CampaignLinksSection />
 
       <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>

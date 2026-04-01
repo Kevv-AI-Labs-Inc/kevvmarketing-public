@@ -6,6 +6,7 @@
  */
 
 import { ENV } from "./_core/env";
+import { AI_TASKS, resolveTaskProfile } from "./_core/ai-tasks";
 import {
   buildOpenAiApiUrl,
   buildOpenAiAuthHeaders,
@@ -37,7 +38,7 @@ async function openaiEmbed(texts: string | string[]): Promise<number[][]> {
       method: "POST",
       headers: buildOpenAiAuthHeaders({ scope: "embeddings" }),
       body: JSON.stringify({
-        model: ENV.openaiEmbeddingModel,
+        model: resolveTaskProfile(AI_TASKS.EMBEDDING).model,
         input: texts,
       }),
       signal: controller.signal,
@@ -60,7 +61,8 @@ async function openaiEmbed(texts: string | string[]): Promise<number[][]> {
 // ─── Model ID ─────────────────────────────────────────────
 
 export function getEmbeddingModelId(): string {
-  return `openai:${ENV.openaiEmbeddingModel}`;
+  const profile = resolveTaskProfile(AI_TASKS.EMBEDDING);
+  return `openai:${profile.model}`;
 }
 
 // ─── Public API ───────────────────────────────────────────

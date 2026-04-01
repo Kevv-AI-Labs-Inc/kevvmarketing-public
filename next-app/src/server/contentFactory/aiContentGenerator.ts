@@ -133,6 +133,7 @@ ${request.customPrompt ? `Additional instructions: ${request.customPrompt}` : ""
 Return JSON with: { "content": "...", "contentZh": "..." (if bilingual), "hashtags": [...], "subject": "..." (if email) }`;
 
   const result = await invokeLLM({
+    task: "content",
     messages: [
       {
         role: "system",

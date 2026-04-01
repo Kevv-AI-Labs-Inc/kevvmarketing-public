@@ -145,6 +145,7 @@ Keep each language version under 200 words.`;
 
   try {
     const result = await invokeLLM({
+      task: "cma",
       messages: [{ role: "user", content: prompt }],
     });
     const content = result.choices?.[0]?.message?.content;

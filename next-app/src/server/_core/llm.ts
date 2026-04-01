@@ -7,6 +7,7 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ENV } from "./env";
+import { resolveTaskProfile, type AITask } from "./ai-tasks";
 import {
   buildOpenAiApiUrl,
   buildOpenAiAuthHeaders,
@@ -69,6 +70,8 @@ export type ToolChoice =
   | ToolChoiceExplicit;
 
 export type InvokeParams = {
+  /** AI task identifier — resolves model, maxTokens, scope from the registry. */
+  task?: AITask;
   provider?: "gemini" | "openai";
   model?: string;
   messages: Message[];
@@ -331,13 +334,37 @@ async function invokeOpenAI(params: InvokeParams): Promise<InvokeResult> {
 // ─── Unified Entry Point ───────────────────────────────────
 
 /**
- * Invoke the LLM with automatic provider routing.
- * Uses AI_PROVIDER env var ("gemini" or "openai").
+ * Invoke the LLM with automatic provider + model routing.
+ *
+ * Resolution order for model:
+ *   1. params.model (explicit per-call override)
+ *   2. Task registry (params.task → ai-tasks.ts → per-task env var → global)
+ *   3. ENV.openaiModel / ENV.geminiModel (global fallback)
+ *
+ * Usage:
+ *   // Task-aware (recommended):
+ *   await invokeLLM({ task: "home-value", messages: [...] });
+ *
+ *   // Explicit model (override):
+ *   await invokeLLM({ model: "gpt-4o", messages: [...] });
+ *
+ *   // Legacy (uses global OPENAI_MODEL):
+ *   await invokeLLM({ messages: [...] });
  */
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  const provider = params.provider ?? ENV.aiProvider;
+  // Resolve task profile if task is specified
+  const taskProfile = params.task ? resolveTaskProfile(params.task) : null;
+
+  // Merge task defaults into params (explicit params always win)
+  const resolved: InvokeParams = {
+    ...params,
+    model: params.model ?? taskProfile?.model,
+    maxTokens: params.maxTokens ?? params.max_tokens ?? taskProfile?.maxTokens,
+  };
+
+  const provider = resolved.provider ?? ENV.aiProvider;
   if (provider === "openai") {
-    return invokeOpenAI(params);
+    return invokeOpenAI(resolved);
   }
-  return invokeGemini(params);
+  return invokeGemini(resolved);
 }

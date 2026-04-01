@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,7 +47,7 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
-export function PublicHomeValuePage({ slug }: { slug: string }) {
+export function PublicHomeValuePage({ slug, linkToken }: { slug: string; linkToken?: string }) {
   const [locale, setLocale] = useState<Locale>("en");
   const [stage, setStage] = useState<Stage>("input");
   const [address, setAddress] = useState("");
@@ -159,6 +160,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
         slug,
         address: address.trim(),
         locale,
+        ...(linkToken ? { ref: linkToken } : {}),
       });
       setValuation(result);
       setValuationRunId(result.valuationRunId);
@@ -177,6 +179,7 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
         slug,
         valuationRunId,
         ...leadForm,
+        ...(linkToken ? { ref: linkToken } : {}),
       });
       setStage("report");
       toast.success(c.errors.unlockSuccess);
@@ -275,11 +278,14 @@ export function PublicHomeValuePage({ slug }: { slug: string }) {
                   {c.inputLabel}
                 </div>
                 <div className="mt-5 space-y-4">
-                  <Input
-                    className="h-12 border-white/10 bg-white/10 text-white placeholder:text-white/35"
+                  <AddressAutocomplete
+                    inputClassName="h-12 border-white/10 bg-white/10 text-white placeholder:text-white/35"
                     placeholder={c.inputPlaceholder}
                     value={address}
-                    onChange={(event) => setAddress(event.target.value)}
+                    onChange={setAddress}
+                    onSelect={(standardized) => {
+                      setAddress(standardized);
+                    }}
                   />
                   <Button
                     className="h-12 w-full bg-cyan-300 text-[#08131d] hover:bg-cyan-200"
