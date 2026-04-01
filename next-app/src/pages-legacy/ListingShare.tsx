@@ -45,6 +45,15 @@ type TourStop = {
   startAt: string;
   endAt: string;
   isExternal?: boolean;
+  driveFromPreviousText?: string | null;
+  distanceFromPreviousText?: string | null;
+};
+
+type TourRouteSummary = {
+  totalDistanceText: string | null;
+  totalDurationText: string | null;
+  googleMapsUrl: string | null;
+  message: string | null;
 };
 
 type ListingShareProps = {
@@ -91,9 +100,40 @@ function getTourStops(value: unknown): TourStop[] {
       startAt: getString(item.startAt),
       endAt: getString(item.endAt),
       isExternal: Boolean(item.isExternal),
+      driveFromPreviousText: getString(item.driveFromPreviousText) || null,
+      distanceFromPreviousText: getString(item.distanceFromPreviousText) || null,
     }))
     .filter((item) => item.listingKey.length > 0)
     .sort((a, b) => a.order - b.order);
+}
+
+function getTourRouteSummary(value: unknown): TourRouteSummary {
+  if (!value || typeof value !== "object") {
+    return {
+      totalDistanceText: null,
+      totalDurationText: null,
+      googleMapsUrl: null,
+      message: null,
+    };
+  }
+
+  const route = (value as { route?: unknown }).route;
+  if (!route || typeof route !== "object") {
+    return {
+      totalDistanceText: null,
+      totalDurationText: null,
+      googleMapsUrl: null,
+      message: null,
+    };
+  }
+
+  const source = route as Record<string, unknown>;
+  return {
+    totalDistanceText: getString(source.totalDistanceText) || null,
+    totalDurationText: getString(source.totalDurationText) || null,
+    googleMapsUrl: getString(source.googleMapsUrl) || null,
+    message: getString(source.message) || null,
+  };
 }
 
 function formatPrice(price: string | null | undefined, fallback: string) {
@@ -191,6 +231,7 @@ export default function ListingShare({ token }: ListingShareProps) {
   }, [copy.externalListingFallback, copy.pricePending, data, pick]);
 
   const tourStops = useMemo(() => getTourStops(data?.tourPlan), [data?.tourPlan]);
+  const tourRouteSummary = useMemo(() => getTourRouteSummary(data?.tourPlan), [data?.tourPlan]);
 
   const agentBranding = (data?.agentBranding ?? {}) as Record<string, unknown>;
   const shareConfig = (data?.shareConfig ?? {}) as Record<string, unknown>;
@@ -461,7 +502,29 @@ export default function ListingShare({ token }: ListingShareProps) {
                     {pick(copy.requestTour)}
                   </Button>
                 </div>
-                <p className="mt-4 text-sm leading-7 text-stone-300">{pick(copy.timelineFallback)}</p>
+                <p className="mt-4 text-sm leading-7 text-stone-300">
+                  {tourRouteSummary.totalDistanceText || tourRouteSummary.totalDurationText
+                    ? pick(
+                        copy.routeSummary(
+                          tourRouteSummary.totalDistanceText ?? "-",
+                          tourRouteSummary.totalDurationText ?? "-"
+                        )
+                      )
+                    : pick(copy.timelineFallback)}
+                </p>
+                {tourRouteSummary.googleMapsUrl ? (
+                  <Button
+                    variant="outline"
+                    className="mt-4 rounded-full border-white/15 bg-white/5 text-stone-100 hover:bg-white/10"
+                    onClick={() => {
+                      trackEvent("route_open_google_maps", { source: "route_section" });
+                      window.open(tourRouteSummary.googleMapsUrl!, "_blank", "noopener,noreferrer");
+                    }}
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    {copy.openGoogleMaps}
+                  </Button>
+                ) : null}
                 <div className="mt-6 space-y-3">
                   {tourStops.map((stop) => (
                     <div key={`${stop.order}-${stop.listingKey}`} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
@@ -469,7 +532,16 @@ export default function ListingShare({ token }: ListingShareProps) {
                         <div>
                           <p className="text-sm font-semibold text-white">#{stop.order} {stop.address || stop.listingKey}</p>
                           <p className="mt-1 text-xs text-stone-400">
-                            {formatDateTime(stop.startAt, locale)} - {formatDateTime(stop.endAt, locale)}
+                            {stop.driveFromPreviousText
+                              ? pick(
+                                  copy.stopDriveSummary(
+                                    stop.driveFromPreviousText,
+                                    stop.distanceFromPreviousText || "-"
+                                  )
+                                )
+                              : stop.startAt || stop.endAt
+                                ? `${formatDateTime(stop.startAt, locale)} - ${formatDateTime(stop.endAt, locale)}`
+                                : pick(copy.stopStartLabel)}
                           </p>
                         </div>
                         <Badge variant="outline" className="w-fit rounded-full border-white/15 bg-white/5 text-stone-300">
@@ -668,7 +740,18 @@ export default function ListingShare({ token }: ListingShareProps) {
                   </div>
                   <div className="flex items-start gap-3">
                     <Clock3 className="mt-1 h-4 w-4 text-emerald-300" />
-                    <p>{tourStops.length > 0 ? pick(copy.routeCount(tourStops.length)) : pick(copy.timelineFallback)}</p>
+                    <p>
+                      {tourRouteSummary.totalDistanceText || tourRouteSummary.totalDurationText
+                        ? pick(
+                            copy.routeSummary(
+                              tourRouteSummary.totalDistanceText ?? "-",
+                              tourRouteSummary.totalDurationText ?? "-"
+                            )
+                          )
+                        : tourStops.length > 0
+                          ? pick(copy.routeCount(tourStops.length))
+                          : pick(copy.timelineFallback)}
+                    </p>
                   </div>
                   <div className="flex items-start gap-3">
                     <MapPin className="mt-1 h-4 w-4 text-emerald-300" />

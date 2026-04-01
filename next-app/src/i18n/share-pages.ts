@@ -79,6 +79,8 @@ export function getSharePageCopy(locale: Locale) {
         t("sharePages.listingShare.viewCount", { count }),
       routeCount: (count: number) =>
         t("sharePages.listingShare.routeCount", { count }),
+      routeSummary: (distance: string, duration: string) =>
+        t("sharePages.listingShare.routeSummary", { distance, duration }),
       createdAt: t("sharePages.listingShare.createdAt"),
       strategyTitle: t("sharePages.listingShare.strategyTitle"),
       strategyFallback: t("sharePages.listingShare.strategyFallback"),
@@ -120,6 +122,10 @@ export function getSharePageCopy(locale: Locale) {
       inventoryEyebrow: t("sharePages.listingShare.inventoryEyebrow"),
       serviceEyebrow: t("sharePages.listingShare.serviceEyebrow"),
       serviceTitle: t("sharePages.listingShare.serviceTitle"),
+      openGoogleMaps: t("sharePages.listingShare.openGoogleMaps"),
+      stopDriveSummary: (duration: string, distance: string) =>
+        t("sharePages.listingShare.stopDriveSummary", { duration, distance }),
+      stopStartLabel: t("sharePages.listingShare.stopStartLabel"),
     },
     areaMagnetShare: {
       marketIntelBadge: t("sharePages.areaMagnetShare.marketIntelBadge"),
