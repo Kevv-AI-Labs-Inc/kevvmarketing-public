@@ -24,6 +24,7 @@ import {
   Search,
   Share2,
   Sparkles,
+  Target,
   Users,
 } from "lucide-react";
 
@@ -340,6 +341,18 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
         icon: LayoutDashboard,
         label: { zh: "指挥台", en: "Command Center" },
         path: "/dashboard",
+      },
+    ],
+  },
+  {
+    id: "prospecting",
+    label: { zh: "AI 拓客", en: "Prospecting" },
+    items: [
+      {
+        id: "prospecting",
+        icon: Target,
+        label: { zh: "拓客工作台", en: "Prospecting" },
+        path: "/prospecting",
       },
     ],
   },
