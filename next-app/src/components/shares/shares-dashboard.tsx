@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Badge,
-} from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,15 +20,34 @@ import {
   ExternalLink,
   Eye,
   Filter,
+  Globe,
+  Home,
   Loader2,
+  MapPin,
   RotateCcw,
   Share2,
   Trash2,
+  User,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-type SessionType = "all" | "listing_share" | "area_magnet";
+type ShareType = "all" | "listing_share" | "area_magnet" | "home_value" | "agent_site";
+
+const SHARE_TYPE_ICON: Record<string, typeof Share2> = {
+  listing_share: Share2,
+  area_magnet: MapPin,
+  home_value: Home,
+  agent_site: User,
+};
+
+const SHARE_TYPE_COLOR: Record<string, string> = {
+  listing_share: "bg-blue-500/10 text-blue-600 border-blue-200",
+  area_magnet: "bg-violet-500/10 text-violet-600 border-violet-200",
+  home_value: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
+  agent_site: "bg-amber-500/10 text-amber-600 border-amber-200",
+};
 
 function followUpTone(signal: string) {
   switch (signal) {
@@ -45,33 +62,20 @@ function followUpTone(signal: string) {
   }
 }
 
-function sessionTypeLabel(sessionType: string, t: ReturnType<typeof useT>["t"]) {
-  if (sessionType === "area_magnet") return t("shares.typeAreaMagnet");
-  if (sessionType === "listing_share") return t("shares.typeListingShare");
-  return sessionType;
-}
-
-function sessionTypeBadgeVariant(sessionType: string): "default" | "secondary" | "outline" {
-  if (sessionType === "area_magnet") return "outline";
-  return "secondary";
-}
-
 export function SharesDashboard() {
   const { t, locale } = useT();
   const router = useRouter();
-  const utils = trpc.useUtils();
 
-  const [filterType, setFilterType] = useState<SessionType>("all");
+  const [filterType, setFilterType] = useState<ShareType>("all");
   const [search, setSearch] = useState("");
 
-  // Fetch ALL share sessions — no sessionType filter
-  const sharesQuery = trpc.share.listMine.useQuery(undefined, {
+  const unifiedQuery = trpc.share.listUnified.useQuery(undefined, {
     refetchOnWindowFocus: false,
   });
 
   const revokeShareMutation = trpc.share.revokeSession.useMutation({
     onSuccess: async () => {
-      await utils.share.listMine.invalidate();
+      await unifiedQuery.refetch();
       toast.success(t("magicShare.shareLinkRevoked"));
     },
     onError: (error) => {
@@ -102,34 +106,38 @@ export function SharesDashboard() {
     }
   };
 
-  const describeSessionStatus = (status: string) => {
-    switch (status) {
-      case "active": return t("magicShare.statusActive");
-      case "revoked": return t("magicShare.statusRevoked");
-      case "expired": return t("magicShare.statusExpired");
-      default: return status;
+  const shareTypeLabel = (shareType: string) => {
+    switch (shareType) {
+      case "listing_share": return t("shares.typeListingShare");
+      case "area_magnet": return t("shares.typeAreaMagnet");
+      case "home_value": return t("shares.typeHomeValue");
+      case "agent_site": return t("shares.typeAgentSite");
+      default: return shareType;
     }
   };
 
-  const allShares = sharesQuery.data ?? [];
+  const allShares = unifiedQuery.data ?? [];
 
-  // Client-side filter by type + search
   const filteredShares = allShares.filter((share) => {
-    const typeMatch = filterType === "all" || share.sessionType === filterType;
+    const typeMatch = filterType === "all" || share.shareType === filterType;
     const searchLower = search.toLowerCase();
     const textMatch =
       !search ||
       share.title?.toLowerCase().includes(searchLower) ||
-      share.clientName?.toLowerCase().includes(searchLower) ||
+      share.description?.toLowerCase().includes(searchLower) ||
       share.sharePath?.toLowerCase().includes(searchLower);
     return typeMatch && textMatch;
   });
 
-  const countByType = {
+  const countByType: Record<ShareType, number> = {
     all: allShares.length,
-    listing_share: allShares.filter((s) => s.sessionType === "listing_share").length,
-    area_magnet: allShares.filter((s) => s.sessionType === "area_magnet").length,
+    listing_share: allShares.filter((s) => s.shareType === "listing_share").length,
+    area_magnet: allShares.filter((s) => s.shareType === "area_magnet").length,
+    home_value: allShares.filter((s) => s.shareType === "home_value").length,
+    agent_site: allShares.filter((s) => s.shareType === "agent_site").length,
   };
+
+  const filterTypes: ShareType[] = ["all", "listing_share", "area_magnet", "home_value", "agent_site"];
 
   return (
     <div className="space-y-6 pb-8">
@@ -163,16 +171,43 @@ export function SharesDashboard() {
             className="border-primary/30 text-primary hover:bg-primary/5"
             onClick={() => router.push("/area-magnet")}
           >
-            <Share2 className="mr-2 h-3.5 w-3.5" />
+            <MapPin className="mr-2 h-3.5 w-3.5" />
             {t("shares.createAreaMagnet")}
           </Button>
         </div>
       </div>
 
+      {/* Stat cards */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {(["listing_share", "area_magnet", "home_value", "agent_site"] as const).map((type) => {
+          const Icon = SHARE_TYPE_ICON[type] ?? Globe;
+          const count = countByType[type];
+          return (
+            <button
+              key={type}
+              onClick={() => setFilterType(type)}
+              className={`group rounded-2xl border p-4 text-left transition-colors hover:bg-muted/20 ${
+                filterType === type ? "border-primary/40 bg-primary/5" : ""
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <div className={`rounded-lg p-2 ${SHARE_TYPE_COLOR[type]}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {shareTypeLabel(type)}
+                </span>
+              </div>
+              <div className="mt-3 text-2xl font-semibold">{count}</div>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-2">
-          {(["all", "listing_share", "area_magnet"] as SessionType[]).map((type) => (
+        <div className="flex flex-wrap gap-2">
+          {filterTypes.map((type) => (
             <button
               key={type}
               onClick={() => setFilterType(type)}
@@ -182,11 +217,7 @@ export function SharesDashboard() {
                   : "border border-border bg-muted/40 text-muted-foreground hover:bg-muted/60"
               }`}
             >
-              {type === "all"
-                ? t("shares.filterAll")
-                : type === "listing_share"
-                  ? t("shares.typeListingShare")
-                  : t("shares.typeAreaMagnet")}
+              {type === "all" ? t("shares.filterAll") : shareTypeLabel(type)}
               <span className="ml-1.5 opacity-70">
                 {countByType[type]}
               </span>
@@ -208,10 +239,10 @@ export function SharesDashboard() {
             variant="outline"
             size="sm"
             className="h-8"
-            disabled={sharesQuery.isFetching}
-            onClick={() => sharesQuery.refetch()}
+            disabled={unifiedQuery.isFetching}
+            onClick={() => unifiedQuery.refetch()}
           >
-            {sharesQuery.isFetching ? (
+            {unifiedQuery.isFetching ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <RotateCcw className="h-3.5 w-3.5" />
@@ -234,7 +265,7 @@ export function SharesDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          {sharesQuery.isLoading ? (
+          {unifiedQuery.isLoading ? (
             <div className="flex items-center py-12 text-sm text-muted-foreground">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               {t("magicShare.loadingShares")}
@@ -246,66 +277,103 @@ export function SharesDashboard() {
           ) : (
             <div className="grid gap-4 xl:grid-cols-2">
               {filteredShares.map((share) => {
-                const engagementCount =
-                  share.eventCounts.contactClick +
-                  share.eventCounts.tourInterest +
-                  share.eventCounts.routeRequest +
-                  share.eventCounts.wechatCopy;
+                const Icon = SHARE_TYPE_ICON[share.shareType] ?? Globe;
+                const isRevokeAllowed =
+                  share.status === "active" &&
+                  share.shareType !== "agent_site" &&
+                  share.id.startsWith("share_");
 
                 return (
-                  <div key={share.token} className="rounded-2xl border bg-muted/10 p-4 shadow-sm">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">
-                          {share.title || t("magicShare.untitledShare")}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {(share.clientName || t("magicShare.noClient")) + " · " + share.sharePath}
-                        </p>
+                  <div key={share.id} className="rounded-2xl border bg-muted/10 p-4 shadow-sm">
+                    {/* Top: Preview + metadata */}
+                    <div className="flex gap-4">
+                      {/* OG preview thumb */}
+                      <div className="hidden sm:flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted/30">
+                        {share.ogImageUrl ? (
+                          <img
+                            src={share.ogImageUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Icon className="h-8 w-8 text-muted-foreground/40" />
+                        )}
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {/* Session type badge */}
-                        <Badge variant={sessionTypeBadgeVariant(share.sessionType)}>
-                          {sessionTypeLabel(share.sessionType, t)}
-                        </Badge>
-                        <Badge variant={share.status === "active" ? "default" : "secondary"}>
-                          {describeSessionStatus(share.status)}
-                        </Badge>
-                        <Badge variant="outline" className={followUpTone(share.followUpSignal)}>
-                          {describeFollowUpSignal(share.followUpSignal)}
-                        </Badge>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold">
+                              {share.title}
+                            </p>
+                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                              {share.description}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <Badge variant="outline" className={SHARE_TYPE_COLOR[share.shareType]}>
+                            {shareTypeLabel(share.shareType)}
+                          </Badge>
+                          <Badge variant={share.status === "active" ? "default" : "secondary"}>
+                            {share.status}
+                          </Badge>
+                          <Badge variant="outline" className={followUpTone(share.followUpSignal)}>
+                            {describeFollowUpSignal(share.followUpSignal)}
+                          </Badge>
+                          {share.shareType === "agent_site" && (
+                            <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-600">
+                              {t("shares.permanentLink")}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     {/* Stats */}
-                    <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-                      <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+                      <div className="rounded-xl border bg-background/70 p-2.5">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
                           {t("magicShare.views")}
                         </p>
-                        <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
-                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        <div className="mt-1.5 flex items-center gap-1.5 text-base font-semibold">
+                          <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                           {share.viewCount}
                         </div>
                       </div>
-                      <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                          {t("magicShare.listingsLabel")}
+                      <div className="rounded-xl border bg-background/70 p-2.5">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          {t("shares.leads")}
                         </p>
-                        <p className="mt-2 text-lg font-semibold">{share.listingCount}</p>
+                        <div className="mt-1.5 flex items-center gap-1.5 text-base font-semibold">
+                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                          {share.leadCount}
+                        </div>
                       </div>
-                      <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                          {t("magicShare.detailOpens")}
-                        </p>
-                        <p className="mt-2 text-lg font-semibold">{share.eventCounts.listingOpen}</p>
-                      </div>
-                      <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                          {t("magicShare.engagements")}
-                        </p>
-                        <p className="mt-2 text-lg font-semibold">{engagementCount}</p>
-                      </div>
+                      {share.shareType !== "agent_site" && (
+                        <>
+                          <div className="rounded-xl border bg-background/70 p-2.5">
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                              {share.shareType === "home_value"
+                                ? t("shares.valuations")
+                                : t("magicShare.detailOpens")}
+                            </p>
+                            <p className="mt-1.5 text-base font-semibold">
+                              {share.shareType === "home_value"
+                                ? share.eventCounts.total - share.viewCount - share.leadCount
+                                : share.eventCounts.listingOpen}
+                            </p>
+                          </div>
+                          <div className="rounded-xl border bg-background/70 p-2.5">
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                              {t("magicShare.engagements")}
+                            </p>
+                            <p className="mt-1.5 text-base font-semibold">
+                              {share.eventCounts.total}
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Timestamp */}
@@ -334,16 +402,21 @@ export function SharesDashboard() {
                         <ExternalLink className="mr-2 h-4 w-4" />
                         {t("magicShare.openSharePage")}
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        disabled={share.status !== "active" || revokeShareMutation.isPending}
-                        onClick={() => revokeShareMutation.mutate({ token: share.token })}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {t("magicShare.revoke")}
-                      </Button>
+                      {isRevokeAllowed && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          disabled={revokeShareMutation.isPending}
+                          onClick={() => {
+                            const token = share.sharePath.replace("/s/", "");
+                            revokeShareMutation.mutate({ token });
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {t("magicShare.revoke")}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );

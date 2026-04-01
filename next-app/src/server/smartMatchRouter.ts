@@ -265,6 +265,7 @@ export const smartMatchRouter = router({
         .mutation(async ({ input }) => {
             try {
                 const response = await invokeLLM({
+                    task: "smart-match",
                     messages: [
                         {
                             role: "system",
@@ -324,10 +325,11 @@ Generate a market brief for this client's target area.`,
         .mutation(async ({ input }) => {
             try {
                 const response = await invokeLLM({
+                    task: "smart-match",
                     messages: [
                         {
                             role: "system",
-                            content: `You are a top real estate agent writing a warm, professional welcome message for a client's personalized property listing page. 
+                            content: `You are a top real estate agent writing a warm, professional welcome message for a client's personalized property listing page.
 Keep it 2-3 sentences. Be personal and strategic — mention how many properties you screened, why you picked these, and any market context.
 Write in the same language as the client's needs (Chinese if Chinese, English otherwise).
 Do NOT include greetings like "Hi" or "Dear" — the UI will handle the greeting display.`,
@@ -390,6 +392,7 @@ Write a welcome message.`,
                 }).join("\n");
 
                 const response = await invokeLLM({
+                    task: "smart-match",
                     messages: [
                         {
                             role: "system",

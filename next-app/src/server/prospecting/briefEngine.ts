@@ -310,11 +310,11 @@ export async function generateBrief(
   const prompt = buildPrompt(listingData, comps, tone, language);
 
   const llmResult = await invokeLLM({
+    task: "prospecting",
     messages: [
       { role: "system", content: "You are a real estate prospecting AI. Always respond with valid JSON." },
       { role: "user", content: prompt },
     ],
-    maxTokens: 4000,
     responseFormat: { type: "json_object" },
   });
 

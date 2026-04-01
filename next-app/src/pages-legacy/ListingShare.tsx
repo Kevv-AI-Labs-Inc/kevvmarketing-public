@@ -26,7 +26,7 @@ import { Separator } from "@/components/ui/separator";
 import { useT } from "@/i18n";
 import { localeTag } from "@/i18n/copy";
 import { getSharePageCopy } from "@/i18n/share-pages";
-import AreaMagnetShare from "@/pages-legacy/AreaMagnetShare";
+import AreaMagnetShare from "@/components/share/area-magnet-share";
 import { trpc } from "@/lib/trpc";
 import type { AppRouter } from "@/routers";
 import { toast } from "sonner";

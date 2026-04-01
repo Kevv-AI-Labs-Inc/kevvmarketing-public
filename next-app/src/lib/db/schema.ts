@@ -328,6 +328,41 @@ export const valuationRuns = pgTable("valuation_runs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// ─── Home Value Campaign Links ─────────────────────────────
+
+export const homeValueLinkSourceEnum = pgEnum("home_value_link_source", [
+  "postcard",
+  "social",
+  "embed",
+  "article",
+  "direct",
+]);
+
+/** Trackable campaign links for the Home Value funnel. */
+export const homeValueLinks = pgTable("home_value_links", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  agentProfileId: integer("agent_profile_id"),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  label: varchar("label", { length: 255 }),
+  source: homeValueLinkSourceEnum("source").default("direct").notNull(),
+  utmSource: varchar("utm_source", { length: 128 }),
+  utmMedium: varchar("utm_medium", { length: 128 }),
+  utmCampaign: varchar("utm_campaign", { length: 128 }),
+  ogTitle: varchar("og_title", { length: 255 }),
+  ogDescription: text("og_description"),
+  ogImageUrl: text("og_image_url"),
+  viewCount: integer("view_count").default(0).notNull(),
+  valuationCount: integer("valuation_count").default(0).notNull(),
+  leadCount: integer("lead_count").default(0).notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type HomeValueLink = typeof homeValueLinks.$inferSelect;
+export type InsertHomeValueLink = typeof homeValueLinks.$inferInsert;
+
 export const postcardContactImports = pgTable("postcard_contact_imports", {
   id: serial("id").primaryKey(),
   agentId: integer("agent_id"),
