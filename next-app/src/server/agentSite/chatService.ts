@@ -1,6 +1,17 @@
 import { ENV } from "@/server/_core/env";
 import { searchListings } from "@/server/clients/listingDataClient";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ChatSettings = {
+  enabled?: boolean;
+  widgetLabel?: string;
+  greeting?: string;
+  systemPrompt?: string;
+  style?: "professional" | "friendly" | "bilingual";
+  suggestedPrompts?: string[];
+};
+
 type ChatProfile = {
   slug: string;
   name: string;
@@ -15,6 +26,7 @@ type ChatProfile = {
   transactions:
     | Array<{ address: string; city: string; price: string; type: string }>
     | null;
+  chatSettings?: ChatSettings | null;
 };
 
 type ListingSuggestion = {
@@ -37,9 +49,11 @@ export type AgentSiteChatReply = {
   listings: ListingSuggestion[];
 };
 
+// ─── Language & intent helpers ────────────────────────────────────────────────
+
 const zhChars = /[\u4e00-\u9fff]/;
 
-const suggestedPrompts = {
+const defaultSuggestedPrompts = {
   en: [
     "How competitive is your local market right now?",
     "Can you help me plan a seller strategy?",
@@ -129,11 +143,44 @@ async function findListingSuggestions(message: string, area: string | null) {
   }
 }
 
-function buildEnglishReply(profile: ChatProfile, intent: string, area: string | null, listings: ListingSuggestion[]) {
-  const serviceAreas = profile.serviceAreas?.length ? profile.serviceAreas.join(", ") : "the markets this agent covers";
-  const specialties = profile.specialties?.slice(0, 3).join(", ") || "seller strategy, buyer guidance, and launch planning";
-  const years = profile.yearsExperience ? `${profile.yearsExperience}+ years` : "deep local experience";
-  const opening = `I'm the AI assistant for ${profile.name}${profile.brokerage ? ` at ${profile.brokerage}` : ""}. ${profile.name.split(" ")[0]} focuses on ${specialties} across ${serviceAreas}.`;
+// ─── Style-aware tone modifiers ───────────────────────────────────────────────
+
+function stylePrefix(style: ChatSettings["style"], lang: "en" | "zh"): string {
+  if (style === "friendly") {
+    return lang === "zh" ? "嗨！" : "Hey! ";
+  }
+  return "";
+}
+
+// ─── Reply builders ───────────────────────────────────────────────────────────
+
+function buildEnglishReply(
+  profile: ChatProfile,
+  intent: string,
+  area: string | null,
+  listings: ListingSuggestion[],
+  settings: ChatSettings
+) {
+  const style = settings.style ?? "professional";
+  const prefix = stylePrefix(style, "en");
+  const serviceAreas = profile.serviceAreas?.length
+    ? profile.serviceAreas.join(", ")
+    : "the markets this agent covers";
+  const specialties =
+    profile.specialties?.slice(0, 3).join(", ") ||
+    "seller strategy, buyer guidance, and launch planning";
+  const years = profile.yearsExperience
+    ? `${profile.yearsExperience}+ years`
+    : "deep local experience";
+
+  // Agent-supplied system prompt injected as opening context
+  const agentContext = settings.systemPrompt?.trim()
+    ? `${settings.systemPrompt.trim()}\n\n`
+    : "";
+
+  const opening = `${agentContext}${prefix}I'm the AI assistant for ${profile.name}${
+    profile.brokerage ? ` at ${profile.brokerage}` : ""
+  }. ${profile.name.split(" ")[0]} focuses on ${specialties} across ${serviceAreas}.`;
 
   if (intent === "selling") {
     return [
@@ -157,21 +204,44 @@ function buildEnglishReply(profile: ChatProfile, intent: string, area: string | 
 
   return [
     opening,
-    profile.bio || `${profile.name.split(" ")[0]} helps clients move from interest to action with clear market framing and high-touch execution.`,
+    profile.bio ||
+      `${profile.name.split(" ")[0]} helps clients move from interest to action with clear market framing and high-touch execution.`,
     area
       ? `You mentioned ${area}. That's one of the areas ${profile.name.split(" ")[0]} can speak to directly.`
       : `If you tell me whether you're buying, selling, or relocating, I can make this more specific.`,
-    profile.bookingUrl ? `If you want a live conversation, you can also book directly: ${profile.bookingUrl}` : "",
+    profile.bookingUrl
+      ? `If you want a live conversation, you can also book directly: ${profile.bookingUrl}`
+      : "",
   ]
     .filter(Boolean)
     .join("\n\n");
 }
 
-function buildChineseReply(profile: ChatProfile, intent: string, area: string | null, listings: ListingSuggestion[]) {
-  const serviceAreas = profile.serviceAreas?.length ? profile.serviceAreas.join("、") : "本地重点市场";
-  const specialties = profile.specialties?.slice(0, 3).join("、") || "卖房策略、买房筛选和上市包装";
+function buildChineseReply(
+  profile: ChatProfile,
+  intent: string,
+  area: string | null,
+  listings: ListingSuggestion[],
+  settings: ChatSettings
+) {
+  const style = settings.style ?? "professional";
+  const prefix = stylePrefix(style, "zh");
+  const serviceAreas = profile.serviceAreas?.length
+    ? profile.serviceAreas.join("、")
+    : "本地重点市场";
+  const specialties =
+    profile.specialties?.slice(0, 3).join("、") ||
+    "卖房策略、买房筛选和上市包装";
   const firstName = profile.name.split(" ")[0];
-  const opening = `我是 ${profile.name}${profile.brokerage ? `（${profile.brokerage}）` : ""} 的 AI 助手。${firstName} 主要服务 ${serviceAreas}，擅长 ${specialties}。`;
+
+  // Agent-supplied system prompt injected as opening context
+  const agentContext = settings.systemPrompt?.trim()
+    ? `${settings.systemPrompt.trim()}\n\n`
+    : "";
+
+  const opening = `${agentContext}${prefix}我是 ${profile.name}${
+    profile.brokerage ? `（${profile.brokerage}）` : ""
+  } 的 AI 助手。${firstName} 主要服务 ${serviceAreas}，擅长 ${specialties}。`;
 
   if (intent === "selling") {
     return [
@@ -196,17 +266,24 @@ function buildChineseReply(profile: ChatProfile, intent: string, area: string | 
   return [
     opening,
     profile.bio || `${firstName} 会把市场信息、客户目标和执行动作串成一条清晰路径。`,
-    area ? `你提到了 ${area}，这正好是 ${firstName} 重点服务的区域之一。` : `如果你告诉我是买房、卖房还是换房，我可以直接切到对应的回答。`,
-    profile.bookingUrl ? `如果你想直接约时间，也可以用这个链接：${profile.bookingUrl}` : "",
+    area
+      ? `你提到了 ${area}，这正好是 ${firstName} 重点服务的区域之一。`
+      : `如果你告诉我是买房、卖房还是换房，我可以直接切到对应的回答。`,
+    profile.bookingUrl
+      ? `如果你想直接约时间，也可以用这个链接：${profile.bookingUrl}`
+      : "",
   ]
     .filter(Boolean)
     .join("\n\n");
 }
 
+// ─── Public API ───────────────────────────────────────────────────────────────
+
 export async function generateAgentSiteChatReply(params: {
   profile: ChatProfile;
   message: string;
 }) {
+  const settings: ChatSettings = params.profile.chatSettings ?? {};
   const language = detectLanguage(params.message);
   const intent = inferIntent(params.message);
   const score = inferScore(params.message);
@@ -218,8 +295,13 @@ export async function generateAgentSiteChatReply(params: {
 
   const response =
     language === "zh"
-      ? buildChineseReply(params.profile, intent, area, listings)
-      : buildEnglishReply(params.profile, intent, area, listings);
+      ? buildChineseReply(params.profile, intent, area, listings, settings)
+      : buildEnglishReply(params.profile, intent, area, listings, settings);
+
+  // Resolve suggested prompts: agent custom → lang default
+  const resolvedPrompts =
+    settings.suggestedPrompts?.filter(Boolean).slice(0, 3) ??
+    defaultSuggestedPrompts[language];
 
   return {
     language,
@@ -229,7 +311,7 @@ export async function generateAgentSiteChatReply(params: {
     area,
     timeline,
     summary: `${intent} lead asking about ${area ?? "general market context"}${timeline ? ` with timeline ${timeline}` : ""}.`,
-    suggestedPrompts: suggestedPrompts[language],
+    suggestedPrompts: resolvedPrompts,
     listings,
   } satisfies AgentSiteChatReply;
 }

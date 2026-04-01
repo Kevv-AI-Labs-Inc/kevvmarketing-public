@@ -27,6 +27,8 @@ import {
   agentSiteTemplateIds,
   buildAgentSlug,
 } from "@/lib/agent-site";
+import { getPresignedPutUrl, isR2Configured } from "@/server/storage";
+
 
 const slugSchema = z.object({
   slug: z.string().trim().min(2).max(64),
@@ -56,6 +58,15 @@ const visibilitySettingsSchema = z.object({
   showAddress: z.boolean(),
 });
 
+const chatSettingsSchema = z.object({
+  enabled: z.boolean().default(true),
+  widgetLabel: z.string().trim().max(80).default(""),
+  greeting: z.string().trim().max(1200).default(""),
+  systemPrompt: z.string().trim().max(4000).default(""),
+  style: z.enum(["professional", "friendly", "bilingual"]).default("professional"),
+  suggestedPrompts: z.array(z.string().trim().max(200)).max(3).default([]),
+});
+
 const profileInputSchema = z.object({
   slug: z.string().trim().min(2).max(64),
   email: z.string().trim().email().max(320),
@@ -80,6 +91,7 @@ const profileInputSchema = z.object({
   yearsExperience: z.number().int().min(0).max(60),
   templateId: z.enum(agentSiteTemplateIds),
   colorScheme: z.string().trim().max(32).optional(),
+  chatSettings: chatSettingsSchema.optional(),
   status: z.enum(["draft", "active", "suspended"]).default("active"),
   tier: z.enum(["free", "pro", "premium"]).default("free"),
 });
@@ -270,7 +282,9 @@ export const profileRouter = router({
         yearsExperience: input.yearsExperience,
         templateId: input.templateId,
         colorScheme: normalizeOptional(input.colorScheme) ?? "gold",
+        chatSettings: input.chatSettings ?? null,
         status: input.status,
+
         tier: input.tier,
         lastPublishedAt: new Date(),
         updatedAt: new Date(),
@@ -436,6 +450,7 @@ export const profileRouter = router({
           languages: profile.languages,
           yearsExperience: profile.yearsExperience,
           transactions: profile.transactions,
+          chatSettings: profile.chatSettings,
         },
         message: input.message,
       });
@@ -638,5 +653,33 @@ export const profileRouter = router({
         ok: true,
         contactId: contact.id,
       };
+    }),
+  /**
+   * Generate a presigned PUT URL so the browser can upload directly to R2.
+   * Returns { uploadUrl, publicUrl } when R2 is configured,
+   * or { configured: false } when credentials are missing (dev fallback).
+   */
+  getUploadUrl: protectedProcedure
+    .input(
+      z.object({
+        /** Destination sub-path e.g. "photo" | "hero" */
+        field: z.enum(["photo", "hero", "general"]),
+        /** Original filename — used to derive content-type */
+        filename: z.string().trim().min(1).max(255),
+        contentType: z.string().trim().min(1).max(128),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isR2Configured()) {
+        return { configured: false as const, uploadUrl: null, publicUrl: null };
+      }
+
+      // Sanitize the extension from the original filename
+      const ext = input.filename.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "bin";
+      const key = `uploads/profiles/${ctx.user.id}/${input.field}-${Date.now()}.${ext}`;
+
+      const { uploadUrl, publicUrl } = await getPresignedPutUrl(key, input.contentType, 300);
+
+      return { configured: true as const, uploadUrl, publicUrl };
     }),
 });

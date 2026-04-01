@@ -18,7 +18,7 @@ import {
   Zap,
 } from "lucide-react";
 
-import { LocaleToggleButton } from "@/components/LocaleToggleButton";
+import { LandingHeader } from "@/components/LandingHeader";
 import { ViewportReveal, RevealChild } from "@/components/motion/ViewportReveal";
 import { SpringHoverCard } from "@/components/motion/SpringHoverCard";
 import { PulseIndicator } from "@/components/motion/PulseIndicator";
@@ -86,21 +86,10 @@ export default async function HomePage() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <LocaleToggleButton variant="ghost" />
-            <Link
-              href="/login"
-              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-accent active:scale-[0.98]"
-            >
-              {copy.header.signIn}
-            </Link>
-            <Link
-              href="/login"
-              className="hidden rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:brightness-110 active:scale-[0.98] sm:inline-flex"
-            >
-              {copy.header.getStartedShort}
-            </Link>
-          </div>
+          <LandingHeader
+            signIn={copy.header.signIn}
+            getStartedShort={copy.header.getStartedShort}
+          />
         </div>
       </header>
 

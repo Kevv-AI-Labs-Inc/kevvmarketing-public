@@ -8,13 +8,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { useT } from "@/i18n";
-import { formatDateTime } from "@/lib/format";
 import {
   Bath,
   BedDouble,
   ChevronDown,
   ChevronUp,
-  Clock3,
   Copy,
   ExternalLink,
   Eye,
@@ -114,24 +112,6 @@ export default function MagicShareStudio() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
   const prefill = useMemo(() => parsePrefillFromUrl(), []);
-
-  const describeFollowUpSignal = useCallback((signal: string) => {
-    switch (signal) {
-      case "hot": return t("magicShare.followUpHot");
-      case "warm": return t("magicShare.followUpWarm");
-      case "new": return t("magicShare.followUpNew");
-      default: return t("magicShare.followUpQuiet");
-    }
-  }, [t]);
-
-  const describeSessionStatus = useCallback((status: string) => {
-    switch (status) {
-      case "active": return t("magicShare.statusActive");
-      case "revoked": return t("magicShare.statusRevoked");
-      case "expired": return t("magicShare.statusExpired");
-      default: return status;
-    }
-  }, [t]);
 
   const [search, setSearch] = useState("");
   const [selectedKeys, setSelectedKeys] = useState<string[]>(prefill.listingKeys);
@@ -249,20 +229,6 @@ export default function MagicShareStudio() {
     },
     onError: (error) => {
       toast.error(t("magicShare.shareGenerateFailed"), { description: error.message });
-    },
-  });
-
-  const mySharesQuery = trpc.share.listMine.useQuery({ sessionType: "listing_share" }, {
-    refetchOnWindowFocus: false,
-  });
-
-  const revokeShareMutation = trpc.share.revokeSession.useMutation({
-    onSuccess: async () => {
-      await utils.share.listMine.invalidate();
-      toast.success(t("magicShare.shareLinkRevoked"));
-    },
-    onError: (error) => {
-      toast.error(t("magicShare.revokeFailed"), { description: error.message });
     },
   });
 
@@ -670,120 +636,19 @@ export default function MagicShareStudio() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <CardContent className="flex items-center justify-between gap-4 p-4">
           <div>
-            <CardTitle>{t("magicShare.myShares")}</CardTitle>
-            <CardDescription>{t("magicShare.mySharesDescription")}</CardDescription>
+            <p className="text-sm font-medium">{t("magicShare.myShares")}</p>
+            <p className="text-xs text-muted-foreground">{t("magicShare.mySharesDescription")}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary">{t("magicShare.count", { count: String(mySharesQuery.data?.length ?? 0) })}</Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={mySharesQuery.isFetching}
-              onClick={() => mySharesQuery.refetch()}
-            >
-              {mySharesQuery.isFetching ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("magicShare.refreshing")}
-                </>
-              ) : t("magicShare.refresh")}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {mySharesQuery.isLoading ? (
-            <div className="flex items-center py-8 text-sm text-muted-foreground">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t("magicShare.loadingShares")}
-            </div>
-          ) : (mySharesQuery.data?.length ?? 0) === 0 ? (
-            <div className="rounded-2xl border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
-              {t("magicShare.emptyShares")}
-            </div>
-          ) : (
-            <div className="grid gap-4 xl:grid-cols-2">
-              {mySharesQuery.data?.map((share) => {
-                const engagementCount =
-                  share.eventCounts.contactClick +
-                  share.eventCounts.tourInterest +
-                  share.eventCounts.routeRequest +
-                  share.eventCounts.wechatCopy;
-
-                return (
-                  <div key={share.token} className="rounded-2xl border bg-muted/10 p-4 shadow-sm">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">{share.title || t("magicShare.untitledShare")}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {(share.clientName || t("magicShare.noClient")) + " · " + share.sharePath}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant={share.status === "active" ? "default" : "secondary"}>
-                          {describeSessionStatus(share.status)}
-                        </Badge>
-                        <Badge variant="outline" className={followUpTone(share.followUpSignal)}>
-                          {describeFollowUpSignal(share.followUpSignal)}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-                      <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("magicShare.views")}</p>
-                        <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                          {share.viewCount}
-                        </div>
-                      </div>
-                      <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("magicShare.listingsLabel")}</p>
-                        <p className="mt-2 text-lg font-semibold">{share.listingCount}</p>
-                      </div>
-                      <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("magicShare.detailOpens")}</p>
-                        <p className="mt-2 text-lg font-semibold">{share.eventCounts.listingOpen}</p>
-                      </div>
-                      <div className="rounded-xl border bg-background/70 p-3">
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("magicShare.engagements")}</p>
-                        <p className="mt-2 text-lg font-semibold">{engagementCount}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock3 className="h-3.5 w-3.5" />
-                      {share.lastActivityAt
-                        ? t("magicShare.lastActivity") + " " + formatDateTime(share.lastActivityAt, locale)
-                        : t("magicShare.createdAt") + " " + formatDateTime(share.createdAt, locale)}
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleCopyShareLink(share.sharePath)}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        {t("magicShare.copyLink")}
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleOpenShare(share.sharePath)}>
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        {t("magicShare.openSharePage")}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        disabled={share.status !== "active" || revokeShareMutation.isPending}
-                        onClick={() => revokeShareMutation.mutate({ token: share.token })}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {t("magicShare.revoke")}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.location.href = "/shares"}
+          >
+            <ExternalLink className="mr-2 h-3.5 w-3.5" />
+            {t("magicShare.myShares")}
+          </Button>
         </CardContent>
       </Card>
     </div>
