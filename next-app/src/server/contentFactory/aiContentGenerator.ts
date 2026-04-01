@@ -20,7 +20,12 @@ export type ContentFormat =
   | "just_sold"
   | "price_drop"
   | "newsletter"
-  | "xhs_post";
+  | "xhs_post"
+  | "instagram_post"
+  | "linkedin_post"
+  | "wechat_moments"
+  | "tiktok_script"
+  | "facebook_post";
 
 export interface ContentRequest {
   format: ContentFormat;
@@ -84,6 +89,84 @@ const FORMAT_PROMPTS: Record<ContentFormat, string> = {
   "contentZh": "同content",
   "hashtags": ["#话题1", "#话题2", ...],
   "photoTips": ["外观照片", "客厅", "厨房", "主卧"]
+}`,
+
+  instagram_post: `You are a top-performing real estate Instagram content creator. Generate an engaging Instagram post for a property listing.
+
+Rules:
+1. **Caption**: Write a compelling English caption under 2,200 characters. The FIRST 125 characters must be a strong hook that makes people stop scrolling.
+2. **Structure**: Use line breaks for readability. Include emojis sparingly but effectively. Mix storytelling with property facts.
+3. **Hashtags**: Include exactly 3-5 highly relevant hashtags at the END of the caption. Mix broad (#RealEstate) with niche (#LuxuryIrvine) and location-specific tags.
+4. **Carousel Tips**: Suggest 5-8 specific photos for an Instagram carousel post (exterior, kitchen close-up, view from backyard, etc.)
+5. **Tone**: Aspirational, lifestyle-focused, visually descriptive.
+
+Return JSON: {
+  "content": "Full caption text including hashtags at the end",
+  "hashtags": ["#Hashtag1", "#Hashtag2", ...],
+  "photoTips": ["Hero exterior shot", "Kitchen island detail", ...]
+}`,
+
+  linkedin_post: `You are a seasoned real estate thought leader writing for LinkedIn. Generate a professional, insightful LinkedIn post about a property or market opportunity.
+
+Rules:
+1. **Hook**: First 210 characters MUST be compelling — this is what shows before "See more."
+2. **Format**: Use short paragraphs (2-3 lines max). Add line breaks between paragraphs. Professional but approachable tone.
+3. **Content**: Frame the listing within a market narrative — why this property matters now, investment thesis, neighborhood trends, or a client success angle. NOT a basic listing ad.
+4. **Length**: 800-1,500 characters. Data-driven where possible.
+5. **Hashtags**: Exactly 3-5 PascalCase hashtags at the end (e.g., #RealEstateInvesting #IrvineMarket).
+6. **CTA**: End with a professional call-to-action ("DM me for details" or "Let's discuss your strategy").
+
+Return JSON: {
+  "content": "Full post text with hashtags at the end",
+  "hashtags": ["#PascalCaseTag1", "#PascalCaseTag2", ...]
+}`,
+
+  wechat_moments: `你是一个服务北美华人高净值客户的房产经纪人微信运营专家。生成一条适合发朋友圈的房源推荐内容。
+
+要求：
+1. **标题**：≤31个中文字符，用于微信分享卡片标题。简洁有力，突出核心卖点。例如："尔湾顶级学区｜全新装修4房 仅$125万"
+2. **摘要**：≤120个中文字符，朋友圈分享卡片的描述文字。概括房源核心优势。
+3. **正文**：100-200字，适合直接粘贴到朋友圈。口吻私密、真诚，像给朋友推荐一样，不像广告。使用1-2个emoji但不过度。
+4. **不使用hashtag**：微信朋友圈没有话题标签文化。
+5. **图片建议**：建议使用哪2-4张最核心的照片。
+
+返回JSON: {
+  "title": "分享卡片标题（≤31字）",
+  "content": "朋友圈正文（100-200字）",
+  "contentZh": "同content",
+  "subject": "摘要（≤120字）",
+  "photoTips": ["外观", "客厅", "厨房"]
+}`,
+
+  tiktok_script: `You are a viral real estate TikTok creator. Generate a TikTok video concept with a caption for a property listing.
+
+Rules:
+1. **Caption**: Short, punchy, under 150 characters. This is the text overlay. Must create curiosity or FOMO.
+2. **Script**: Write a 30-60 second video script with scene directions. Format as numbered scenes: "[SCENE 1: Walk up to front door] 'Wait until you see this kitchen...'"
+3. **Hook**: The caption AND first scene must grab attention in under 1 second.
+4. **Hashtags**: Exactly 3-5 hashtags. Mix trending (#HouseHunting) with location (#IrvineCA) and niche (#DreamHome).
+5. **Style**: Casual, authentic, fast-paced. Use "you" language. Create FOMO.
+
+Return JSON: {
+  "title": "Hook caption for the video (≤150 chars)",
+  "content": "Full video script with scene directions",
+  "hashtags": ["#Hashtag1", "#Hashtag2", ...]
+}`,
+
+  facebook_post: `You are a community-focused real estate agent creating a Facebook post about a property listing.
+
+Rules:
+1. **Tone**: Warm, neighborhood-focused, community-driven. Like sharing with friends and neighbors.
+2. **Length**: 300-800 words. Longer than Instagram, more personal than LinkedIn.
+3. **Content**: Include property highlights, neighborhood context (schools, restaurants, parks), and a personal touch ("I just toured this home and...").
+4. **Hashtags**: 2-3 simple hashtags at the end.
+5. **CTA**: Friendly call to action — "Know someone looking? Tag them!" or "DM me for a private tour."
+6. **Bilingual option**: If the agent serves Chinese-speaking clients, include a brief Chinese summary paragraph at the end.
+
+Return JSON: {
+  "content": "Full post text",
+  "contentZh": "Chinese summary paragraph (optional)",
+  "hashtags": ["#Hashtag1", "#Hashtag2"]
 }`,
 };
 

@@ -760,9 +760,9 @@ export type ShowingFeedback = typeof showingFeedback.$inferSelect;
 export type InsertShowingFeedback = typeof showingFeedback.$inferInsert;
 
 /**
- * Showing tours — smart route-optimized property tours.
- * Agent inputs a set of properties → system optimizes driving route →
- * generates a branded PDF showing guide.
+ * Showing tours — shareable property route plans.
+ * Agent selects listings, computes an optimized or manual route,
+ * and shares the resulting tour page with the client.
  */
 export const showingTours = pgTable("showing_tours", {
   id: serial("id").primaryKey(),
@@ -791,7 +791,7 @@ export const showingTours = pgTable("showing_tours", {
       durationText: string;
     }>;
   }>(),
-  // Generated PDF
+  // Legacy field kept nullable; the product now shares a live route page instead of PDFs.
   pdfUrl: text("pdf_url"),
   // Status
   status: varchar("status", { length: 20 }).default("draft").notNull(), // draft | optimized | pdf_ready

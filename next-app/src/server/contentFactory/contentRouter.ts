@@ -342,4 +342,108 @@ ${input.highlights ? `- 亮点: ${input.highlights}` : ""}
         photoTips: result.photoTips ?? [],
       };
     }),
+
+  // ─── Multi-Platform Social Content Generator ────────────────
+
+  socialGenerate: protectedProcedure
+    .input(
+      z.object({
+        platform: z.enum([
+          "xiaohongshu",
+          "instagram",
+          "linkedin",
+          "wechat",
+          "tiktok",
+          "facebook",
+        ]),
+        agentName: z.string(),
+        agentTitle: z.string().optional(),
+        listingKey: z.string().optional(),
+        customPrompt: z.string().optional(),
+        tone: z
+          .enum(["professional", "casual", "luxury", "friendly"])
+          .optional(),
+        // Manual listing data
+        address: z.string().optional(),
+        city: z.string().optional(),
+        price: z.string().optional(),
+        propertyType: z.string().optional(),
+        beds: z.number().optional(),
+        baths: z.number().optional(),
+        sqft: z.number().optional(),
+        highlights: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // Map platform → format + language
+      const platformConfig: Record<
+        string,
+        { format: ContentFormat; language: "en" | "zh" | "zh_en" }
+      > = {
+        xiaohongshu: { format: "xhs_post", language: "zh" },
+        instagram: { format: "instagram_post", language: "en" },
+        linkedin: { format: "linkedin_post", language: "en" },
+        wechat: { format: "wechat_moments", language: "zh" },
+        tiktok: { format: "tiktok_script", language: "en" },
+        facebook: { format: "facebook_post", language: "en" },
+      };
+
+      const config = platformConfig[input.platform];
+      if (!config) throw new Error(`Unknown platform: ${input.platform}`);
+
+      // Build manual listing context
+      const manualListingPrompt = input.address
+        ? `
+## ${config.language === "zh" ? "房源数据" : "Listing Data"}
+- ${config.language === "zh" ? "地址" : "Address"}: ${input.address}${input.city ? `, ${input.city}` : ""}
+- ${config.language === "zh" ? "价格" : "Price"}: ${input.price ? `$${input.price}` : config.language === "zh" ? "待询" : "TBD"}
+- ${config.language === "zh" ? "类型" : "Type"}: ${input.propertyType ?? "Residential"}
+- ${config.language === "zh" ? "卧室/浴室" : "Beds/Baths"}: ${input.beds ?? "N/A"} / ${input.baths ?? "N/A"}
+- ${config.language === "zh" ? "面积" : "Area"}: ${input.sqft ? `${input.sqft} sqft` : "N/A"}
+${input.highlights ? `- ${config.language === "zh" ? "亮点" : "Highlights"}: ${input.highlights}` : ""}
+`
+        : "";
+
+      const result = await generateContent({
+        format: config.format,
+        platform: input.platform,
+        language: config.language,
+        agentName: input.agentName,
+        agentTitle: input.agentTitle,
+        tone: input.tone,
+        customPrompt: [manualListingPrompt, input.customPrompt]
+          .filter(Boolean)
+          .join("\n"),
+      });
+
+      // Audit trail
+      await db.insert(generatedContent).values({
+        agentId: ctx.user?.id ?? null,
+        sourceType: input.listingKey ? "listing" : "manual",
+        sourceId: input.listingKey,
+        contentType: config.format,
+        content: JSON.stringify({
+          title: result.title,
+          body: result.content,
+          subject: result.subject,
+          hashtags: result.hashtags,
+          photoTips: result.photoTips,
+        }),
+        language: config.language,
+        platform: input.platform,
+      });
+
+      return {
+        title: result.title ?? "",
+        subject: result.subject ?? "",
+        body: result.content,
+        hashtags: result.hashtags ?? [],
+        photoTips: result.photoTips ?? [],
+        platform: input.platform,
+        language: config.language,
+      };
+    }),
 });
