@@ -1,8 +1,14 @@
-// legacy page — incrementally migrated
+// MagicShare Studio — Classic + Magic share modes
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,21 +19,31 @@ import {
   BedDouble,
   ChevronDown,
   ChevronUp,
+  ClipboardList,
   Copy,
   ExternalLink,
-  Eye,
+  FileText,
   Loader2,
   MapPin,
+  MessageSquareText,
   Plus,
   Ruler,
   Search,
+  Send,
   Settings,
   Share2,
   Sparkles,
   Trash2,
+  Zap,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+/* ────────────────────────────────────────────────────────────── */
+/*  Types                                                        */
+/* ────────────────────────────────────────────────────────────── */
+
+type ShareMode = "classic" | "magic";
 
 type MlsListing = {
   id: number;
@@ -48,6 +64,10 @@ type MlsListing = {
   thumbnailUrl?: string | null;
 };
 
+/* ────────────────────────────────────────────────────────────── */
+/*  Helpers                                                      */
+/* ────────────────────────────────────────────────────────────── */
+
 function formatPrice(price: string | null | undefined, fallback: string) {
   if (!price) return fallback;
   const num = Number(price);
@@ -57,16 +77,24 @@ function formatPrice(price: string | null | undefined, fallback: string) {
   return `$${num.toLocaleString()}`;
 }
 
-function displayAddress(item: {
-  unparsedAddress?: string | null;
-  listingId?: string | null;
-  city?: string | null;
-  stateOrProvince?: string | null;
-  postalCode?: string | null;
-}, fallback: string) {
+function displayAddress(
+  item: {
+    unparsedAddress?: string | null;
+    listingId?: string | null;
+    city?: string | null;
+    stateOrProvince?: string | null;
+    postalCode?: string | null;
+  },
+  fallback: string
+) {
   const full = item.unparsedAddress?.trim();
   if (full) return full;
-  const fb = [item.listingId, item.city, item.stateOrProvince, item.postalCode]
+  const fb = [
+    item.listingId,
+    item.city,
+    item.stateOrProvince,
+    item.postalCode,
+  ]
     .filter(Boolean)
     .join(" · ");
   return fb || fallback;
@@ -74,9 +102,8 @@ function displayAddress(item: {
 
 function parsePrefillFromUrl() {
   if (typeof window === "undefined") {
-    return { listingKeys: [] as string[], title: "", clientName: "" };
+    return { listingKeys: [] as string[], title: "", clientName: "", mode: "magic" as ShareMode };
   }
-
   const params = new URLSearchParams(window.location.search);
   const listingKeys = Array.from(
     new Set(
@@ -91,48 +118,321 @@ function parsePrefillFromUrl() {
     listingKeys,
     title: params.get("title")?.trim() || "",
     clientName: params.get("clientName")?.trim() || "",
+    mode: (params.get("mode") === "classic" ? "classic" : "magic") as ShareMode,
   };
 }
 
-function followUpTone(signal: string) {
-  switch (signal) {
-    case "hot":
-      return "border-red-200 bg-red-50 text-red-700";
-    case "warm":
-      return "border-amber-200 bg-amber-50 text-amber-700";
-    case "new":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    default:
-      return "border-stone-200 bg-stone-50 text-stone-600";
-  }
+/* ────────────────────────────────────────────────────────────── */
+/*  Tab Bar                                                      */
+/* ────────────────────────────────────────────────────────────── */
+
+const MODE_TABS: {
+  id: ShareMode;
+  icon: React.ReactNode;
+  future?: boolean;
+}[] = [
+  { id: "classic", icon: <FileText className="h-4 w-4" /> },
+  { id: "magic", icon: <Sparkles className="h-4 w-4" /> },
+];
+
+const FUTURE_TABS = [
+  {
+    id: "buyer_board",
+    icon: <ClipboardList className="h-4 w-4" />,
+  },
+  {
+    id: "tour_recap",
+    icon: <MapPin className="h-4 w-4" />,
+  },
+  {
+    id: "offer_worksheet",
+    icon: <MessageSquareText className="h-4 w-4" />,
+  },
+];
+
+/* ────────────────────────────────────────────────────────────── */
+/*  Listing Search Card (shared between modes)                   */
+/* ────────────────────────────────────────────────────────────── */
+
+function ListingSearchCard({
+  search,
+  setSearch,
+  selectedKeys,
+  addListing,
+  removeListing,
+  moveListing,
+  selectedListings,
+  selectedKeySet,
+  searchResults,
+  searchLoading,
+  selectedLoading,
+  t,
+}: {
+  search: string;
+  setSearch: (v: string) => void;
+  selectedKeys: string[];
+  addListing: (key: string) => void;
+  removeListing: (key: string) => void;
+  moveListing: (index: number, direction: -1 | 1) => void;
+  selectedListings: MlsListing[];
+  selectedKeySet: Set<string>;
+  searchResults: MlsListing[];
+  searchLoading: boolean;
+  selectedLoading: boolean;
+  t: (...args: any[]) => string;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("magicShare.listingSelection")}</CardTitle>
+        <CardDescription>
+          {t("magicShare.listingSelectionDescription")}
+        </CardDescription>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("magicShare.searchPlaceholder")}
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Selected listings */}
+        <div className="rounded-xl border bg-muted/20 p-3">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium">
+              {t("magicShare.selectedListings")}
+            </p>
+            <Badge variant="secondary">{selectedKeys.length} / 15</Badge>
+          </div>
+          {selectedLoading ? (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {t("magicShare.loadingSelected")}
+            </div>
+          ) : selectedListings.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {t("magicShare.noSelected")}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {selectedListings.map((item, index) => (
+                <div
+                  key={item.listingKey}
+                  className="rounded-lg border bg-background p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      {item.thumbnailUrl ? (
+                        <img
+                          src={item.thumbnailUrl}
+                          alt=""
+                          className="h-10 w-14 rounded-md border object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="h-10 w-14 rounded-md border bg-muted/30 shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {displayAddress(
+                            item,
+                            t("listings.addressUnknown")
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatPrice(
+                            item.listPrice,
+                            t("listings.pricePending")
+                          )}{" "}
+                          · {item.listingId || item.listingKey}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        disabled={index === 0}
+                        onClick={() => moveListing(index, -1)}
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        disabled={index === selectedListings.length - 1}
+                        onClick={() => moveListing(index, 1)}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => removeListing(item.listingKey)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Search results */}
+        <div>
+          <p className="mb-2 text-sm font-medium">
+            {t("magicShare.searchResults")}
+          </p>
+          <ScrollArea className="h-[380px] pr-3">
+            <div className="space-y-2">
+              {searchLoading ? (
+                <div className="flex items-center py-8 text-sm text-muted-foreground">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t("magicShare.loadingSearch")}
+                </div>
+              ) : searchResults.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {t("magicShare.noResults")}
+                </p>
+              ) : (
+                searchResults.map((item) => {
+                  const isSelected = selectedKeySet.has(item.listingKey);
+                  return (
+                    <div
+                      key={item.listingKey}
+                      className="rounded-xl border p-3"
+                    >
+                      <div className="flex items-start gap-3">
+                        {item.thumbnailUrl ? (
+                          <img
+                            src={item.thumbnailUrl}
+                            alt={displayAddress(
+                              item,
+                              t("listings.addressUnknown")
+                            )}
+                            className="h-20 w-28 rounded-md border object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="h-20 w-28 rounded-md border bg-muted/40 shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold">
+                            {displayAddress(
+                              item,
+                              t("listings.addressUnknown")
+                            )}
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {formatPrice(
+                              item.listPrice,
+                              t("listings.pricePending")
+                            )}
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            {item.bedroomsTotal != null && (
+                              <span className="inline-flex items-center gap-1">
+                                <BedDouble className="h-3.5 w-3.5" />
+                                {item.bedroomsTotal}
+                              </span>
+                            )}
+                            {item.bathroomsTotalInteger != null && (
+                              <span className="inline-flex items-center gap-1">
+                                <Bath className="h-3.5 w-3.5" />
+                                {item.bathroomsTotalInteger}
+                              </span>
+                            )}
+                            {item.livingArea && (
+                              <span className="inline-flex items-center gap-1">
+                                <Ruler className="h-3.5 w-3.5" />
+                                {Number(item.livingArea).toLocaleString()} sqft
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-2 flex items-center justify-between">
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {item.city ||
+                                item.stateOrProvince ||
+                                t("magicShare.locationUnknown")}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant={isSelected ? "secondary" : "outline"}
+                              disabled={isSelected}
+                              onClick={() => addListing(item.listingKey)}
+                            >
+                              {isSelected ? (
+                                t("magicShare.added")
+                              ) : (
+                                <>
+                                  <Plus className="mr-1 h-3.5 w-3.5" />
+                                  {t("magicShare.add")}
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
+/* ────────────────────────────────────────────────────────────── */
+/*  Main Component                                               */
+/* ────────────────────────────────────────────────────────────── */
+
 export default function MagicShareStudio() {
-  const { t, locale } = useT();
+  const { t } = useT();
   const { user } = useAuth();
   const utils = trpc.useUtils();
   const prefill = useMemo(() => parsePrefillFromUrl(), []);
 
-  const [search, setSearch] = useState("");
-  const [selectedKeys, setSelectedKeys] = useState<string[]>(prefill.listingKeys);
+  // ─── Mode ──────────────────────────────────────────
+  const [mode, setMode] = useState<ShareMode>(prefill.mode);
 
+  // ─── Shared state ──────────────────────────────────
+  const [search, setSearch] = useState("");
+  const [selectedKeys, setSelectedKeys] = useState<string[]>(
+    prefill.listingKeys
+  );
+  const [generatedShareUrl, setGeneratedShareUrl] = useState("");
+
+  // ─── Classic-only state ────────────────────────────
+  const [classicNote, setClassicNote] = useState("");
+
+  // ─── Magic-only state ──────────────────────────────
   const [clientName, setClientName] = useState(prefill.clientName);
   const [clientNeeds, setClientNeeds] = useState("");
   const [headerTitle, setHeaderTitle] = useState(
-    prefill.title || (prefill.clientName ? t("magicShare.clientTitle", { name: prefill.clientName }) : t("magicShare.defaultTitle"))
+    prefill.title ||
+      (prefill.clientName
+        ? t("magicShare.clientTitle", { name: prefill.clientName })
+        : t("magicShare.defaultTitle"))
   );
   const [headerDescription, setHeaderDescription] = useState("");
   const [strategyPointsText, setStrategyPointsText] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const PROFILE_KEY = "bbo_agent_profile";
-
-  const loadSavedProfile = useCallback(() => {
-    try {
-      const saved = localStorage.getItem(PROFILE_KEY);
-      if (saved) return JSON.parse(saved) as Record<string, string>;
-    } catch { /* ignore */ }
-    return null;
-  }, []);
+  // ─── Agent branding ────────────────────────────────
+  const profileQuery = trpc.profile.getMine.useQuery(undefined, {
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
 
   const [agentTitle, setAgentTitle] = useState("");
   const [agentPhone, setAgentPhone] = useState("");
@@ -142,32 +442,21 @@ export default function MagicShareStudio() {
   const [agentCompany, setAgentCompany] = useState("");
 
   useEffect(() => {
-    const saved = loadSavedProfile();
-    if (saved) {
-      if (saved.agentTitle) setAgentTitle(saved.agentTitle);
-      if (saved.agentPhone) setAgentPhone(saved.agentPhone);
-      if (saved.agentWechatId) setAgentWechatId(saved.agentWechatId);
-      if (saved.agentCompany) setAgentCompany(saved.agentCompany);
-    }
-  }, [loadSavedProfile]);
+    const p = profileQuery.data?.profile;
+    if (!p) return;
+    setAgentTitle((prev) => prev || p.title || "");
+    setAgentPhone((prev) => prev || p.phone || "");
+    setAgentEmail((prev) => prev || p.email || user?.email || "");
+    setAgentWechatId((prev) => {
+      if (prev) return prev;
+      const socials = (p.socialLinks ?? {}) as Record<string, string>;
+      return socials.wechat || "";
+    });
+    setAgentAvatarUrl((prev) => prev || p.photoUrl || "");
+    setAgentCompany((prev) => prev || p.brokerage || "");
+  }, [profileQuery.data, user]);
 
-  useEffect(() => {
-    const profile = { agentTitle, agentPhone, agentWechatId, agentCompany };
-    const hasValue = Object.values(profile).some((v) => v.trim().length > 0);
-    if (hasValue) {
-      try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch { /* ignore */ }
-    }
-  }, [agentTitle, agentPhone, agentWechatId, agentCompany]);
-
-  useEffect(() => {
-    if (user?.email && !agentEmail) {
-      setAgentEmail(user.email);
-    }
-    if ((user as any)?.picture && !agentAvatarUrl) {
-      setAgentAvatarUrl((user as any).picture);
-    }
-  }, [user, agentEmail, agentAvatarUrl]);
-
+  // ─── Queries ───────────────────────────────────────
   const searchQuery = trpc.mls.getProperties.useQuery({
     search: search || undefined,
     limit: 20,
@@ -180,44 +469,29 @@ export default function MagicShareStudio() {
     { enabled: selectedKeys.length > 0, refetchOnWindowFocus: false }
   );
 
-  const analyzeForShareMutation = trpc.smartMatch.analyzeForShare.useMutation({
-    onSuccess: (data: any) => {
-      if (data.headerDescription) setHeaderDescription(data.headerDescription);
-      if (data.strategyPoints?.length > 0) setStrategyPointsText(data.strategyPoints.join("\n"));
-      if (data.headerTitle) setHeaderTitle(data.headerTitle);
-      toast.success(t("magicShare.aiAnalysisDone"), { description: t("magicShare.aiAnalysisDoneDescription") });
-    },
-    onError: (error) => {
-      toast.error(t("magicShare.aiAnalysisFailed"), { description: error.message });
-    },
-  });
-
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [generatedShareUrl, setGeneratedShareUrl] = useState("");
-
-  const handleAiAutoFill = () => {
-    if (selectedListings.length === 0) {
-      toast.error(t("magicShare.selectAtLeastOne"));
-      return;
-    }
-    analyzeForShareMutation.mutate({
-      listings: selectedListings.map((item) => ({
-        address: displayAddress(item, t("listings.addressUnknown")),
-        price: item.listPrice ?? undefined,
-        beds: item.bedroomsTotal != null ? String(item.bedroomsTotal) : undefined,
-        baths: item.bathroomsTotalInteger != null ? String(item.bathroomsTotalInteger) : undefined,
-        sqft: item.livingArea ?? undefined,
-        propertyType: item.propertyType ?? undefined,
-        city: item.city ?? undefined,
-        publicRemarks: item.publicRemarks?.slice(0, 200) ?? undefined,
-      })),
-      clientNeeds: clientNeeds.trim() || undefined,
+  const analyzeForShareMutation =
+    trpc.smartMatch.analyzeForShare.useMutation({
+      onSuccess: (data: any) => {
+        if (data.headerDescription)
+          setHeaderDescription(data.headerDescription);
+        if (data.strategyPoints?.length > 0)
+          setStrategyPointsText(data.strategyPoints.join("\n"));
+        if (data.headerTitle) setHeaderTitle(data.headerTitle);
+        toast.success(t("magicShare.aiAnalysisDone"), {
+          description: t("magicShare.aiAnalysisDoneDescription"),
+        });
+      },
+      onError: (error) => {
+        toast.error(t("magicShare.aiAnalysisFailed"), {
+          description: error.message,
+        });
+      },
     });
-  };
 
   const createShareMutation = trpc.share.createSession.useMutation({
     onSuccess: async (data) => {
-      const shareUrl = data.shareUrl ?? window.location.origin + data.sharePath;
+      const shareUrl =
+        data.shareUrl ?? window.location.origin + data.sharePath;
       setGeneratedShareUrl(shareUrl);
       try {
         await navigator.clipboard.writeText(shareUrl);
@@ -225,17 +499,27 @@ export default function MagicShareStudio() {
         // Ignore clipboard permission errors.
       }
       await utils.share.listMine.invalidate();
-      toast.success(t("magicShare.shareLinkGenerated"), { description: shareUrl });
+      toast.success(t("magicShare.shareLinkGenerated"), {
+        description: shareUrl,
+      });
     },
     onError: (error) => {
-      toast.error(t("magicShare.shareGenerateFailed"), { description: error.message });
+      toast.error(t("magicShare.shareGenerateFailed"), {
+        description: error.message,
+      });
     },
   });
 
-  const selectedListings = ((selectedQuery.data ?? []) as MlsListing[]).filter(Boolean);
-  const selectedKeySet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
+  const selectedListings = (
+    (selectedQuery.data ?? []) as MlsListing[]
+  ).filter(Boolean);
+  const selectedKeySet = useMemo(
+    () => new Set(selectedKeys),
+    [selectedKeys]
+  );
   const searchResults = (searchQuery.data ?? []) as MlsListing[];
 
+  // ─── Listing Handlers ─────────────────────────────
   const addListing = (listingKey: string) => {
     setSelectedKeys((prev) => {
       if (prev.includes(listingKey)) return prev;
@@ -248,7 +532,9 @@ export default function MagicShareStudio() {
   };
 
   const removeListing = (listingKey: string) => {
-    setSelectedKeys((prev) => prev.filter((item) => item !== listingKey));
+    setSelectedKeys((prev) =>
+      prev.filter((item) => item !== listingKey)
+    );
   };
 
   const moveListing = (index: number, direction: -1 | 1) => {
@@ -263,394 +549,575 @@ export default function MagicShareStudio() {
     });
   };
 
+  // ─── AI Auto-fill (Magic only) ────────────────────
+  const handleAiAutoFill = () => {
+    if (selectedListings.length === 0) {
+      toast.error(t("magicShare.selectAtLeastOne"));
+      return;
+    }
+    analyzeForShareMutation.mutate({
+      listings: selectedListings.map((item) => ({
+        address: displayAddress(item, t("listings.addressUnknown")),
+        price: item.listPrice ?? undefined,
+        beds:
+          item.bedroomsTotal != null
+            ? String(item.bedroomsTotal)
+            : undefined,
+        baths:
+          item.bathroomsTotalInteger != null
+            ? String(item.bathroomsTotalInteger)
+            : undefined,
+        sqft: item.livingArea ?? undefined,
+        propertyType: item.propertyType ?? undefined,
+        city: item.city ?? undefined,
+        publicRemarks: item.publicRemarks?.slice(0, 200) ?? undefined,
+      })),
+      clientNeeds: clientNeeds.trim() || undefined,
+    });
+  };
+
+  // ─── Create Share ─────────────────────────────────
   const handleCreateShare = () => {
     if (selectedListings.length === 0) {
       toast.error(t("magicShare.selectAtLeastOne"));
       return;
     }
-    if (!headerTitle.trim()) {
-      toast.error(t("magicShare.fillShareTitle"));
-      return;
-    }
-
-    const strategyPoints = strategyPointsText
-      .split("\n")
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0)
-      .slice(0, 10);
 
     const agentBranding =
-      agentTitle || agentPhone || agentEmail || agentWechatId || agentAvatarUrl || agentCompany
+      agentTitle ||
+      agentPhone ||
+      agentEmail ||
+      agentWechatId ||
+      agentAvatarUrl ||
+      agentCompany
         ? {
-          agentTitle: agentTitle.trim() || undefined,
-          phone: agentPhone.trim() || undefined,
-          email: agentEmail.trim() || undefined,
-          wechatId: agentWechatId.trim() || undefined,
-          avatarUrl: agentAvatarUrl.trim() || undefined,
-          brokerageName: agentCompany.trim() || undefined,
-        }
+            agentTitle: agentTitle.trim() || undefined,
+            phone: agentPhone.trim() || undefined,
+            email: agentEmail.trim() || undefined,
+            wechatId: agentWechatId.trim() || undefined,
+            avatarUrl: agentAvatarUrl.trim() || undefined,
+            brokerageName: agentCompany.trim() || undefined,
+          }
         : {};
 
-    createShareMutation.mutate({
-      title: headerTitle.trim(),
-      introMessage: headerDescription.trim() || undefined,
-      clientName: clientName.trim() || undefined,
-      shareConfig: {
-        strategyPoints: strategyPoints.length > 0 ? strategyPoints : undefined,
-      },
-      listingKeys: selectedKeys,
-      agentBranding,
-      externalListings: [],
-    });
-  };
+    if (mode === "classic") {
+      // Classic: auto-generate title, minimal config
+      const firstListing = selectedListings[0];
+      const autoTitle =
+        selectedListings.length === 1
+          ? displayAddress(firstListing, t("listings.addressUnknown"))
+          : t("magicShare.classicMultiTitle", {
+              count: String(selectedListings.length),
+            });
 
-  const handleCopyShareLink = async (sharePath: string) => {
-    const shareUrl = window.location.origin + sharePath;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success(t("magicShare.shareLinkCopied"), { description: shareUrl });
-    } catch {
-      toast.error(t("magicShare.copyFailed"));
+      createShareMutation.mutate({
+        title: autoTitle,
+        introMessage: classicNote.trim() || undefined,
+        listingKeys: selectedKeys,
+        shareConfig: {
+          shareMode: "classic",
+          agentNote: classicNote.trim() || undefined,
+        },
+        agentBranding,
+        externalListings: [],
+      });
+    } else {
+      // Magic: full config
+      if (!headerTitle.trim()) {
+        toast.error(t("magicShare.fillShareTitle"));
+        return;
+      }
+
+      const strategyPoints = strategyPointsText
+        .split("\n")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0)
+        .slice(0, 10);
+
+      createShareMutation.mutate({
+        title: headerTitle.trim(),
+        introMessage: headerDescription.trim() || undefined,
+        clientName: clientName.trim() || undefined,
+        shareConfig: {
+          shareMode: "magic",
+          strategyPoints:
+            strategyPoints.length > 0 ? strategyPoints : undefined,
+        },
+        listingKeys: selectedKeys,
+        agentBranding,
+        externalListings: [],
+      });
     }
   };
 
-  const handleOpenShare = (sharePath: string) => {
-    window.open(window.location.origin + sharePath, "_blank", "noopener,noreferrer");
-  };
-
+  // ─── Render ────────────────────────────────────────
   return (
     <div className="space-y-6 pb-8">
+      {/* ─── Hero ──────────────────────────────────── */}
       <div className="rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/5 via-primary/2 to-transparent p-6 text-foreground shadow-sm md:p-8">
         <div className="flex items-center gap-2 text-sm text-primary">
           <Share2 className="h-4 w-4" />
           {t("magicShare.eyebrow")}
         </div>
-        <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">{t("magicShare.heroTitle")}</h1>
+        <h1 className="mt-2 text-3xl font-serif tracking-tight md:text-4xl">
+          {t("magicShare.heroTitleV2")}
+        </h1>
         <p className="mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">
-          {t("magicShare.heroDescription")}
+          {t("magicShare.heroDescriptionV2")}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("magicShare.listingSelection")}</CardTitle>
-            <CardDescription>{t("magicShare.listingSelectionDescription")}</CardDescription>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-10"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("magicShare.searchPlaceholder")}
-              />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-xl border bg-muted/20 p-3">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-medium">{t("magicShare.selectedListings")}</p>
-                <Badge variant="secondary">{selectedKeys.length} / 15</Badge>
-              </div>
-              {selectedQuery.isLoading ? (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("magicShare.loadingSelected")}
-                </div>
-              ) : selectedListings.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("magicShare.noSelected")}</p>
-              ) : (
-                <div className="space-y-2">
-                  {selectedListings.map((item, index) => (
-                    <div key={item.listingKey} className="rounded-lg border bg-background p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{displayAddress(item, t("listings.addressUnknown"))}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatPrice(item.listPrice, t("listings.pricePending"))} · {item.listingId || item.listingKey}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            disabled={index === 0}
-                            onClick={() => moveListing(index, -1)}
-                          >
-                            <ChevronUp className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            disabled={index === selectedListings.length - 1}
-                            onClick={() => moveListing(index, 1)}
-                          >
-                            <ChevronDown className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive"
-                            onClick={() => removeListing(item.listingKey)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <p className="mb-2 text-sm font-medium">{t("magicShare.searchResults")}</p>
-              <ScrollArea className="h-[420px] pr-3">
-                <div className="space-y-2">
-                  {searchQuery.isLoading ? (
-                    <div className="flex items-center py-8 text-sm text-muted-foreground">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t("magicShare.loadingSearch")}
-                    </div>
-                  ) : searchResults.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t("magicShare.noResults")}</p>
-                  ) : (
-                    searchResults.map((item) => {
-                      const isSelected = selectedKeySet.has(item.listingKey);
-                      return (
-                        <div key={item.listingKey} className="rounded-xl border p-3">
-                          <div className="flex items-start gap-3">
-                            {item.thumbnailUrl ? (
-                              <img
-                                src={item.thumbnailUrl}
-                                alt={displayAddress(item, t("listings.addressUnknown"))}
-                                className="h-20 w-28 rounded-md border object-cover"
-                              />
-                            ) : (
-                              <div className="h-20 w-28 rounded-md border bg-muted/40" />
-                            )}
-
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold">{displayAddress(item, t("listings.addressUnknown"))}</p>
-                              <p className="mt-0.5 text-xs text-muted-foreground">{formatPrice(item.listPrice, t("listings.pricePending"))}</p>
-                              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                {item.bedroomsTotal != null ? (
-                                  <span className="inline-flex items-center gap-1">
-                                    <BedDouble className="h-3.5 w-3.5" />
-                                    {item.bedroomsTotal}
-                                  </span>
-                                ) : null}
-                                {item.bathroomsTotalInteger != null ? (
-                                  <span className="inline-flex items-center gap-1">
-                                    <Bath className="h-3.5 w-3.5" />
-                                    {item.bathroomsTotalInteger}
-                                  </span>
-                                ) : null}
-                                {item.livingArea ? (
-                                  <span className="inline-flex items-center gap-1">
-                                    <Ruler className="h-3.5 w-3.5" />
-                                    {Number(item.livingArea).toLocaleString()} sqft
-                                  </span>
-                                ) : null}
-                              </div>
-                              <div className="mt-2 flex items-center justify-between">
-                                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                                  <MapPin className="h-3.5 w-3.5" />
-                                  {item.city || item.stateOrProvince || t("magicShare.locationUnknown")}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant={isSelected ? "secondary" : "outline"}
-                                  disabled={isSelected}
-                                  onClick={() => addListing(item.listingKey)}
-                                >
-                                  {isSelected ? t("magicShare.added") : (
-                                    <>
-                                      <Plus className="mr-1 h-3.5 w-3.5" />
-                                      {t("magicShare.add")}
-                                    </>
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </ScrollArea>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("magicShare.shareConfig")}</CardTitle>
-            <CardDescription>{t("magicShare.shareConfigDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium">{t("magicShare.clientName")}</p>
-              <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder={t("magicShare.clientNamePlaceholder")} />
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">{t("magicShare.clientNeeds")}</p>
-              <Textarea
-                rows={3}
-                value={clientNeeds}
-                onChange={(e) => setClientNeeds(e.target.value)}
-                placeholder={t("magicShare.clientNeedsPlaceholder")}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">{t("magicShare.shareTitle")}</p>
-              <Input value={headerTitle} onChange={(e) => setHeaderTitle(e.target.value)} />
-            </div>
-
-            {/* AI Auto-fill */}
-            <Button
-              variant="outline"
-              className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/5"
-              disabled={analyzeForShareMutation.isPending || selectedListings.length === 0}
-              onClick={handleAiAutoFill}
-            >
-              {analyzeForShareMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {t("magicShare.aiAnalyzing")}
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  {t("magicShare.aiAutoFill")}
-                </>
-              )}
-            </Button>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">{t("magicShare.shareDescription")}</p>
-              <Textarea
-                rows={3}
-                value={headerDescription}
-                onChange={(e) => setHeaderDescription(e.target.value)}
-                placeholder={t("magicShare.shareDescriptionPlaceholder")}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">{t("magicShare.strategyPoints")}</p>
-              <Textarea
-                rows={3}
-                value={strategyPointsText}
-                onChange={(e) => setStrategyPointsText(e.target.value)}
-                placeholder={t("magicShare.strategyPlaceholder")}
-              />
-            </div>
-
-            {/* Collapsible advanced settings */}
+      {/* ─── Mode Tabs ─────────────────────────────── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {MODE_TABS.map((tab) => {
+          const active = mode === tab.id;
+          return (
             <button
+              key={tab.id}
               type="button"
-              className="flex w-full items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground hover:border-primary/30 hover:text-primary transition-colors"
-              onClick={() => setShowAdvanced(!showAdvanced)}
+              onClick={() => {
+                setMode(tab.id);
+                setGeneratedShareUrl("");
+              }}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all whitespace-nowrap ${
+                active
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
             >
-              <Settings className="h-4 w-4" />
-              {t("magicShare.advancedSettings")}
-              <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+              {tab.icon}
+              {(t as any)(`magicShare.tab_${tab.id}`)}
             </button>
+          );
+        })}
 
-            {showAdvanced && (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 rounded-lg border p-3 bg-muted/10">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">{t("magicShare.agentTitle")}</p>
-                  <Input value={agentTitle} onChange={(e) => setAgentTitle(e.target.value)} placeholder="Your Local Listing Strategist" />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">{t("magicShare.agentPhone")}</p>
-                  <Input value={agentPhone} onChange={(e) => setAgentPhone(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">{t("magicShare.agentEmail")}</p>
-                  <Input value={agentEmail} onChange={(e) => setAgentEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">{t("magicShare.wechatId")}</p>
-                  <Input value={agentWechatId} onChange={(e) => setAgentWechatId(e.target.value)} />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <p className="text-sm font-medium">{t("magicShare.avatarUrl")}</p>
-                  <Input value={agentAvatarUrl} onChange={(e) => setAgentAvatarUrl(e.target.value)} />
-                </div>
-              </div>
-            )}
+        <div className="mx-1 h-6 w-px bg-border" />
 
-            <Button
-              className="w-full gap-2"
-              size="lg"
-              disabled={createShareMutation.isPending}
-              onClick={handleCreateShare}
+        {FUTURE_TABS.map((tab) => (
+          <div
+            key={tab.id}
+            className="flex items-center gap-2 rounded-xl border border-dashed border-muted-foreground/20 px-4 py-2.5 text-sm text-muted-foreground/40 whitespace-nowrap"
+          >
+            {tab.icon}
+            {(t as any)(`magicShare.tab_${tab.id}`)}
+            <Badge
+              variant="outline"
+              className="text-[9px] px-1.5 py-0 h-4 border-dashed text-muted-foreground/40"
             >
-              {createShareMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {t("magicShare.generating")}
-                </>
-              ) : (
-                <>
-                  <Share2 className="h-4 w-4" />
-                  {t("magicShare.generate")}
-                </>
-              )}
-            </Button>
-
-            {generatedShareUrl ? (
-              <div className="rounded-xl border bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">{t("magicShare.shareLink")}</p>
-                <p className="break-all text-sm font-medium">{generatedShareUrl}</p>
-                <div className="mt-3 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigator.clipboard.writeText(generatedShareUrl)}
-                  >
-                    <Copy className="mr-2 h-4 w-4" />
-                    {t("magicShare.copy")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(generatedShareUrl, "_blank", "noopener,noreferrer")}
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    {t("magicShare.open")}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+              Soon
+            </Badge>
+          </div>
+        ))}
       </div>
 
+      {/* ═══════ CLASSIC MODE ═══════ */}
+      {mode === "classic" && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <ListingSearchCard
+            search={search}
+            setSearch={setSearch}
+            selectedKeys={selectedKeys}
+            addListing={addListing}
+            removeListing={removeListing}
+            moveListing={moveListing}
+            selectedListings={selectedListings}
+            selectedKeySet={selectedKeySet}
+            searchResults={searchResults}
+            searchLoading={searchQuery.isLoading}
+            selectedLoading={selectedQuery.isLoading}
+            t={t}
+          />
+
+          {/* Classic — Minimal config */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  {t("magicShare.classicTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("magicShare.classicDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Optional personal note */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">
+                    {t("magicShare.classicNote")}
+                  </p>
+                  <Textarea
+                    rows={3}
+                    value={classicNote}
+                    onChange={(e) => setClassicNote(e.target.value)}
+                    placeholder={t("magicShare.classicNotePlaceholder")}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("magicShare.classicNoteHint")}
+                  </p>
+                </div>
+
+                {/* Summary preview */}
+                {selectedListings.length > 0 && (
+                  <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                      {t("magicShare.classicPreview")}
+                    </p>
+                    {selectedListings.slice(0, 5).map((item) => (
+                      <div
+                        key={item.listingKey}
+                        className="flex items-center gap-3"
+                      >
+                        {item.thumbnailUrl ? (
+                          <img
+                            src={item.thumbnailUrl}
+                            alt=""
+                            className="h-10 w-14 rounded-md border object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="h-10 w-14 rounded-md border bg-muted/30 shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
+                            {displayAddress(
+                              item,
+                              t("listings.addressUnknown")
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatPrice(
+                              item.listPrice,
+                              t("listings.pricePending")
+                            )}
+                            {item.bedroomsTotal != null &&
+                              ` · ${item.bedroomsTotal}bd`}
+                            {item.bathroomsTotalInteger != null &&
+                              ` ${item.bathroomsTotalInteger}ba`}
+                            {item.livingArea &&
+                              ` · ${Number(item.livingArea).toLocaleString()} sqft`}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {selectedListings.length > 5 && (
+                      <p className="text-xs text-muted-foreground">
+                        +{selectedListings.length - 5} more
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Generate button */}
+                <Button
+                  className="w-full gap-2"
+                  size="lg"
+                  disabled={
+                    createShareMutation.isPending ||
+                    selectedListings.length === 0
+                  }
+                  onClick={handleCreateShare}
+                >
+                  {createShareMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {t("magicShare.generating")}
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      {t("magicShare.classicGenerate")}
+                    </>
+                  )}
+                </Button>
+
+                {/* Generated link */}
+                {generatedShareUrl && <ShareLinkResult url={generatedShareUrl} t={t} />}
+              </CardContent>
+            </Card>
+
+            {/* Info card */}
+            <Card className="border-dashed">
+              <CardContent className="p-4 space-y-2">
+                <p className="text-sm font-medium">
+                  {t("magicShare.classicVsMagic")}
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t("magicShare.classicVsMagicDesc")}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary"
+                  onClick={() => setMode("magic")}
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  {t("magicShare.switchToMagic")}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════ MAGIC MODE ═══════ */}
+      {mode === "magic" && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <ListingSearchCard
+            search={search}
+            setSearch={setSearch}
+            selectedKeys={selectedKeys}
+            addListing={addListing}
+            removeListing={removeListing}
+            moveListing={moveListing}
+            selectedListings={selectedListings}
+            selectedKeySet={selectedKeySet}
+            searchResults={searchResults}
+            searchLoading={searchQuery.isLoading}
+            selectedLoading={selectedQuery.isLoading}
+            t={t}
+          />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("magicShare.shareConfig")}</CardTitle>
+              <CardDescription>
+                {t("magicShare.shareConfigDescription")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {t("magicShare.clientName")}
+                </p>
+                <Input
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder={t("magicShare.clientNamePlaceholder")}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {t("magicShare.clientNeeds")}
+                </p>
+                <Textarea
+                  rows={3}
+                  value={clientNeeds}
+                  onChange={(e) => setClientNeeds(e.target.value)}
+                  placeholder={t("magicShare.clientNeedsPlaceholder")}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {t("magicShare.shareTitle")}
+                </p>
+                <Input
+                  value={headerTitle}
+                  onChange={(e) => setHeaderTitle(e.target.value)}
+                />
+              </div>
+
+              {/* AI Auto-fill */}
+              <Button
+                variant="outline"
+                className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/5"
+                disabled={
+                  analyzeForShareMutation.isPending ||
+                  selectedListings.length === 0
+                }
+                onClick={handleAiAutoFill}
+              >
+                {analyzeForShareMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t("magicShare.aiAnalyzing")}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    {t("magicShare.aiAutoFill")}
+                  </>
+                )}
+              </Button>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {t("magicShare.shareDescription")}
+                </p>
+                <Textarea
+                  rows={3}
+                  value={headerDescription}
+                  onChange={(e) => setHeaderDescription(e.target.value)}
+                  placeholder={t("magicShare.shareDescriptionPlaceholder")}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {t("magicShare.strategyPoints")}
+                </p>
+                <Textarea
+                  rows={3}
+                  value={strategyPointsText}
+                  onChange={(e) => setStrategyPointsText(e.target.value)}
+                  placeholder={t("magicShare.strategyPlaceholder")}
+                />
+              </div>
+
+              {/* Collapsible advanced settings */}
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground hover:border-primary/30 hover:text-primary transition-colors"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                <Settings className="h-4 w-4" />
+                {t("magicShare.advancedSettings")}
+                <ChevronDown
+                  className={`ml-auto h-4 w-4 transition-transform ${
+                    showAdvanced ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {showAdvanced && (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 rounded-lg border p-3 bg-muted/10">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      {t("magicShare.agentTitle")}
+                    </p>
+                    <Input
+                      value={agentTitle}
+                      onChange={(e) => setAgentTitle(e.target.value)}
+                      placeholder="Your Local Listing Strategist"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      {t("magicShare.agentPhone")}
+                    </p>
+                    <Input
+                      value={agentPhone}
+                      onChange={(e) => setAgentPhone(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      {t("magicShare.agentEmail")}
+                    </p>
+                    <Input
+                      value={agentEmail}
+                      onChange={(e) => setAgentEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      {t("magicShare.wechatId")}
+                    </p>
+                    <Input
+                      value={agentWechatId}
+                      onChange={(e) => setAgentWechatId(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <p className="text-sm font-medium">
+                      {t("magicShare.avatarUrl")}
+                    </p>
+                    <Input
+                      value={agentAvatarUrl}
+                      onChange={(e) => setAgentAvatarUrl(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Button
+                className="w-full gap-2"
+                size="lg"
+                disabled={createShareMutation.isPending}
+                onClick={handleCreateShare}
+              >
+                {createShareMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t("magicShare.generating")}
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="h-4 w-4" />
+                    {t("magicShare.generate")}
+                  </>
+                )}
+              </Button>
+
+              {generatedShareUrl && <ShareLinkResult url={generatedShareUrl} t={t} />}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── My Shares ─────────────────────────────── */}
       <Card>
         <CardContent className="flex items-center justify-between gap-4 p-4">
           <div>
-            <p className="text-sm font-medium">{t("magicShare.myShares")}</p>
-            <p className="text-xs text-muted-foreground">{t("magicShare.mySharesDescription")}</p>
+            <p className="text-sm font-medium">
+              {t("magicShare.myShares")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("magicShare.mySharesDescription")}
+            </p>
           </div>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.location.href = "/shares"}
+            onClick={() => (window.location.href = "/shares")}
           >
             <ExternalLink className="mr-2 h-3.5 w-3.5" />
             {t("magicShare.myShares")}
           </Button>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  Share Link Result                                            */
+/* ────────────────────────────────────────────────────────────── */
+
+function ShareLinkResult({
+  url,
+  t,
+}: {
+  url: string;
+  t: (...args: any[]) => string;
+}) {
+  return (
+    <div className="rounded-xl border bg-muted/20 p-3">
+      <p className="text-xs text-muted-foreground">
+        {t("magicShare.shareLink")}
+      </p>
+      <p className="break-all text-sm font-medium">{url}</p>
+      <div className="mt-3 flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigator.clipboard.writeText(url)}
+        >
+          <Copy className="mr-2 h-4 w-4" />
+          {t("magicShare.copy")}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            window.open(url, "_blank", "noopener,noreferrer")
+          }
+        >
+          <ExternalLink className="mr-2 h-4 w-4" />
+          {t("magicShare.open")}
+        </Button>
+      </div>
     </div>
   );
 }
