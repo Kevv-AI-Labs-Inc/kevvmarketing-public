@@ -17,10 +17,12 @@ import { useT } from "@/i18n";
 import {
   Bath,
   BedDouble,
+  Calendar,
   ChevronDown,
   ChevronUp,
   ClipboardList,
   Copy,
+  DollarSign,
   ExternalLink,
   FileText,
   Loader2,
@@ -33,6 +35,7 @@ import {
   Settings,
   Share2,
   Sparkles,
+  Target,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -43,7 +46,7 @@ import { toast } from "sonner";
 /*  Types                                                        */
 /* ────────────────────────────────────────────────────────────── */
 
-type ShareMode = "classic" | "magic";
+type ShareMode = "classic" | "magic" | "buyer_board" | "tour_recap" | "offer_worksheet";
 
 type MlsListing = {
   id: number;
@@ -129,25 +132,12 @@ function parsePrefillFromUrl() {
 const MODE_TABS: {
   id: ShareMode;
   icon: React.ReactNode;
-  future?: boolean;
 }[] = [
   { id: "classic", icon: <FileText className="h-4 w-4" /> },
   { id: "magic", icon: <Sparkles className="h-4 w-4" /> },
-];
-
-const FUTURE_TABS = [
-  {
-    id: "buyer_board",
-    icon: <ClipboardList className="h-4 w-4" />,
-  },
-  {
-    id: "tour_recap",
-    icon: <MapPin className="h-4 w-4" />,
-  },
-  {
-    id: "offer_worksheet",
-    icon: <MessageSquareText className="h-4 w-4" />,
-  },
+  { id: "buyer_board", icon: <ClipboardList className="h-4 w-4" /> },
+  { id: "tour_recap", icon: <MapPin className="h-4 w-4" /> },
+  { id: "offer_worksheet", icon: <DollarSign className="h-4 w-4" /> },
 ];
 
 /* ────────────────────────────────────────────────────────────── */
@@ -415,6 +405,27 @@ export default function MagicShareStudio() {
   // ─── Classic-only state ────────────────────────────
   const [classicNote, setClassicNote] = useState("");
 
+  // ─── Buyer Board state ────────────────────────────
+  const [boardTitle, setBoardTitle] = useState("");
+  const [boardDescription, setBoardDescription] = useState("");
+  const [boardClientName, setBoardClientName] = useState("");
+  const [listingNotes, setListingNotes] = useState<Record<string, string>>({});
+
+  // ─── Tour Recap state ─────────────────────────────
+  const [tourDate, setTourDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [tourClientName, setTourClientName] = useState("");
+  const [tourSummary, setTourSummary] = useState("");
+  const [tourNextSteps, setTourNextSteps] = useState("");
+  const [listingFeedback, setListingFeedback] = useState<Record<string, { agentNotes: string; highlights: string; concerns: string }>>({});
+
+  // ─── Offer Worksheet state ────────────────────────
+  const [offerClientName, setOfferClientName] = useState("");
+  const [targetListingKey, setTargetListingKey] = useState("");
+  const [suggestedOfferLow, setSuggestedOfferLow] = useState("");
+  const [suggestedOfferHigh, setSuggestedOfferHigh] = useState("");
+  const [agentRecommendation, setAgentRecommendation] = useState("");
+  const [compNotes, setCompNotes] = useState<Record<string, { whyComparable: string; soldPrice: string; adjustmentNotes: string }>>({});
+
   // ─── Magic-only state ──────────────────────────────
   const [clientName, setClientName] = useState(prefill.clientName);
   const [clientNeeds, setClientNeeds] = useState("");
@@ -488,26 +499,35 @@ export default function MagicShareStudio() {
       },
     });
 
+  const shareSuccessHandler = async (data: { shareUrl: string | null; sharePath: string }) => {
+    const shareUrl = data.shareUrl ?? window.location.origin + data.sharePath;
+    setGeneratedShareUrl(shareUrl);
+    try { await navigator.clipboard.writeText(shareUrl); } catch { /* noop */ }
+    await utils.share.listMine.invalidate();
+    toast.success(t("magicShare.shareLinkGenerated"), { description: shareUrl });
+  };
+  const shareErrorHandler = (error: { message: string }) => {
+    toast.error(t("magicShare.shareGenerateFailed"), { description: error.message });
+  };
+
   const createShareMutation = trpc.share.createSession.useMutation({
-    onSuccess: async (data) => {
-      const shareUrl =
-        data.shareUrl ?? window.location.origin + data.sharePath;
-      setGeneratedShareUrl(shareUrl);
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-      } catch {
-        // Ignore clipboard permission errors.
-      }
-      await utils.share.listMine.invalidate();
-      toast.success(t("magicShare.shareLinkGenerated"), {
-        description: shareUrl,
-      });
-    },
-    onError: (error) => {
-      toast.error(t("magicShare.shareGenerateFailed"), {
-        description: error.message,
-      });
-    },
+    onSuccess: shareSuccessHandler,
+    onError: shareErrorHandler,
+  });
+
+  const createBuyerBoardMutation = trpc.share.createBuyerBoard.useMutation({
+    onSuccess: shareSuccessHandler,
+    onError: shareErrorHandler,
+  });
+
+  const createTourRecapMutation = trpc.share.createTourRecap.useMutation({
+    onSuccess: shareSuccessHandler,
+    onError: shareErrorHandler,
+  });
+
+  const createOfferWorksheetMutation = trpc.share.createOfferWorksheet.useMutation({
+    onSuccess: shareSuccessHandler,
+    onError: shareErrorHandler,
   });
 
   const selectedListings = (
@@ -576,79 +596,124 @@ export default function MagicShareStudio() {
     });
   };
 
-  // ─── Create Share ─────────────────────────────────
+  // ─── Build agent branding ──────────────────────────
+  const buildAgentBranding = () =>
+    agentTitle || agentPhone || agentEmail || agentWechatId || agentAvatarUrl || agentCompany
+      ? {
+          agentTitle: agentTitle.trim() || undefined,
+          phone: agentPhone.trim() || undefined,
+          email: agentEmail.trim() || undefined,
+          wechatId: agentWechatId.trim() || undefined,
+          avatarUrl: agentAvatarUrl.trim() || undefined,
+          brokerageName: agentCompany.trim() || undefined,
+        }
+      : {};
+
+  // ─── Create Share (Classic / Magic) ──────────────
   const handleCreateShare = () => {
     if (selectedListings.length === 0) {
       toast.error(t("magicShare.selectAtLeastOne"));
       return;
     }
-
-    const agentBranding =
-      agentTitle ||
-      agentPhone ||
-      agentEmail ||
-      agentWechatId ||
-      agentAvatarUrl ||
-      agentCompany
-        ? {
-            agentTitle: agentTitle.trim() || undefined,
-            phone: agentPhone.trim() || undefined,
-            email: agentEmail.trim() || undefined,
-            wechatId: agentWechatId.trim() || undefined,
-            avatarUrl: agentAvatarUrl.trim() || undefined,
-            brokerageName: agentCompany.trim() || undefined,
-          }
-        : {};
+    const agentBranding = buildAgentBranding();
 
     if (mode === "classic") {
-      // Classic: auto-generate title, minimal config
       const firstListing = selectedListings[0];
       const autoTitle =
         selectedListings.length === 1
           ? displayAddress(firstListing, t("listings.addressUnknown"))
-          : t("magicShare.classicMultiTitle", {
-              count: String(selectedListings.length),
-            });
-
+          : t("magicShare.classicMultiTitle", { count: String(selectedListings.length) });
       createShareMutation.mutate({
         title: autoTitle,
         introMessage: classicNote.trim() || undefined,
         listingKeys: selectedKeys,
-        shareConfig: {
-          shareMode: "classic",
-          agentNote: classicNote.trim() || undefined,
-        },
+        shareConfig: { shareMode: "classic", agentNote: classicNote.trim() || undefined },
         agentBranding,
         externalListings: [],
       });
     } else {
-      // Magic: full config
-      if (!headerTitle.trim()) {
-        toast.error(t("magicShare.fillShareTitle"));
-        return;
-      }
-
-      const strategyPoints = strategyPointsText
-        .split("\n")
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0)
-        .slice(0, 10);
-
+      if (!headerTitle.trim()) { toast.error(t("magicShare.fillShareTitle")); return; }
+      const strategyPoints = strategyPointsText.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 10);
       createShareMutation.mutate({
         title: headerTitle.trim(),
         introMessage: headerDescription.trim() || undefined,
         clientName: clientName.trim() || undefined,
-        shareConfig: {
-          shareMode: "magic",
-          strategyPoints:
-            strategyPoints.length > 0 ? strategyPoints : undefined,
-        },
+        shareConfig: { shareMode: "magic", strategyPoints: strategyPoints.length > 0 ? strategyPoints : undefined },
         listingKeys: selectedKeys,
         agentBranding,
         externalListings: [],
       });
     }
   };
+
+  // ─── Create Buyer Board ──────────────────────────
+  const handleCreateBuyerBoard = () => {
+    if (selectedListings.length === 0) { toast.error(t("magicShare.selectAtLeastOne")); return; }
+    const title = boardTitle.trim() || (boardClientName.trim() ? `${boardClientName.trim()}'s Board` : `${selectedListings.length} Listings Board`);
+    createBuyerBoardMutation.mutate({
+      title,
+      clientName: boardClientName.trim() || undefined,
+      boardDescription: boardDescription.trim() || undefined,
+      listingKeys: selectedKeys,
+      listingNotes,
+      agentBranding: buildAgentBranding(),
+    });
+  };
+
+  // ─── Create Tour Recap ───────────────────────────
+  const handleCreateTourRecap = () => {
+    if (selectedListings.length === 0) { toast.error(t("magicShare.selectAtLeastOne")); return; }
+    const nextSteps = tourNextSteps.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 10);
+    const feedbackForApi: Record<string, { agentNotes: string; tourOrder: number; highlights?: string; concerns?: string }> = {};
+    selectedKeys.forEach((key, idx) => {
+      const fb = listingFeedback[key];
+      feedbackForApi[key] = {
+        agentNotes: fb?.agentNotes?.trim() || "",
+        tourOrder: idx,
+        highlights: fb?.highlights?.trim() || undefined,
+        concerns: fb?.concerns?.trim() || undefined,
+      };
+    });
+    createTourRecapMutation.mutate({
+      title: tourClientName.trim() ? `Tour Recap — ${tourClientName.trim()}` : `Tour Recap — ${tourDate}`,
+      clientName: tourClientName.trim() || undefined,
+      tourDate,
+      overallSummary: tourSummary.trim() || undefined,
+      nextSteps: nextSteps.length > 0 ? nextSteps : undefined,
+      listingKeys: selectedKeys,
+      listingFeedback: feedbackForApi,
+      agentBranding: buildAgentBranding(),
+    });
+  };
+
+  // ─── Create Offer Worksheet ──────────────────────
+  const handleCreateOfferWorksheet = () => {
+    if (selectedListings.length === 0) { toast.error(t("magicShare.selectAtLeastOne")); return; }
+    const target = targetListingKey || selectedKeys[0];
+    if (!target) { toast.error(t("magicShare.selectAtLeastOne")); return; }
+    const comps = selectedKeys.filter((k) => k !== target).map((k) => ({
+      listingKey: k,
+      whyComparable: compNotes[k]?.whyComparable?.trim() || "",
+      soldPrice: compNotes[k]?.soldPrice ? Number(compNotes[k].soldPrice) : undefined,
+      adjustmentNotes: compNotes[k]?.adjustmentNotes?.trim() || undefined,
+    }));
+    const title = offerClientName.trim()
+      ? `Offer Analysis — ${offerClientName.trim()}`
+      : `Offer Analysis — ${displayAddress(selectedListings.find((l) => l.listingKey === target) ?? selectedListings[0], "Property")}`;
+    createOfferWorksheetMutation.mutate({
+      title,
+      clientName: offerClientName.trim() || undefined,
+      targetListingKey: target,
+      listingKeys: selectedKeys,
+      suggestedOfferLow: suggestedOfferLow ? Number(suggestedOfferLow) : undefined,
+      suggestedOfferHigh: suggestedOfferHigh ? Number(suggestedOfferHigh) : undefined,
+      agentRecommendation: agentRecommendation.trim() || undefined,
+      comparables: comps.length > 0 ? comps : undefined,
+      agentBranding: buildAgentBranding(),
+    });
+  };
+
+  const isAnyMutationPending = createShareMutation.isPending || createBuyerBoardMutation.isPending || createTourRecapMutation.isPending || createOfferWorksheetMutation.isPending;
 
   // ─── Render ────────────────────────────────────────
   return (
@@ -690,24 +755,6 @@ export default function MagicShareStudio() {
             </button>
           );
         })}
-
-        <div className="mx-1 h-6 w-px bg-border" />
-
-        {FUTURE_TABS.map((tab) => (
-          <div
-            key={tab.id}
-            className="flex items-center gap-2 rounded-xl border border-dashed border-muted-foreground/20 px-4 py-2.5 text-sm text-muted-foreground/40 whitespace-nowrap"
-          >
-            {tab.icon}
-            {(t as any)(`magicShare.tab_${tab.id}`)}
-            <Badge
-              variant="outline"
-              className="text-[9px] px-1.5 py-0 h-4 border-dashed text-muted-foreground/40"
-            >
-              Soon
-            </Badge>
-          </div>
-        ))}
       </div>
 
       {/* ═══════ CLASSIC MODE ═══════ */}
@@ -1053,6 +1100,408 @@ export default function MagicShareStudio() {
               {generatedShareUrl && <ShareLinkResult url={generatedShareUrl} t={t} />}
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* ═══════ BUYER BOARD MODE ═══════ */}
+      {mode === "buyer_board" && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <ListingSearchCard
+            search={search}
+            setSearch={setSearch}
+            selectedKeys={selectedKeys}
+            addListing={addListing}
+            removeListing={removeListing}
+            moveListing={moveListing}
+            selectedListings={selectedListings}
+            selectedKeySet={selectedKeySet}
+            searchResults={searchResults}
+            searchLoading={searchQuery.isLoading}
+            selectedLoading={selectedQuery.isLoading}
+            t={t}
+          />
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4" />
+                  {(t as any)("magicShare.buyerBoardTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {(t as any)("magicShare.buyerBoardDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{(t as any)("magicShare.boardClientName")}</p>
+                    <Input
+                      value={boardClientName}
+                      onChange={(e) => setBoardClientName(e.target.value)}
+                      placeholder="e.g. Sarah & David"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{(t as any)("magicShare.boardTitleLabel")}</p>
+                    <Input
+                      value={boardTitle}
+                      onChange={(e) => setBoardTitle(e.target.value)}
+                      placeholder="e.g. Dream Home Shortlist"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">{(t as any)("magicShare.boardDescLabel")}</p>
+                  <Textarea
+                    rows={2}
+                    value={boardDescription}
+                    onChange={(e) => setBoardDescription(e.target.value)}
+                    placeholder={(t as any)("magicShare.boardDescPlaceholder")}
+                  />
+                </div>
+
+                {/* Per-listing notes */}
+                {selectedListings.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">{(t as any)("magicShare.perListingNotes")}</p>
+                    {selectedListings.map((item) => (
+                      <div key={item.listingKey} className="rounded-lg border p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          {item.thumbnailUrl ? (
+                            <img src={item.thumbnailUrl} alt="" className="h-8 w-12 rounded border object-cover shrink-0" />
+                          ) : (
+                            <div className="h-8 w-12 rounded border bg-muted/30 shrink-0" />
+                          )}
+                          <p className="text-sm font-medium truncate">{displayAddress(item, t("listings.addressUnknown"))}</p>
+                        </div>
+                        <Input
+                          value={listingNotes[item.listingKey] || ""}
+                          onChange={(e) => setListingNotes((prev) => ({ ...prev, [item.listingKey]: e.target.value }))}
+                          placeholder={(t as any)("magicShare.listingNotePlaceholder")}
+                          className="text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Button
+                  className="w-full gap-2"
+                  size="lg"
+                  disabled={createBuyerBoardMutation.isPending || selectedListings.length === 0}
+                  onClick={handleCreateBuyerBoard}
+                >
+                  {createBuyerBoardMutation.isPending ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" />{t("magicShare.generating")}</>
+                  ) : (
+                    <><ClipboardList className="h-4 w-4" />{(t as any)("magicShare.generateBoard")}</>
+                  )}
+                </Button>
+
+                {generatedShareUrl && <ShareLinkResult url={generatedShareUrl} t={t} />}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════ TOUR RECAP MODE ═══════ */}
+      {mode === "tour_recap" && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <ListingSearchCard
+            search={search}
+            setSearch={setSearch}
+            selectedKeys={selectedKeys}
+            addListing={addListing}
+            removeListing={removeListing}
+            moveListing={moveListing}
+            selectedListings={selectedListings}
+            selectedKeySet={selectedKeySet}
+            searchResults={searchResults}
+            searchLoading={searchQuery.isLoading}
+            selectedLoading={selectedQuery.isLoading}
+            t={t}
+          />
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  {(t as any)("magicShare.tourRecapTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {(t as any)("magicShare.tourRecapDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{(t as any)("magicShare.tourClientName")}</p>
+                    <Input
+                      value={tourClientName}
+                      onChange={(e) => setTourClientName(e.target.value)}
+                      placeholder="Client name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{(t as any)("magicShare.tourDateLabel")}</p>
+                    <Input
+                      type="date"
+                      value={tourDate}
+                      onChange={(e) => setTourDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Per-listing feedback */}
+                {selectedListings.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">{(t as any)("magicShare.perPropertyFeedback")}</p>
+                    {selectedListings.map((item, idx) => (
+                      <div key={item.listingKey} className="rounded-lg border p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-900 text-xs font-bold text-white shrink-0">{idx + 1}</span>
+                          {item.thumbnailUrl ? (
+                            <img src={item.thumbnailUrl} alt="" className="h-8 w-12 rounded border object-cover shrink-0" />
+                          ) : (
+                            <div className="h-8 w-12 rounded border bg-muted/30 shrink-0" />
+                          )}
+                          <p className="text-sm font-medium truncate">{displayAddress(item, t("listings.addressUnknown"))}</p>
+                        </div>
+                        <Input
+                          value={listingFeedback[item.listingKey]?.highlights || ""}
+                          onChange={(e) => setListingFeedback((prev) => ({ ...prev, [item.listingKey]: { ...prev[item.listingKey], agentNotes: prev[item.listingKey]?.agentNotes || "", concerns: prev[item.listingKey]?.concerns || "", highlights: e.target.value } }))}
+                          placeholder={(t as any)("magicShare.highlightsPlaceholder")}
+                          className="text-sm"
+                        />
+                        <Input
+                          value={listingFeedback[item.listingKey]?.concerns || ""}
+                          onChange={(e) => setListingFeedback((prev) => ({ ...prev, [item.listingKey]: { ...prev[item.listingKey], agentNotes: prev[item.listingKey]?.agentNotes || "", highlights: prev[item.listingKey]?.highlights || "", concerns: e.target.value } }))}
+                          placeholder={(t as any)("magicShare.concernsPlaceholder")}
+                          className="text-sm"
+                        />
+                        <Input
+                          value={listingFeedback[item.listingKey]?.agentNotes || ""}
+                          onChange={(e) => setListingFeedback((prev) => ({ ...prev, [item.listingKey]: { ...prev[item.listingKey], highlights: prev[item.listingKey]?.highlights || "", concerns: prev[item.listingKey]?.concerns || "", agentNotes: e.target.value } }))}
+                          placeholder={(t as any)("magicShare.agentNotesPlaceholder")}
+                          className="text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">{(t as any)("magicShare.tourOverallSummary")}</p>
+                  <Textarea
+                    rows={3}
+                    value={tourSummary}
+                    onChange={(e) => setTourSummary(e.target.value)}
+                    placeholder={(t as any)("magicShare.tourSummaryPlaceholder")}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">{(t as any)("magicShare.tourNextSteps")}</p>
+                  <Textarea
+                    rows={3}
+                    value={tourNextSteps}
+                    onChange={(e) => setTourNextSteps(e.target.value)}
+                    placeholder={(t as any)("magicShare.tourNextStepsPlaceholder")}
+                  />
+                  <p className="text-xs text-muted-foreground">{(t as any)("magicShare.onePerLine")}</p>
+                </div>
+
+                <Button
+                  className="w-full gap-2"
+                  size="lg"
+                  disabled={createTourRecapMutation.isPending || selectedListings.length === 0}
+                  onClick={handleCreateTourRecap}
+                >
+                  {createTourRecapMutation.isPending ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" />{t("magicShare.generating")}</>
+                  ) : (
+                    <><Send className="h-4 w-4" />{(t as any)("magicShare.generateRecap")}</>
+                  )}
+                </Button>
+
+                {generatedShareUrl && <ShareLinkResult url={generatedShareUrl} t={t} />}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════ OFFER WORKSHEET MODE ═══════ */}
+      {mode === "offer_worksheet" && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <ListingSearchCard
+            search={search}
+            setSearch={setSearch}
+            selectedKeys={selectedKeys}
+            addListing={addListing}
+            removeListing={removeListing}
+            moveListing={moveListing}
+            selectedListings={selectedListings}
+            selectedKeySet={selectedKeySet}
+            searchResults={searchResults}
+            searchLoading={searchQuery.isLoading}
+            selectedLoading={selectedQuery.isLoading}
+            t={t}
+          />
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  {(t as any)("magicShare.offerTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {(t as any)("magicShare.offerDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">{(t as any)("magicShare.offerClientName")}</p>
+                  <Input
+                    value={offerClientName}
+                    onChange={(e) => setOfferClientName(e.target.value)}
+                    placeholder="Client name"
+                  />
+                </div>
+
+                {/* Target listing selector */}
+                {selectedListings.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{(t as any)("magicShare.targetListing")}</p>
+                    <p className="text-xs text-muted-foreground">{(t as any)("magicShare.targetListingHint")}</p>
+                    <div className="space-y-2">
+                      {selectedListings.map((item) => {
+                        const isTarget = (targetListingKey || selectedKeys[0]) === item.listingKey;
+                        return (
+                          <button
+                            key={item.listingKey}
+                            type="button"
+                            onClick={() => setTargetListingKey(item.listingKey)}
+                            className={`w-full flex items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+                              isTarget ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "hover:bg-muted/50"
+                            }`}
+                          >
+                            <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 shrink-0 ${isTarget ? "border-primary bg-primary" : "border-muted-foreground/30"}`}>
+                              {isTarget && <div className="h-2 w-2 rounded-full bg-white" />}
+                            </div>
+                            {item.thumbnailUrl ? (
+                              <img src={item.thumbnailUrl} alt="" className="h-8 w-12 rounded border object-cover shrink-0" />
+                            ) : (
+                              <div className="h-8 w-12 rounded border bg-muted/30 shrink-0" />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{displayAddress(item, t("listings.addressUnknown"))}</p>
+                              <p className="text-xs text-muted-foreground">{formatPrice(item.listPrice, t("listings.pricePending"))}</p>
+                            </div>
+                            {isTarget && <Badge variant="default" className="shrink-0"><Target className="mr-1 h-3 w-3" />Target</Badge>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Offer range */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{(t as any)("magicShare.offerLow")}</p>
+                    <Input
+                      type="number"
+                      value={suggestedOfferLow}
+                      onChange={(e) => setSuggestedOfferLow(e.target.value)}
+                      placeholder="e.g. 1100000"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{(t as any)("magicShare.offerHigh")}</p>
+                    <Input
+                      type="number"
+                      value={suggestedOfferHigh}
+                      onChange={(e) => setSuggestedOfferHigh(e.target.value)}
+                      placeholder="e.g. 1200000"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">{(t as any)("magicShare.offerRecommendation")}</p>
+                  <Textarea
+                    rows={3}
+                    value={agentRecommendation}
+                    onChange={(e) => setAgentRecommendation(e.target.value)}
+                    placeholder={(t as any)("magicShare.offerRecommendationPlaceholder")}
+                  />
+                </div>
+
+                {/* Comp notes */}
+                {selectedListings.filter((l) => l.listingKey !== (targetListingKey || selectedKeys[0])).length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">{(t as any)("magicShare.compNotes")}</p>
+                    {selectedListings
+                      .filter((l) => l.listingKey !== (targetListingKey || selectedKeys[0]))
+                      .map((item) => (
+                        <div key={item.listingKey} className="rounded-lg border p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            {item.thumbnailUrl ? (
+                              <img src={item.thumbnailUrl} alt="" className="h-8 w-12 rounded border object-cover shrink-0" />
+                            ) : (
+                              <div className="h-8 w-12 rounded border bg-muted/30 shrink-0" />
+                            )}
+                            <p className="text-sm font-medium truncate">{displayAddress(item, t("listings.addressUnknown"))}</p>
+                          </div>
+                          <Input
+                            value={compNotes[item.listingKey]?.whyComparable || ""}
+                            onChange={(e) => setCompNotes((prev) => ({ ...prev, [item.listingKey]: { ...prev[item.listingKey], soldPrice: prev[item.listingKey]?.soldPrice || "", adjustmentNotes: prev[item.listingKey]?.adjustmentNotes || "", whyComparable: e.target.value } }))}
+                            placeholder={(t as any)("magicShare.whyComparablePlaceholder")}
+                            className="text-sm"
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              type="number"
+                              value={compNotes[item.listingKey]?.soldPrice || ""}
+                              onChange={(e) => setCompNotes((prev) => ({ ...prev, [item.listingKey]: { ...prev[item.listingKey], whyComparable: prev[item.listingKey]?.whyComparable || "", adjustmentNotes: prev[item.listingKey]?.adjustmentNotes || "", soldPrice: e.target.value } }))}
+                              placeholder={(t as any)("magicShare.soldPricePlaceholder")}
+                              className="text-sm"
+                            />
+                            <Input
+                              value={compNotes[item.listingKey]?.adjustmentNotes || ""}
+                              onChange={(e) => setCompNotes((prev) => ({ ...prev, [item.listingKey]: { ...prev[item.listingKey], whyComparable: prev[item.listingKey]?.whyComparable || "", soldPrice: prev[item.listingKey]?.soldPrice || "", adjustmentNotes: e.target.value } }))}
+                              placeholder={(t as any)("magicShare.adjustmentPlaceholder")}
+                              className="text-sm"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                <Button
+                  className="w-full gap-2"
+                  size="lg"
+                  disabled={createOfferWorksheetMutation.isPending || selectedListings.length === 0}
+                  onClick={handleCreateOfferWorksheet}
+                >
+                  {createOfferWorksheetMutation.isPending ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" />{t("magicShare.generating")}</>
+                  ) : (
+                    <><DollarSign className="h-4 w-4" />{(t as any)("magicShare.generateOffer")}</>
+                  )}
+                </Button>
+
+                {generatedShareUrl && <ShareLinkResult url={generatedShareUrl} t={t} />}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 

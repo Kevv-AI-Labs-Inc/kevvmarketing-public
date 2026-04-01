@@ -49,9 +49,15 @@ export function I18nProvider({
 }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
     try {
+      // 1. Explicit user preference from localStorage
       const saved = localStorage.getItem(LOCALE_STORAGE_KEY);
       if (isLocale(saved)) return saved;
-    } catch { /* noop */ }
+
+      // 2. Browser / device language
+      const browserLang = navigator.language?.toLowerCase() ?? "";
+      if (browserLang.startsWith("zh")) return "zh";
+      if (browserLang.startsWith("en")) return "en";
+    } catch { /* noop — SSR or restricted environment */ }
     return defaultLocale;
   });
 

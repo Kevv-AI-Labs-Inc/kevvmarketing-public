@@ -244,6 +244,69 @@ export const contacts = pgTable("contacts", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const buyerProfiles = pgTable(
+  "buyer_profiles",
+  {
+    id: serial("id").primaryKey(),
+    agentId: integer("agent_id"),
+    contactId: integer("contact_id").notNull(),
+    legacyClientId: integer("legacy_client_id"),
+    status: varchar("status", { length: 20 }).default("active").notNull(),
+    canonicalSummary: text("canonical_summary"),
+    hardFilters: jsonb("hard_filters").$type<{
+      city?: string | null;
+      postalCode?: string | null;
+      propertyType?: string | null;
+      minPrice?: number | null;
+      maxPrice?: number | null;
+      minBedrooms?: number | null;
+      maxBedrooms?: number | null;
+      status?: string | null;
+    }>().default({}),
+    softPreferences: jsonb("soft_preferences").$type<string[]>().default([]),
+    negativePreferences: jsonb("negative_preferences").$type<string[]>().default([]),
+    searchMetadata: jsonb("search_metadata").$type<Record<string, unknown>>().default({}),
+    embedding: vector("embedding", { dimensions: 1536 }),
+    embeddingModel: varchar("embedding_model", { length: 100 }),
+    embeddingUpdatedAt: timestamp("embedding_updated_at"),
+    lastMatchedAt: timestamp("last_matched_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("buyer_profiles_contact_unique").on(table.contactId)]
+);
+
+export const smartMatchRuns = pgTable("smart_match_runs", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id"),
+  contactId: integer("contact_id").notNull(),
+  buyerProfileId: integer("buyer_profile_id"),
+  status: varchar("status", { length: 20 }).default("completed").notNull(),
+  queryText: text("query_text"),
+  hardFilters: jsonb("hard_filters").$type<Record<string, unknown>>().default({}),
+  topK: integer("top_k").default(8).notNull(),
+  retrievalSource: varchar("retrieval_source", { length: 30 }).default("search").notNull(),
+  candidateCount: integer("candidate_count").default(0).notNull(),
+  returnedCount: integer("returned_count").default(0).notNull(),
+  processingMs: integer("processing_ms").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const smartMatchResults = pgTable("smart_match_results", {
+  id: serial("id").primaryKey(),
+  runId: integer("run_id").notNull(),
+  listingKey: varchar("listing_key", { length: 255 }).notNull(),
+  listingId: varchar("listing_id", { length: 255 }),
+  listingSnapshot: jsonb("listing_snapshot").$type<Record<string, unknown>>().default({}),
+  semanticScore: integer("semantic_score").default(0).notNull(),
+  ruleScore: integer("rule_score").default(0).notNull(),
+  behaviorScore: integer("behavior_score").default(0).notNull(),
+  finalScore: integer("final_score").default(0).notNull(),
+  matchReasons: jsonb("match_reasons").$type<string[]>().default([]),
+  images: jsonb("images").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const conversationSessions = pgTable(
   "conversation_sessions",
   {
@@ -685,6 +748,12 @@ export type ShareSessionEvent = typeof shareSessionEvents.$inferSelect;
 export type InsertShareSessionEvent = typeof shareSessionEvents.$inferInsert;
 export type ShareLead = typeof shareLeads.$inferSelect;
 export type InsertShareLead = typeof shareLeads.$inferInsert;
+export type BuyerProfile = typeof buyerProfiles.$inferSelect;
+export type InsertBuyerProfile = typeof buyerProfiles.$inferInsert;
+export type SmartMatchRun = typeof smartMatchRuns.$inferSelect;
+export type InsertSmartMatchRun = typeof smartMatchRuns.$inferInsert;
+export type SmartMatchResult = typeof smartMatchResults.$inferSelect;
+export type InsertSmartMatchResult = typeof smartMatchResults.$inferInsert;
 export type DealStory = typeof dealStories.$inferSelect;
 export type InsertDealStory = typeof dealStories.$inferInsert;
 export type ShowingFeedback = typeof showingFeedback.$inferSelect;
@@ -1307,3 +1376,37 @@ export type ListingSubscription = typeof listingSubscriptions.$inferSelect;
 export type InsertListingSubscription = typeof listingSubscriptions.$inferInsert;
 export type SubscriptionNotification = typeof subscriptionNotifications.$inferSelect;
 export type InsertSubscriptionNotification = typeof subscriptionNotifications.$inferInsert;
+
+// ============================================================
+// Flyer Studio — Saved Flyers / Marketing Materials
+// ============================================================
+
+/**
+ * Saved flyers / marketing materials.
+ * Stores the full editor state as JSON so the agent can resume editing.
+ * Exported images are stored in R2 and referenced by thumbnailUrl.
+ */
+export const flyers = pgTable("flyers", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").notNull(), // FK to kevv users
+  openId: varchar("open_id", { length: 64 }).notNull(),
+  // Flyer metadata
+  title: varchar("title", { length: 255 }).notNull(),
+  templateId: varchar("template_id", { length: 64 }).notNull(),
+  sizeKey: varchar("size_key", { length: 32 }).default("letter").notNull(),
+  status: varchar("status", { length: 20 }).default("draft").notNull(), // draft | exported | shared
+  // Full editor state (FlyerData JSON)
+  flyerData: jsonb("flyer_data").notNull(),
+  // Exported image reference
+  thumbnailUrl: varchar("thumbnail_url", { length: 1024 }),
+  exportedUrl: varchar("exported_url", { length: 1024 }),
+  r2Key: varchar("r2_key", { length: 512 }),
+  // Share session link (when shared via Shares Dashboard)
+  shareToken: varchar("share_token", { length: 64 }),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Flyer = typeof flyers.$inferSelect;
+export type InsertFlyer = typeof flyers.$inferInsert;

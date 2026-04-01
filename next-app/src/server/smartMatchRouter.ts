@@ -14,6 +14,10 @@ import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { invokeLLM } from "./_core/llm";
+import {
+    generateSmartMatch,
+    getSmartMatchWorkspace,
+} from "./smartMatch/smartMatchService";
 
 // ─── DB Table Setup (dynamic migration) ────────────────
 
@@ -231,23 +235,65 @@ const externalListingSchema = z.object({
 // ─── Router ──────────────────────────────────────────────
 
 export const smartMatchRouter = router({
+    workspace: protectedProcedure
+        .input(
+            z
+                .object({
+                    query: z.string().trim().max(255).optional(),
+                    limit: z.number().int().min(1).max(50).default(24),
+                })
+                .optional()
+        )
+        .query(async ({ ctx, input }) => {
+            const db = await getDb();
+            return getSmartMatchWorkspace(
+                {
+                    agentId: ctx.user.id,
+                    query: input?.query,
+                    limit: input?.limit,
+                },
+                db
+            );
+        }),
+
     /**
      * Generate AI-powered property recommendations (MLS only).
      */
     generateMatch: protectedProcedure
         .input(
             z.object({
-                clientName: z.string().trim().min(1).max(255),
-                clientNeeds: z.string().trim().min(1).max(5000),
-                budgetMin: z.number().optional(),
-                budgetMax: z.number().optional(),
-                excludeKeys: z.array(z.string()).max(50).optional(),
-                topK: z.number().int().min(1).max(20).default(10),
+                contactId: z.number().int(),
+                locale: z.enum(["zh", "en"]).default("zh"),
+                searchBrief: z.string().trim().max(5000).optional(),
+                city: z.string().trim().max(120).optional(),
+                postalCode: z.string().trim().max(20).optional(),
+                propertyType: z.string().trim().max(80).optional(),
+                minPrice: z.number().int().min(0).optional(),
+                maxPrice: z.number().int().min(0).optional(),
+                minBedrooms: z.number().int().min(0).max(20).optional(),
+                maxBedrooms: z.number().int().min(0).max(20).optional(),
+                topK: z.number().int().min(1).max(20).default(8),
             })
         )
-        .mutation(async () => {
-            // TODO: Implement AI-powered recommendations via vector search
-            return [];
+        .mutation(async ({ ctx, input }) => {
+            const db = await getDb();
+            return generateSmartMatch(
+                {
+                    agentId: ctx.user.id,
+                    contactId: input.contactId,
+                    locale: input.locale,
+                    searchBrief: input.searchBrief,
+                    city: input.city,
+                    postalCode: input.postalCode,
+                    propertyType: input.propertyType,
+                    minPrice: input.minPrice,
+                    maxPrice: input.maxPrice,
+                    minBedrooms: input.minBedrooms,
+                    maxBedrooms: input.maxBedrooms,
+                    topK: input.topK,
+                },
+                db
+            );
         }),
 
     /**
