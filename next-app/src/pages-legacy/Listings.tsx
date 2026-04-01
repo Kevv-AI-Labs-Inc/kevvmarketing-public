@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/i18n";
+import { ListingImage } from "@/components/listings/listing-image";
 
 const PAGE_SIZE = 24;
 
@@ -539,21 +540,14 @@ export default function Listings() {
                                                     )}
                                                 </div>
                                             )}
-                                            {property.thumbnailUrl && !(brokenThumbnailByListingKey as Record<string, boolean>)[property.listingKey ?? ''] ? (
-                                                <img
-                                                    src={property.thumbnailUrl}
-                                                    alt={getDisplayAddress(property, t("listings.addressUnknown"))}
-                                                    className="h-full w-full object-cover"
-                                                    onError={() =>
-                                                        setBrokenThumbnailByListingKey(prev => ({
-                                                            ...prev,
-                                                            [property.listingKey ?? '']: true,
-                                                        }))
-                                                    }
-                                                />
-                                            ) : (
-                                                <Building2 className="h-10 w-10 text-muted-foreground/30" />
-                                            )}
+                                            <ListingImage
+                                                src={property.thumbnailUrl}
+                                                alt={getDisplayAddress(property, t("listings.addressUnknown"))}
+                                                width={400}
+                                                height={300}
+                                                className="h-full w-full object-cover"
+                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                            />
                                             {/* Status badge */}
                                             {property.standardStatus && (
                                                 <Badge
@@ -708,20 +702,13 @@ export default function Listings() {
                                 return detailImages.length > 0 ? (
                                 <div className="space-y-2">
                                     {!detailImageBroken && mainImageUrl ? (
-                                        <img
+                                        <ListingImage
                                             src={mainImageUrl}
                                             alt={getDisplayAddress(propertyDetails, t("listings.addressUnknown"))}
+                                            width={700}
+                                            height={256}
                                             className="w-full h-64 object-cover rounded-lg border"
-                                            onError={() => {
-                                                setBrokenDetailImageUrls((prev) => {
-                                                    const next = { ...prev, [mainImageUrl]: true };
-                                                    const hasAvailable = detailImages.some((url) => !next[url]);
-                                                    if (!hasAvailable) {
-                                                        setDetailImageBroken(true);
-                                                    }
-                                                    return next;
-                                                });
-                                            }}
+                                            sizes="(max-width: 768px) 100vw, 700px"
                                         />
                                     ) : (
                                         <div className="w-full h-64 rounded-lg border bg-muted/40 flex items-center justify-center text-muted-foreground">
@@ -731,15 +718,14 @@ export default function Listings() {
                                     <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
                                         {(propertyDetails.media ?? []).slice(0, 10).map((m) =>
                                             m.mediaURL ? (
-                                                <img
+                                                <ListingImage
                                                     key={m.id}
                                                     src={m.mediaURL}
                                                     alt="Property"
+                                                    width={160}
+                                                    height={80}
                                                     className="w-full h-20 object-cover rounded border"
-                                                    onError={(e) => {
-                                                        const target = e.currentTarget;
-                                                        target.style.display = "none";
-                                                    }}
+                                                    sizes="(max-width: 768px) 33vw, 20vw"
                                                 />
                                             ) : null
                                         )}
