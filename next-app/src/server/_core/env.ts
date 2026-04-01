@@ -64,7 +64,7 @@ export const ENV = {
   webhookSecret: process.env.WEBHOOK_SECRET ?? "",
 
   // Video studio providers
-  videoProvider: (process.env.VIDEO_PROVIDER ?? "local") as
+  videoProvider: (process.env.VIDEO_PROVIDER ?? "sora") as
     | "local"
     | "sora"
     | "jimeng",

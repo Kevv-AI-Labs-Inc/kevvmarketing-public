@@ -13,7 +13,11 @@ import { getDb } from "./db";
 import { videoJobs } from "../drizzle/schema";
 import { desc, eq } from "drizzle-orm";
 
-const cloudProviderSchema = z.enum(["sora", "jimeng"]);
+/* ────────────────────────────────────────────────────────────── */
+/*  Provider schema                                              */
+/* ────────────────────────────────────────────────────────────── */
+
+const cloudProviderSchema = z.enum(["sora"]);
 
 const createCloudVideoTaskInput = z.object({
   provider: cloudProviderSchema,
@@ -25,7 +29,7 @@ const createCloudVideoTaskInput = z.object({
 });
 
 type CloudVideoResult = {
-  provider: "sora" | "jimeng";
+  provider: "sora";
   status: "processing" | "completed";
   jobId: string | null;
   downloadUrl: string | null;
@@ -58,39 +62,14 @@ function pickFirstString(source: unknown, paths: string[][]): string | null {
   return null;
 }
 
-async function postJsonWithTimeout(url: string, headers: Record<string, string>, body: unknown) {
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit
+): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ENV.videoRequestTimeoutMs);
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    const text = await response.text();
-    const parsed = text ? safeJsonParse(text) : {};
-    if (!response.ok) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: `Video provider request failed (${response.status})`,
-        cause: parsed,
-      });
-    }
-    return parsed;
-  } catch (error) {
-    if (error instanceof TRPCError) throw error;
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new TRPCError({
-        code: "TIMEOUT",
-        message: `Video provider request timed out after ${ENV.videoRequestTimeoutMs}ms`,
-      });
-    }
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Video provider request failed",
-      cause: error,
-    });
+    return await fetch(url, { ...init, signal: controller.signal });
   } finally {
     clearTimeout(timeout);
   }
@@ -104,27 +83,52 @@ function safeJsonParse(value: string): unknown {
   }
 }
 
-function buildSoraUrl() {
+async function postJsonWithTimeout(
+  url: string,
+  headers: Record<string, string>,
+  body: unknown
+) {
+  const response = await fetchWithTimeout(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  const text = await response.text();
+  const parsed = text ? safeJsonParse(text) : {};
+  if (!response.ok) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Video provider request failed (${response.status})`,
+      cause: parsed,
+    });
+  }
+  return parsed;
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  Sora 2 (Azure OpenAI)                                       */
+/* ────────────────────────────────────────────────────────────── */
+
+function buildSoraUrl(suffix = "") {
   const configuredPath = ENV.openaiVideoApiPath.trim();
   const normalized = configuredPath
     .replace(/^\/+/, "")
     .replace(/^v1\//i, "");
-  return buildOpenAiApiUrl(normalized || "videos", { scope: "video" });
+  const resource = normalized || "videos";
+  return buildOpenAiApiUrl(
+    suffix ? `${resource}/${suffix}` : resource,
+    { scope: "video" }
+  );
 }
 
-function buildJimengUrl() {
-  const base = ENV.jimengApiBaseUrl.replace(/\/$/, "");
-  const path = ENV.jimengVideoApiPath.startsWith("/")
-    ? ENV.jimengVideoApiPath
-    : `/${ENV.jimengVideoApiPath}`;
-  return `${base}${path}`;
-}
-
-async function createSoraTask(input: z.infer<typeof createCloudVideoTaskInput>): Promise<CloudVideoResult> {
+async function createSoraTask(
+  input: z.infer<typeof createCloudVideoTaskInput>
+): Promise<CloudVideoResult> {
   if (!resolveOpenAiApiKey({ scope: "video" })) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Sora API key not configured",
+      message:
+        "Sora API key not configured. Set AZURE_OPENAI_VIDEO_ENDPOINT + AZURE_OPENAI_VIDEO_API_KEY.",
     });
   }
 
@@ -142,20 +146,21 @@ async function createSoraTask(input: z.infer<typeof createCloudVideoTaskInput>):
       ...(index === 0 && input.prompt ? { caption: input.prompt } : {}),
     })),
     aspect_ratio: input.aspectRatio,
-    duration: Math.round(input.imageUrls.length * input.durationSecondsPerImage),
+    duration: Math.round(
+      input.imageUrls.length * input.durationSecondsPerImage
+    ),
     n: 1,
   };
 
   const result = await postJsonWithTimeout(url, headers, body);
   const record = asRecord(result);
 
-  const downloadUrl =
-    pickFirstString(result, [
-      ["data", "0", "url"],
-      ["data", "0", "video", "url"],
-      ["url"],
-      ["video_url"],
-    ]);
+  const downloadUrl = pickFirstString(result, [
+    ["data", "0", "url"],
+    ["data", "0", "video", "url"],
+    ["url"],
+    ["video_url"],
+  ]);
 
   return {
     provider: "sora",
@@ -166,67 +171,92 @@ async function createSoraTask(input: z.infer<typeof createCloudVideoTaskInput>):
   };
 }
 
-async function createJimengTask(input: z.infer<typeof createCloudVideoTaskInput>): Promise<CloudVideoResult> {
-  if (!ENV.jimengApiKey || !ENV.jimengApiBaseUrl) {
+/**
+ * Poll an in-progress Sora 2 video generation job.
+ */
+async function pollSoraJob(jobId: string) {
+  if (!resolveOpenAiApiKey({ scope: "video" })) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Jimeng API not configured (set JIMENG_API_KEY and JIMENG_API_BASE_URL)",
+      message: "Sora API key not configured",
     });
   }
 
-  const url = buildJimengUrl();
-  const headers = {
-    Authorization: `Bearer ${ENV.jimengApiKey}`,
-    "Content-Type": "application/json",
-  };
+  const url = buildSoraUrl(jobId);
+  const headers = buildOpenAiAuthHeaders({ scope: "video" });
 
-  const body = {
-    model: ENV.jimengVideoModel,
-    prompt: input.prompt || "professional real estate video",
-    image_urls: input.imageUrls,
-    aspect_ratio: input.aspectRatio,
-    duration: Math.round(input.imageUrls.length * input.durationSecondsPerImage),
-  };
+  const response = await fetchWithTimeout(url, {
+    method: "GET",
+    headers,
+  });
+  const text = await response.text();
+  const parsed = text ? safeJsonParse(text) : {};
 
-  const result = await postJsonWithTimeout(url, headers, body);
-  const record = asRecord(result);
+  if (!response.ok) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Sora poll failed (${response.status})`,
+      cause: parsed,
+    });
+  }
 
-  const downloadUrl = pickFirstString(result, [
-    ["data", "video_url"],
+  const record = asRecord(parsed);
+  const status = asString(record.status) ?? "unknown";
+
+  const downloadUrl = pickFirstString(parsed, [
+    ["data", "0", "url"],
+    ["data", "0", "video", "url"],
+    ["output", "video_url"],
     ["video_url"],
     ["url"],
   ]);
 
   return {
-    provider: "jimeng",
-    status: downloadUrl ? "completed" : "processing",
-    jobId: asString(record.id) ?? asString(record.task_id),
+    jobId,
+    status,
     downloadUrl,
-    raw: result,
+    raw: parsed,
   };
 }
 
+/* ────────────────────────────────────────────────────────────── */
+/*  Router                                                       */
+/* ────────────────────────────────────────────────────────────── */
+
 export const studioRouter = router({
+  /**
+   * Provider availability status.
+   * Sora 2 (Azure OpenAI) is the primary provider.
+   * Local and Jimeng are marked as development-only.
+   */
   providerStatus: protectedProcedure.query(() => {
     const soraEnabled = Boolean(resolveOpenAiApiKey({ scope: "video" }));
-    const jimengEnabled = Boolean(ENV.jimengApiKey && ENV.jimengApiBaseUrl);
 
     return {
-      defaultProvider: ENV.videoProvider,
+      defaultProvider: "sora" as const,
       providers: {
         sora: {
           enabled: soraEnabled,
-          label: "Sora",
+          label: "Sora 2",
+          sublabel: "Azure OpenAI",
           note: soraEnabled
             ? `Model: ${ENV.openaiVideoModel}`
-            : "Set OpenAI/Azure Video API key to enable",
+            : "Set AZURE_OPENAI_VIDEO_ENDPOINT + AZURE_OPENAI_VIDEO_API_KEY to enable",
+          status: soraEnabled ? ("ready" as const) : ("not_configured" as const),
+        },
+        local: {
+          enabled: false,
+          label: "Local Render",
+          sublabel: "Browser",
+          note: "In development — Ken Burns slideshow with transitions",
+          status: "dev" as const,
         },
         jimeng: {
-          enabled: jimengEnabled,
+          enabled: false,
           label: "Jimeng",
-          note: jimengEnabled
-            ? `Model: ${ENV.jimengVideoModel}`
-            : "Set JIMENG_API_KEY + JIMENG_API_BASE_URL to enable",
+          sublabel: "Dreamina",
+          note: "In development — ByteDance AI video model",
+          status: "dev" as const,
         },
       },
     };
@@ -235,10 +265,16 @@ export const studioRouter = router({
   createCloudVideoTask: protectedProcedure
     .input(createCloudVideoTaskInput)
     .mutation(async ({ input }) => {
-      if (input.provider === "sora") {
-        return createSoraTask(input);
-      }
-      return createJimengTask(input);
+      return createSoraTask(input);
+    }),
+
+  /**
+   * Poll an in-progress Sora 2 job for completion status.
+   */
+  pollVideoJob: protectedProcedure
+    .input(z.object({ jobId: z.string().min(1) }))
+    .query(async ({ input }) => {
+      return pollSoraJob(input.jobId);
     }),
 
   /**
@@ -249,11 +285,12 @@ export const studioRouter = router({
       z.object({
         base64Data: z.string().min(1),
         fileName: z.string().trim().max(255).optional(),
-        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]).default("image/jpeg"),
+        mimeType: z
+          .enum(["image/jpeg", "image/png", "image/webp"])
+          .default("image/jpeg"),
       })
     )
     .mutation(async ({ input }) => {
-      // Validate size (max 10MB base64 ≈ ~14MB string)
       if (input.base64Data.length > 14_000_000) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -271,7 +308,6 @@ export const studioRouter = router({
       const filename = `${id}${ext}`;
       const r2Key = `studio/uploads/${filename}`;
 
-      // Strip data URI prefix if present
       const raw = input.base64Data.replace(/^data:image\/\w+;base64,/, "");
       const buffer = Buffer.from(raw, "base64");
 
@@ -280,26 +316,21 @@ export const studioRouter = router({
       return { url, filename };
     }),
 
-  /**
-   * List previously uploaded images.
-   * Client-side tracks uploaded URLs per session.
-   */
   listUploads: protectedProcedure.query(() => {
     return [] as { filename: string; url: string }[];
   }),
 
   // ─── Video Job Persistence ─────────────────────────────────
 
-  /**
-   * saveJob — Persist a video generation job to the database.
-   */
   saveJob: protectedProcedure
     .input(
       z.object({
         listingKey: z.string().max(255).optional(),
         title: z.string().max(255).optional(),
         provider: z.enum(["local", "sora", "jimeng"]),
-        status: z.enum(["pending", "processing", "completed", "failed"]).default("completed"),
+        status: z
+          .enum(["pending", "processing", "completed", "failed"])
+          .default("completed"),
         jobExternalId: z.string().max(255).optional(),
         prompt: z.string().max(4000).optional(),
         aspectRatio: z.enum(["9:16", "16:9", "1:1"]).default("9:16"),
@@ -334,15 +365,14 @@ export const studioRouter = router({
       return job;
     }),
 
-  /**
-   * listJobs — Paginated list of past video jobs for the current agent.
-   */
   listJobs: protectedProcedure
     .input(
-      z.object({
-        limit: z.number().min(1).max(50).default(20),
-        offset: z.number().min(0).default(0),
-      }).optional()
+      z
+        .object({
+          limit: z.number().min(1).max(50).default(20),
+          offset: z.number().min(0).default(0),
+        })
+        .optional()
     )
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? 20;
@@ -358,9 +388,6 @@ export const studioRouter = router({
       return jobs;
     }),
 
-  /**
-   * getJob — Get a single video job by ID.
-   */
   getJob: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input, ctx }) => {
