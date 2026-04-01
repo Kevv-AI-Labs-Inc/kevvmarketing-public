@@ -27,6 +27,7 @@ import { useT } from "@/i18n";
 import { localeTag } from "@/i18n/copy";
 import { getSharePageCopy } from "@/i18n/share-pages";
 import AreaMagnetShare from "@/components/share/area-magnet-share";
+import ClassicShareView from "@/components/share/classic-share-view";
 import { trpc } from "@/lib/trpc";
 import type { AppRouter } from "@/routers";
 import { toast } from "sonner";
@@ -281,6 +282,21 @@ export default function ListingShare({ token }: ListingShareProps) {
 
   if (data.session.sessionType === "area_magnet") {
     return <AreaMagnetShare token={token} data={data} trackEvent={trackEvent} />;
+  }
+
+  // Classic share mode — clean, light, data-focused
+  const shareConfigRaw = (data.shareConfig ?? {}) as Record<string, unknown>;
+  if (getString(shareConfigRaw.shareMode) === "classic") {
+    return (
+      <ClassicShareView
+        token={token}
+        session={data.session}
+        agentBranding={(data.agentBranding ?? {}) as Record<string, unknown>}
+        shareConfig={shareConfigRaw}
+        listings={data.listings}
+        trackEvent={trackEvent}
+      />
+    );
   }
 
   return (

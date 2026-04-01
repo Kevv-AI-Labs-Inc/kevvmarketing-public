@@ -97,7 +97,9 @@ const externalListingSchema = z.object({
 });
 
 const shareConfigSchema = z.object({
+  shareMode: z.enum(["classic", "magic"]).default("magic"),
   strategyPoints: z.array(z.string().trim().min(1).max(200)).max(10).optional(),
+  agentNote: z.string().trim().max(500).optional(),
 });
 
 const shareSessionTypeSchema = z.enum(["listing_share", "area_magnet"]);
