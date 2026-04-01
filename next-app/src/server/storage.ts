@@ -14,6 +14,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ENV } from "./_core/env";
 
+
 let _client: S3Client | null = null;
 
 function getClient(): S3Client {
@@ -127,3 +128,49 @@ export async function storageGet(
 
   return { key, url };
 }
+
+/**
+ * Check whether R2 is fully configured.
+ */
+export function isR2Configured(): boolean {
+  return Boolean(
+    ENV.r2AccountId &&
+      ENV.r2AccessKeyId &&
+      ENV.r2SecretAccessKey &&
+      ENV.r2BucketName
+  );
+}
+
+/**
+ * Generate a short-lived presigned PUT URL so the client can upload directly to R2.
+ *
+ * @param relKey      - Relative storage key (e.g. "uploads/profiles/user-42/photo.jpg")
+ * @param contentType - MIME type that the client MUST use in the PUT request
+ * @param expiresIn   - Seconds until the URL expires (default 300 s)
+ * @returns { uploadUrl, publicUrl, key }
+ */
+export async function getPresignedPutUrl(
+  relKey: string,
+  contentType: string,
+  expiresIn = 300
+): Promise<{ uploadUrl: string; publicUrl: string; key: string }> {
+  const client = getClient();
+  const key = normalizeKey(relKey);
+
+  const uploadUrl = await getSignedUrl(
+    client,
+    new PutObjectCommand({
+      Bucket: ENV.r2BucketName,
+      Key: key,
+      ContentType: contentType,
+    }),
+    { expiresIn }
+  );
+
+  const publicUrlBase = ENV.r2PublicUrl
+    ? ENV.r2PublicUrl.replace(/\/+$/, "")
+    : `https://${ENV.r2AccountId}.r2.cloudflarestorage.com/${ENV.r2BucketName}`;
+
+  return { uploadUrl, publicUrl: `${publicUrlBase}/${key}`, key };
+}
+

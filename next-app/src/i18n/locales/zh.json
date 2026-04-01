@@ -313,7 +313,9 @@
   "landing": {
     "header": {
       "signIn": "登录",
-      "getStartedShort": "免费开始"
+      "getStartedShort": "免费开始",
+      "leads": "线索中心",
+      "myShares": "我的分享"
     },
     "hero": {
       "badge": "为地产经纪人打造的 AI 营销平台",
@@ -1896,5 +1898,20 @@
     "description": "Sorry, the page you are looking for doesn't exist.",
     "descriptionLine2": "It may have been moved or deleted.",
     "goHome": "Go Home"
+  },
+  "shares": {
+    "eyebrow": "我的分享",
+    "heroTitle": "分享管理中心",
+    "heroDescription": "统一管理所有发出的分享链接，包括批量分享和地区诱饵页，查看访问数据并随时撤销。",
+    "createListingShare": "新建批量分享",
+    "createAreaMagnet": "新建地区诱饵",
+    "filterAll": "全部",
+    "typeListingShare": "批量分享",
+    "typeAreaMagnet": "地区诱饵",
+    "searchPlaceholder": "搜索分享...",
+    "listTitle": "所有分享",
+    "listDescription": "按创建时间倒序排列，支持按类型和关键词筛选",
+    "emptyAll": "暂无发出的分享，前往批量分享或地区诱饵创建第一条分享链接。",
+    "emptyFiltered": "当前筛选条件下没有匹配的分享。"
   }
 }

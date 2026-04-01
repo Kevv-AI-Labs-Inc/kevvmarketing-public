@@ -180,6 +180,14 @@ export const agentProfiles = pgTable(
     yearsExperience: integer("years_experience").default(0),
     templateId: varchar("template_id", { length: 32 }).default("classic"),
     colorScheme: varchar("color_scheme", { length: 32 }).default("gold"),
+    chatSettings: jsonb("chat_settings").$type<{
+      enabled: boolean;
+      widgetLabel: string;
+      greeting: string;
+      systemPrompt: string;
+      style: "professional" | "friendly" | "bilingual";
+      suggestedPrompts: string[];
+    }>(),
     status: agentProfileStatusEnum("status").default("active").notNull(),
     tier: agentTierEnum("tier").default("free").notNull(),
     stripeCustomerId: varchar("stripe_customer_id", { length: 128 }),
@@ -1062,6 +1070,85 @@ export type AgentInsight = typeof agentInsights.$inferSelect;
 export type InsertAgentInsight = typeof agentInsights.$inferInsert;
 export type CmaReport = typeof cmaReports.$inferSelect;
 export type InsertCmaReport = typeof cmaReports.$inferInsert;
+
+// ============================================================
+// Prospecting Dashboard — AI Pitch Engine for Expired/FSBO Leads
+// ============================================================
+
+export const prospectBriefStatusEnum = pgEnum("prospect_brief_status", [
+  "generating",
+  "ready",
+  "failed",
+]);
+
+export const prospectOutcomeEnum = pgEnum("prospect_outcome", [
+  "called",
+  "appointment_booked",
+  "not_interested",
+  "no_answer",
+  "voicemail",
+  "callback_scheduled",
+]);
+
+export const prospectChannelEnum = pgEnum("prospect_channel", [
+  "call",
+  "sms",
+  "email",
+  "postcard",
+]);
+
+/** Prospect briefs — AI-generated pitch packages for expired/FSBO listings. */
+export const prospectBriefs = pgTable("prospect_briefs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  listingId: text("listing_id"),
+  address: text("address"),
+  listingData: jsonb("listing_data").$type<Record<string, unknown>>(),
+  diagnosis: jsonb("diagnosis").$type<Record<string, unknown>>(),
+  pitchAngles: jsonb("pitch_angles").$type<
+    Array<{ id: string; name: string; confidence: number; script: string }>
+  >(),
+  outreachScripts: jsonb("outreach_scripts").$type<{
+    call: string;
+    sms: string;
+    email: string;
+    postcard: string;
+  }>(),
+  objectionHandlers: jsonb("objection_handlers").$type<
+    Array<{ objection: string; rebuttal: string }>
+  >(),
+  tone: varchar("tone", { length: 20 }).default("professional"),
+  language: varchar("language", { length: 10 }).default("en"),
+  llmPrompt: text("llm_prompt"),
+  llmResponse: text("llm_response"),
+  status: prospectBriefStatusEnum("status").default("generating").notNull(),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ProspectBrief = typeof prospectBriefs.$inferSelect;
+export type InsertProspectBrief = typeof prospectBriefs.$inferInsert;
+
+/** Prospect feedback — tracks outreach outcomes for the feedback loop. */
+export const prospectFeedback = pgTable(
+  "prospect_feedback",
+  {
+    id: serial("id").primaryKey(),
+    briefId: integer("brief_id").notNull(),
+    userId: integer("user_id").notNull(),
+    outcome: prospectOutcomeEnum("outcome"),
+    pitchAngleId: text("pitch_angle_id"),
+    outreachChannel: prospectChannelEnum("outreach_channel"),
+    editsMade: boolean("edits_made").default(false),
+    editedScript: text("edited_script"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("prospect_feedback_brief_user_idx").on(table.briefId, table.userId)]
+);
+
+export type ProspectFeedback = typeof prospectFeedback.$inferSelect;
+export type InsertProspectFeedback = typeof prospectFeedback.$inferInsert;
 
 // ============================================================
 // API Key Management (used by apiKeyAuth.ts)

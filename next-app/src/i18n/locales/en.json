@@ -313,7 +313,9 @@
   "landing": {
     "header": {
       "signIn": "Sign in",
-      "getStartedShort": "Start free"
+      "getStartedShort": "Start free",
+      "leads": "Leads",
+      "myShares": "My Shares"
     },
     "hero": {
       "badge": "An AI marketing platform built for real estate agents",
@@ -1896,5 +1898,20 @@
     "description": "Sorry, the page you are looking for doesn't exist.",
     "descriptionLine2": "It may have been moved or deleted.",
     "goHome": "Go Home"
+  },
+  "shares": {
+    "eyebrow": "My Shares",
+    "heroTitle": "Share Management",
+    "heroDescription": "Manage all your outbound share links in one place — listing shares, area magnet pages, and more. View engagement stats and revoke any link instantly.",
+    "createListingShare": "New Listing Share",
+    "createAreaMagnet": "New Area Magnet",
+    "filterAll": "All",
+    "typeListingShare": "Listing Share",
+    "typeAreaMagnet": "Area Magnet",
+    "searchPlaceholder": "Search shares...",
+    "listTitle": "All Shares",
+    "listDescription": "Sorted by creation date, filterable by type and keyword",
+    "emptyAll": "No shares yet. Create your first share from Magic Share or Area Magnet.",
+    "emptyFiltered": "No shares match the current filters."
   }
 }
