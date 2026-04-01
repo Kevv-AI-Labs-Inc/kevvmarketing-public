@@ -87,6 +87,123 @@ const bootstrapSql = `
     updated_at timestamp not null default now()
   );
 
+  create table buyer_profiles (
+    id serial primary key,
+    agent_id integer,
+    contact_id integer not null,
+    legacy_client_id integer,
+    status varchar(20) not null default 'active',
+    canonical_summary text,
+    hard_filters jsonb not null default '{}'::jsonb,
+    soft_preferences jsonb not null default '[]'::jsonb,
+    negative_preferences jsonb not null default '[]'::jsonb,
+    search_metadata jsonb not null default '{}'::jsonb,
+    embedding text,
+    embedding_model varchar(100),
+    embedding_updated_at timestamp,
+    last_matched_at timestamp,
+    created_at timestamp not null default now(),
+    updated_at timestamp not null default now()
+  );
+
+  create unique index buyer_profiles_contact_unique on buyer_profiles (contact_id);
+
+  create table smart_match_runs (
+    id serial primary key,
+    agent_id integer,
+    contact_id integer not null,
+    buyer_profile_id integer,
+    status varchar(20) not null default 'completed',
+    query_text text,
+    hard_filters jsonb not null default '{}'::jsonb,
+    top_k integer not null default 8,
+    retrieval_source varchar(30) not null default 'search',
+    candidate_count integer not null default 0,
+    returned_count integer not null default 0,
+    processing_ms integer not null default 0,
+    created_at timestamp not null default now()
+  );
+
+  create table smart_match_results (
+    id serial primary key,
+    run_id integer not null,
+    listing_key varchar(255) not null,
+    listing_id varchar(255),
+    listing_snapshot jsonb not null default '{}'::jsonb,
+    semantic_score integer not null default 0,
+    rule_score integer not null default 0,
+    behavior_score integer not null default 0,
+    final_score integer not null default 0,
+    match_reasons jsonb not null default '[]'::jsonb,
+    images jsonb not null default '[]'::jsonb,
+    created_at timestamp not null default now()
+  );
+
+  create table clients (
+    id serial primary key,
+    "externalId" varchar(255),
+    name varchar(255),
+    email varchar(320),
+    phone varchar(50),
+    "budgetMin" varchar(20),
+    "budgetMax" varchar(20),
+    "preferredCities" text,
+    "preferredBedrooms" integer,
+    "preferredPropertyTypes" text,
+    "lifestyleNotes" text,
+    "mustHaveFeatures" text,
+    "dealBreakers" text,
+    "profileSummary" text,
+    "agentId" integer,
+    buyer_type varchar(20),
+    language varchar(10) default 'en',
+    wechat_id varchar(100),
+    "createdAt" timestamp not null default now(),
+    "updatedAt" timestamp not null default now()
+  );
+
+  create table showing_feedback (
+    id serial primary key,
+    client_id integer,
+    property_id integer,
+    listing_key varchar(255),
+    agent_id integer,
+    showing_date timestamp,
+    overall_rating integer,
+    would_revisit boolean,
+    price_reaction varchar(20),
+    feedback_text text,
+    liked jsonb,
+    disliked jsonb,
+    embedding text,
+    embedding_model varchar(100),
+    embedding_updated_at timestamp,
+    created_at timestamp not null default now(),
+    updated_at timestamp not null default now()
+  );
+
+  create table listing_subscriptions (
+    id serial primary key,
+    agent_id integer,
+    client_id integer,
+    name varchar(255),
+    cities jsonb,
+    min_price varchar(20),
+    max_price varchar(20),
+    min_beds integer,
+    max_beds integer,
+    property_types jsonb,
+    keywords text,
+    channel varchar(20) not null default 'email',
+    frequency varchar(20) not null default 'instant',
+    language varchar(10) default 'en',
+    status varchar(20) not null default 'active',
+    last_notified_at timestamp,
+    match_count integer not null default 0,
+    created_at timestamp not null default now(),
+    updated_at timestamp not null default now()
+  );
+
   create table client_events (
     id serial primary key,
     contact_id integer,

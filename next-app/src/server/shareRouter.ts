@@ -102,7 +102,13 @@ const shareConfigSchema = z.object({
   agentNote: z.string().trim().max(500).optional(),
 });
 
-const shareSessionTypeSchema = z.enum(["listing_share", "area_magnet"]);
+const shareSessionTypeSchema = z.enum([
+  "listing_share",
+  "area_magnet",
+  "buyer_board",
+  "tour_recap",
+  "offer_worksheet",
+]);
 const areaMagnetScopeTypeSchema = z.enum(["zip", "neighborhood", "building"]);
 const areaMagnetTypeSchema = z.enum([
   "spring_market",
@@ -164,6 +170,49 @@ const createSessionInputSchema = z.object({
   expiresInDays: z.number().int().min(1).max(90).optional(),
   agentBranding: agentBrandingSchema,
   tour: tourConfigSchema.optional(),
+});
+
+const createBuyerBoardInputSchema = z.object({
+  title: z.string().trim().min(1).max(255),
+  clientName: z.string().trim().max(255).optional(),
+  boardDescription: z.string().trim().max(2000).optional(),
+  listingKeys: z.array(z.string().trim().min(1)).min(1).max(30),
+  listingNotes: z.record(z.string(), z.string().trim().max(500)).optional(),
+  agentBranding: agentBrandingSchema,
+});
+
+const createTourRecapInputSchema = z.object({
+  title: z.string().trim().min(1).max(255),
+  clientName: z.string().trim().max(255).optional(),
+  tourDate: z.string().trim().min(1).max(30),
+  overallSummary: z.string().trim().max(3000).optional(),
+  nextSteps: z.array(z.string().trim().min(1).max(500)).max(10).optional(),
+  listingKeys: z.array(z.string().trim().min(1)).min(1).max(30),
+  listingFeedback: z.record(z.string(), z.object({
+    agentNotes: z.string().trim().max(1000).default(""),
+    tourOrder: z.number().int().min(0).max(30).default(0),
+    highlights: z.string().trim().max(500).optional(),
+    concerns: z.string().trim().max(500).optional(),
+  })).optional(),
+  agentBranding: agentBrandingSchema,
+});
+
+const createOfferWorksheetInputSchema = z.object({
+  title: z.string().trim().min(1).max(255),
+  clientName: z.string().trim().max(255).optional(),
+  targetListingKey: z.string().trim().min(1),
+  listingKeys: z.array(z.string().trim().min(1)).min(1).max(30),
+  suggestedOfferLow: z.number().min(0).optional(),
+  suggestedOfferHigh: z.number().min(0).optional(),
+  agentRecommendation: z.string().trim().max(3000).optional(),
+  comparables: z.array(z.object({
+    listingKey: z.string().trim().min(1),
+    whyComparable: z.string().trim().max(500).default(""),
+    soldPrice: z.number().min(0).optional(),
+    soldDate: z.string().trim().max(30).optional(),
+    adjustmentNotes: z.string().trim().max(500).optional(),
+  })).max(15).optional(),
+  agentBranding: agentBrandingSchema,
 });
 
 const buyerTourInputSchema = z.object({
@@ -2544,5 +2593,174 @@ export const shareRouter = router({
       });
 
       return { success: true };
+    }),
+
+  // ─── Buyer Board ─────────────────────────────────────────────
+  createBuyerBoard: protectedProcedure
+    .input(createBuyerBoardInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      await ensureShareTables(db);
+
+      const listingKeys = Array.from(new Set(input.listingKeys.map((k) => k.trim()).filter(Boolean)));
+      const listings = await getListingsByKeys(db, listingKeys);
+      if (listings.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "No valid listings found." });
+
+      const validListingKeys = listings.map((l) => l.listingKey);
+      const token = await generateUniqueToken(db);
+      const now = new Date();
+      const normalizedBranding = normalizeBranding(input.agentBranding, {
+        name: ctx.user.name || "Agent",
+        title: "Real Estate Advisor",
+        email: ctx.user.email,
+      });
+
+      await db.insert(shareSessions).values({
+        token,
+        status: "active",
+        sessionType: "buyer_board",
+        title: input.title.trim(),
+        introMessage: null,
+        clientName: input.clientName?.trim() || null,
+        createdByOpenId: ctx.user.openId,
+        createdByCompanyId: null,
+        createdByApiKeyId: null,
+        createdByName: ctx.user.name ?? null,
+        createdByEmail: ctx.user.email ?? null,
+        agentBranding: normalizedBranding,
+        shareConfig: {
+          shareMode: "buyer_board",
+          boardDescription: input.boardDescription?.trim() || null,
+          listingNotes: input.listingNotes ?? {},
+          allowClientInteraction: true,
+        },
+        magnetScope: null,
+        magnetPayload: null,
+        listingKeys: validListingKeys,
+        tourPlan: null,
+        expiresAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const origin = inferOrigin(ctx.headers);
+      const sharePath = `/s/${token}`;
+      return { token, sharePath, shareUrl: origin ? `${origin}${sharePath}` : null, listingCount: validListingKeys.length };
+    }),
+
+  // ─── Tour Recap ──────────────────────────────────────────────
+  createTourRecap: protectedProcedure
+    .input(createTourRecapInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      await ensureShareTables(db);
+
+      const listingKeys = Array.from(new Set(input.listingKeys.map((k) => k.trim()).filter(Boolean)));
+      const listings = await getListingsByKeys(db, listingKeys);
+      if (listings.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "No valid listings found." });
+
+      const validListingKeys = listings.map((l) => l.listingKey);
+      const token = await generateUniqueToken(db);
+      const now = new Date();
+      const normalizedBranding = normalizeBranding(input.agentBranding, {
+        name: ctx.user.name || "Agent",
+        title: "Real Estate Advisor",
+        email: ctx.user.email,
+      });
+
+      await db.insert(shareSessions).values({
+        token,
+        status: "active",
+        sessionType: "tour_recap",
+        title: input.title.trim(),
+        introMessage: null,
+        clientName: input.clientName?.trim() || null,
+        createdByOpenId: ctx.user.openId,
+        createdByCompanyId: null,
+        createdByApiKeyId: null,
+        createdByName: ctx.user.name ?? null,
+        createdByEmail: ctx.user.email ?? null,
+        agentBranding: normalizedBranding,
+        shareConfig: {
+          shareMode: "tour_recap",
+          tourDate: input.tourDate,
+          overallSummary: input.overallSummary?.trim() || null,
+          nextSteps: input.nextSteps ?? [],
+          listingFeedback: input.listingFeedback ?? {},
+        },
+        magnetScope: null,
+        magnetPayload: null,
+        listingKeys: validListingKeys,
+        tourPlan: null,
+        expiresAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const origin = inferOrigin(ctx.headers);
+      const sharePath = `/s/${token}`;
+      return { token, sharePath, shareUrl: origin ? `${origin}${sharePath}` : null, listingCount: validListingKeys.length };
+    }),
+
+  // ─── Offer Worksheet ────────────────────────────────────────
+  createOfferWorksheet: protectedProcedure
+    .input(createOfferWorksheetInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      await ensureShareTables(db);
+
+      // Combine target + comparable listing keys
+      const allKeys = Array.from(new Set([
+        input.targetListingKey.trim(),
+        ...input.listingKeys.map((k) => k.trim()),
+      ].filter(Boolean)));
+      const listings = await getListingsByKeys(db, allKeys);
+      if (listings.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "No valid listings found." });
+
+      const validListingKeys = listings.map((l) => l.listingKey);
+      const token = await generateUniqueToken(db);
+      const now = new Date();
+      const normalizedBranding = normalizeBranding(input.agentBranding, {
+        name: ctx.user.name || "Agent",
+        title: "Real Estate Advisor",
+        email: ctx.user.email,
+      });
+
+      await db.insert(shareSessions).values({
+        token,
+        status: "active",
+        sessionType: "offer_worksheet",
+        title: input.title.trim(),
+        introMessage: null,
+        clientName: input.clientName?.trim() || null,
+        createdByOpenId: ctx.user.openId,
+        createdByCompanyId: null,
+        createdByApiKeyId: null,
+        createdByName: ctx.user.name ?? null,
+        createdByEmail: ctx.user.email ?? null,
+        agentBranding: normalizedBranding,
+        shareConfig: {
+          shareMode: "offer_worksheet",
+          targetListingKey: input.targetListingKey.trim(),
+          suggestedOfferLow: input.suggestedOfferLow ?? null,
+          suggestedOfferHigh: input.suggestedOfferHigh ?? null,
+          agentRecommendation: input.agentRecommendation?.trim() || null,
+          comparables: input.comparables ?? [],
+        },
+        magnetScope: null,
+        magnetPayload: null,
+        listingKeys: validListingKeys,
+        tourPlan: null,
+        expiresAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const origin = inferOrigin(ctx.headers);
+      const sharePath = `/s/${token}`;
+      return { token, sharePath, shareUrl: origin ? `${origin}${sharePath}` : null, listingCount: validListingKeys.length };
     }),
 });

@@ -27,7 +27,10 @@ import { useT } from "@/i18n";
 import { localeTag } from "@/i18n/copy";
 import { getSharePageCopy } from "@/i18n/share-pages";
 import AreaMagnetShare from "@/components/share/area-magnet-share";
+import BuyerBoardView from "@/components/share/buyer-board-view";
 import ClassicShareView from "@/components/share/classic-share-view";
+import OfferWorksheetView from "@/components/share/offer-worksheet-view";
+import TourRecapView from "@/components/share/tour-recap-view";
 import { trpc } from "@/lib/trpc";
 import type { AppRouter } from "@/routers";
 import { toast } from "sonner";
@@ -282,6 +285,51 @@ export default function ListingShare({ token }: ListingShareProps) {
 
   if (data.session.sessionType === "area_magnet") {
     return <AreaMagnetShare token={token} data={data} trackEvent={trackEvent} />;
+  }
+
+  // Buyer Board — collaborative listing board
+  if (data.session.sessionType === "buyer_board") {
+    const shareConfigRaw = (data.shareConfig ?? {}) as Record<string, unknown>;
+    return (
+      <BuyerBoardView
+        token={token}
+        session={data.session}
+        agentBranding={(data.agentBranding ?? {}) as Record<string, unknown>}
+        shareConfig={shareConfigRaw}
+        listings={data.listings}
+        trackEvent={trackEvent}
+      />
+    );
+  }
+
+  // Tour Recap — post-showing summary
+  if (data.session.sessionType === "tour_recap") {
+    const shareConfigRaw = (data.shareConfig ?? {}) as Record<string, unknown>;
+    return (
+      <TourRecapView
+        token={token}
+        session={data.session}
+        agentBranding={(data.agentBranding ?? {}) as Record<string, unknown>}
+        shareConfig={shareConfigRaw}
+        listings={data.listings}
+        trackEvent={trackEvent}
+      />
+    );
+  }
+
+  // Offer Worksheet — pre-offer comparison tool
+  if (data.session.sessionType === "offer_worksheet") {
+    const shareConfigRaw = (data.shareConfig ?? {}) as Record<string, unknown>;
+    return (
+      <OfferWorksheetView
+        token={token}
+        session={data.session}
+        agentBranding={(data.agentBranding ?? {}) as Record<string, unknown>}
+        shareConfig={shareConfigRaw}
+        listings={data.listings}
+        trackEvent={trackEvent}
+      />
+    );
   }
 
   // Classic share mode — clean, light, data-focused
