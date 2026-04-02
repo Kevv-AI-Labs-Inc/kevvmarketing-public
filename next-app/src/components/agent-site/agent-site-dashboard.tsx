@@ -17,6 +17,7 @@ import {
   MapPin,
   MessageCircle,
   Phone,
+  Plus,
   Save,
   Sparkles,
   Star,
@@ -29,6 +30,7 @@ import { toast } from "sonner";
 import { AgentSiteShell } from "@/components/agent-site/agent-site-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
@@ -372,6 +374,11 @@ export function AgentSiteDashboard() {
   const [form, setForm] = useState<FormState>(createEmptyFormState());
   const [activeTab, setActiveTab] = useState<Tab>("identity");
   const [saved, setSaved] = useState(false);
+  // Quick-add transaction fields (local, not saved to form)
+  const [txAddr, setTxAddr] = useState("");
+  const [txCity, setTxCity] = useState("");
+  const [txType, setTxType] = useState("");
+  const [txPrice, setTxPrice] = useState("");
 
   useEffect(() => {
     if (query.data?.profile) {
@@ -657,15 +664,13 @@ export function AgentSiteDashboard() {
                     </FieldGroup>
                   </div>
                   <FieldGroup label="办公室地址">
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        className="pl-8 text-sm"
-                        placeholder="350 S Grand Ave, Los Angeles, CA 90071"
-                        value={form.officeAddress}
-                        onChange={(e) => set("officeAddress", e.target.value)}
-                      />
-                    </div>
+                    <AddressAutocomplete
+                      inputClassName="text-sm"
+                      placeholder="350 S Grand Ave, Los Angeles, CA 90071"
+                      value={form.officeAddress}
+                      onChange={(v) => set("officeAddress", v)}
+                      onSelect={(v) => set("officeAddress", v)}
+                    />
                   </FieldGroup>
                   <FieldGroup label="预约链接" hint="Calendly / Cal.com URL，访客点击「预约策略通话」时跳转">
                     <Input
@@ -779,8 +784,54 @@ export function AgentSiteDashboard() {
                   <SectionHeader
                     icon={ChevronRight}
                     title="成交案例"
-                    description="格式：Address | City | Type | Price（每行一条）"
+                    description="用下方快速添加，或直接编辑文本（格式：Address | City | Type | Price）"
                   />
+                  {/* Quick-add row with address autocomplete */}
+                  <div className="grid grid-cols-[1fr_120px_100px_120px_auto] gap-2 items-end">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">地址</label>
+                      <AddressAutocomplete
+                        inputClassName="text-sm h-9"
+                        placeholder="12 Oak Lane, Irvine, CA"
+                        value={txAddr}
+                        onChange={setTxAddr}
+                        onSelect={(formatted) => {
+                          const parts = formatted.split(",").map((s) => s.trim());
+                          setTxAddr(parts[0] ?? formatted);
+                          if (parts.length >= 4) setTxCity(parts[1] ?? "");
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">城市</label>
+                      <Input className="text-sm h-9" placeholder="Irvine, CA" value={txCity} onChange={(e) => setTxCity(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">类型</label>
+                      <Input className="text-sm h-9" placeholder="Sold" value={txType} onChange={(e) => setTxType(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">价格</label>
+                      <Input className="text-sm h-9" placeholder="$1,250,000" value={txPrice} onChange={(e) => setTxPrice(e.target.value)} />
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9"
+                      onClick={() => {
+                        if (!txAddr.trim()) return;
+                        const line = [txAddr.trim(), txCity, txPrice, txType || "Seller"].join(" | ");
+                        set("transactionsText", form.transactionsText ? `${form.transactionsText}\n${line}` : line);
+                        setTxAddr("");
+                        setTxCity("");
+                        setTxType("");
+                        setTxPrice("");
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {/* Bulk textarea fallback */}
                   <Textarea
                     className="text-sm font-mono"
                     placeholder={"12 Oak Lane | Irvine, CA | Sold | $1,250,000\n88 Maple St, Unit 5B | Flushing, NY | Leased | $3,200/mo"}

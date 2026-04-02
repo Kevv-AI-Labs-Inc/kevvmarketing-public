@@ -12,6 +12,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -974,7 +975,24 @@ export default function FlyerStudio() {
                             <div className="space-y-3">
                                 <div>
                                     <Label>{t("flyerStudio.addressLabel")}</Label>
-                                    <Input value={flyer.address} onChange={(e) => updateFlyer({ address: e.target.value })} placeholder="123 Main Street" />
+                                    <AddressAutocomplete
+                                        value={flyer.address}
+                                        onChange={(v) => updateFlyer({ address: v })}
+                                        onSelect={(formatted) => {
+                                            // Parse "123 Main St, City, ST 12345, USA"
+                                            const parts = formatted.split(",").map((s) => s.trim());
+                                            if (parts.length >= 3) {
+                                                const stateZip = parts[parts.length - 2] ?? "";
+                                                const m = stateZip.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+                                                updateFlyer({
+                                                    address: parts[0] ?? flyer.address,
+                                                    city: parts.length >= 4 ? (parts[1] ?? flyer.city) : flyer.city,
+                                                    state: m?.[1] ?? flyer.state,
+                                                });
+                                            }
+                                        }}
+                                        placeholder="123 Main Street"
+                                    />
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>

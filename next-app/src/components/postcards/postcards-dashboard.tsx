@@ -34,6 +34,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useT } from "@/i18n";
@@ -341,6 +342,7 @@ export function PostcardsDashboard() {
                 {showImport && (
                   <div className="rounded-xl border border-dashed p-4 space-y-3">
                     <Textarea rows={6} value={csvText} onChange={(e) => setCsvText(e.target.value)} className="font-mono text-xs" />
+                    <p className="text-xs text-muted-foreground">Addresses will be automatically verified and standardized via USPS/Lob on import.</p>
                     <Button size="sm" disabled={importMutation.isPending} onClick={() => void handleImport()}>
                       {importMutation.isPending ? "Importing..." : "Import CSV"}
                     </Button>
@@ -351,7 +353,26 @@ export function PostcardsDashboard() {
                 {showManual && (
                   <div className="rounded-xl border border-dashed p-4 grid gap-3">
                     <Input placeholder="Full name" value={manualContact.fullName} onChange={(e) => setManualContact((p) => ({ ...p, fullName: e.target.value }))} />
-                    <Input placeholder="Address line 1" value={manualContact.addressLine1} onChange={(e) => setManualContact((p) => ({ ...p, addressLine1: e.target.value }))} />
+                    <AddressAutocomplete
+                      placeholder="Address line 1"
+                      value={manualContact.addressLine1}
+                      onChange={(v) => setManualContact((p) => ({ ...p, addressLine1: v }))}
+                      onSelect={(formatted) => {
+                        // Parse "123 Main St, City, ST 12345, USA" into components
+                        const parts = formatted.split(",").map((s) => s.trim());
+                        if (parts.length >= 3) {
+                          const stateZip = parts[parts.length - 2] ?? "";
+                          const m = stateZip.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+                          setManualContact((p) => ({
+                            ...p,
+                            addressLine1: parts[0] ?? p.addressLine1,
+                            city: parts.length >= 4 ? (parts[1] ?? p.city) : p.city,
+                            state: m?.[1] ?? p.state,
+                            postalCode: m?.[2] ?? p.postalCode,
+                          }));
+                        }
+                      }}
+                    />
                     <div className="grid gap-3 grid-cols-3">
                       <Input placeholder="City" value={manualContact.city} onChange={(e) => setManualContact((p) => ({ ...p, city: e.target.value }))} />
                       <Input placeholder="State" value={manualContact.state} onChange={(e) => setManualContact((p) => ({ ...p, state: e.target.value.toUpperCase() }))} />

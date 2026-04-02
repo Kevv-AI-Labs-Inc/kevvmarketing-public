@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
@@ -499,9 +500,25 @@ export default function CMAStudio() {
                     <label className="text-xs text-muted-foreground mb-1 block">
                       {isChinese ? "地址 *" : "Address *"}
                     </label>
-                    <Input
+                    <AddressAutocomplete
                       value={manualAddress}
-                      onChange={(e) => setManualAddress(e.target.value)}
+                      onChange={setManualAddress}
+                      onSelect={(formatted) => {
+                        // Parse "123 Main St, City, ST 12345, USA"
+                        const parts = formatted.split(",").map((s) => s.trim());
+                        if (parts.length >= 3) {
+                          setManualAddress(parts[0] ?? formatted);
+                          if (parts.length >= 4) setManualCity(parts[1] ?? "");
+                          const stateZip = parts[parts.length - 2] ?? "";
+                          const m = stateZip.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+                          if (m) {
+                            setManualState(m[1] ?? "");
+                            setManualZip(m[2] ?? "");
+                          }
+                        } else {
+                          setManualAddress(formatted);
+                        }
+                      }}
                       placeholder="123 Main St"
                     />
                   </div>
