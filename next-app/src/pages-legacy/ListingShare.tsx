@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ShowingTourRouteMap } from "@/components/showing-tour/showing-tour-route-map";
 import { Separator } from "@/components/ui/separator";
 import { useT } from "@/i18n";
 import { localeTag } from "@/i18n/copy";
@@ -45,6 +46,8 @@ type TourStop = {
   startAt: string;
   endAt: string;
   isExternal?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
   driveFromPreviousText?: string | null;
   distanceFromPreviousText?: string | null;
 };
@@ -100,6 +103,18 @@ function getTourStops(value: unknown): TourStop[] {
       startAt: getString(item.startAt),
       endAt: getString(item.endAt),
       isExternal: Boolean(item.isExternal),
+      latitude:
+        typeof item.latitude === "number"
+          ? item.latitude
+          : Number.isFinite(Number(item.latitude))
+            ? Number(item.latitude)
+            : null,
+      longitude:
+        typeof item.longitude === "number"
+          ? item.longitude
+          : Number.isFinite(Number(item.longitude))
+            ? Number(item.longitude)
+            : null,
       driveFromPreviousText: getString(item.driveFromPreviousText) || null,
       distanceFromPreviousText: getString(item.distanceFromPreviousText) || null,
     }))
@@ -525,6 +540,11 @@ export default function ListingShare({ token }: ListingShareProps) {
                     {copy.openGoogleMaps}
                   </Button>
                 ) : null}
+                <ShowingTourRouteMap
+                  stops={tourStops}
+                  emptyState={pick(copy.timelineFallback)}
+                  className="mt-6 h-[320px]"
+                />
                 <div className="mt-6 space-y-3">
                   {tourStops.map((stop) => (
                     <div key={`${stop.order}-${stop.listingKey}`} className="rounded-[22px] border border-white/10 bg-white/5 p-4">

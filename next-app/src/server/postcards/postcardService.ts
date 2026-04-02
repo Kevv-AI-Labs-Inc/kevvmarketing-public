@@ -13,7 +13,7 @@ import {
   postcardTemplates,
 } from "@/lib/db/schema";
 import { buildDemoPostcardTemplate } from "@/server/demo/factories";
-import { dispatchPostcard } from "@/server/postcards/provider";
+import { dispatchPostcard, verifyAddress } from "@/server/postcards/provider";
 import { quotePostcardCampaign } from "@/server/postcards/pricing";
 
 type AddressInput = {
@@ -142,32 +142,14 @@ function mapCsvRowToContact(row: Record<string, string>) {
   };
 }
 
-export function validatePostalAddress(input: AddressInput) {
-  const normalized = {
-    primary_line: input.addressLine1.trim(),
-    secondary_line: normalizeOptional(input.addressLine2),
-    city: input.city.trim(),
-    state: input.state.trim().toUpperCase(),
-    zip_code: input.postalCode.trim(),
-    country: "US",
-  };
-
-  const isDeliverable =
-    normalized.primary_line.length > 4 &&
-    /^[A-Z]{2}$/.test(normalized.state) &&
-    /^\d{5}(?:-\d{4})?$/.test(normalized.zip_code);
-
-  return {
-    provider: "lob_mock",
-    isDeliverable,
-    summary: isDeliverable
-      ? "Mock validation marked this address deliverable."
-      : "Mock validation could not confirm this address. Check state and ZIP formatting.",
-    normalizedAddress: normalized,
-    providerPayload: {
-      mode: "mock",
-    },
-  };
+export async function validatePostalAddress(input: AddressInput) {
+  return verifyAddress({
+    addressLine1: input.addressLine1,
+    addressLine2: input.addressLine2,
+    city: input.city,
+    state: input.state,
+    postalCode: input.postalCode,
+  });
 }
 
 export async function ensureSystemPostcardTemplates(db: Db = getDb()) {
@@ -224,9 +206,15 @@ export async function listPostcardContacts(agentId: number, db: Db = getDb()) {
   return db
     .select()
     .from(contacts)
-    .where(and(eq(contacts.agentId, agentId), or(eq(contacts.source, "postcard_import"), eq(contacts.source, "home_value"), eq(contacts.source, "agent_site_form"), eq(contacts.source, "agent_site_chat"))))
+    .where(and(eq(contacts.agentId, agentId), or(
+      eq(contacts.source, "postcard_import"),
+      eq(contacts.source, "home_value"),
+      eq(contacts.source, "agent_site_form"),
+      eq(contacts.source, "agent_site_chat"),
+      eq(contacts.source, "zipcode_scan"),
+    )))
     .orderBy(desc(contacts.updatedAt))
-    .limit(80);
+    .limit(500);
 }
 
 async function createValidatedContact(params: {
@@ -242,7 +230,7 @@ async function createValidatedContact(params: {
   tags?: string[];
   sourceRef?: string | null;
 }, db: Db = getDb()) {
-  const validation = validatePostalAddress({
+  const validation = await validatePostalAddress({
     addressLine1: params.addressLine1,
     addressLine2: params.addressLine2,
     city: params.city,
@@ -627,6 +615,7 @@ export async function processPostcardDispatch(campaignId: number, db: Db = getDb
 
     const dispatch = await dispatchPostcard({
       mailingId: mailing.id,
+      channel: mailing.channel as "postcard" | "letter",
       recipient: {
         name: contact.name || "Current Resident",
         addressLine1: contact.addressLine1,

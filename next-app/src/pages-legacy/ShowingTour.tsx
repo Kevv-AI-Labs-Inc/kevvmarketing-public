@@ -1,12 +1,13 @@
 // legacy page — incrementally migrated
 import type { inferRouterOutputs } from "@trpc/server";
 import { useCallback, useState } from "react";
-import { ArrowDown, ArrowUp, Copy, ExternalLink, Loader2, MapPin, Navigation, Search, Trash2, Route } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, ExternalLink, GripVertical, Loader2, MapPin, Navigation, Search, Trash2, Route } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ShowingTourRouteMap } from "@/components/showing-tour/showing-tour-route-map";
 import { trpc } from "@/lib/trpc";
 import { useT } from "@/i18n";
 import type { AppRouter } from "@/routers";
@@ -39,6 +40,8 @@ type RoutePreview = {
     order: number;
     listingKey: string;
     address: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
     driveFromPreviousText?: string | null;
     distanceFromPreviousText?: string | null;
   }>;
@@ -153,6 +156,8 @@ export default function ShowingTour() {
   const [tourDate, setTourDate] = useState(new Date().toISOString().split("T")[0]);
   const [routePreview, setRoutePreview] = useState<RoutePreview | null>(null);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+  const [draggingListingKey, setDraggingListingKey] = useState<string | null>(null);
+  const [dragOverListingKey, setDragOverListingKey] = useState<string | null>(null);
 
   const searchResults = trpc.mls.getProperties.useQuery(
     { search: searchQuery || undefined, limit: 10, offset: 0, status: "Active" },
@@ -197,38 +202,61 @@ export default function ShowingTour() {
     setGeneratedUrl(null);
   }, []);
 
-  const addListing = useCallback((listing: MlsListing) => {
-    setSelectedListings((current) => {
-      if (current.some((item) => item.listingKey === listing.listingKey)) {
-        toast.info(t("showingTour.alreadyAdded"));
-        return current;
-      }
-      if (current.length >= 10) {
-        toast.warning(t("showingTour.maxListings"));
-        return current;
-      }
+  const recalculateManualPreview = useCallback((nextListings: MlsListing[]) => {
+    if (routeMode !== "manual" || !routePreview || nextListings.length < 2) {
       resetDerivedState();
-      return [...current, listing];
+      return;
+    }
+
+    setGeneratedUrl(null);
+    previewRoute.mutate({
+      propertyIds: nextListings.map((listing) => listing.listingKey),
+      routeMode: "manual",
     });
+  }, [previewRoute, resetDerivedState, routeMode, routePreview]);
+
+  const addListing = useCallback((listing: MlsListing) => {
+    if (selectedListings.some((item) => item.listingKey === listing.listingKey)) {
+      toast.info(t("showingTour.alreadyAdded"));
+      return;
+    }
+    if (selectedListings.length >= 10) {
+      toast.warning(t("showingTour.maxListings"));
+      return;
+    }
+    resetDerivedState();
+    setSelectedListings((current) => [...current, listing]);
     setSearchQuery("");
-  }, [resetDerivedState, t]);
+  }, [resetDerivedState, selectedListings, t]);
 
   const removeListing = useCallback((listingKey: string) => {
-    resetDerivedState();
-    setSelectedListings((current) => current.filter((listing) => listing.listingKey !== listingKey));
-  }, [resetDerivedState]);
+    const nextListings = selectedListings.filter((listing) => listing.listingKey !== listingKey);
+    setSelectedListings(nextListings);
+    recalculateManualPreview(nextListings);
+  }, [recalculateManualPreview, selectedListings]);
 
   const moveListing = useCallback((index: number, direction: -1 | 1) => {
-    setSelectedListings((current) => {
-      const nextIndex = index + direction;
-      if (nextIndex < 0 || nextIndex >= current.length) return current;
-      const next = [...current];
-      const [item] = next.splice(index, 1);
-      next.splice(nextIndex, 0, item);
-      return next;
-    });
-    resetDerivedState();
-  }, [resetDerivedState]);
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= selectedListings.length) return;
+    const nextListings = [...selectedListings];
+    const [item] = nextListings.splice(index, 1);
+    nextListings.splice(nextIndex, 0, item);
+    setSelectedListings(nextListings);
+    recalculateManualPreview(nextListings);
+  }, [recalculateManualPreview, selectedListings]);
+
+  const moveListingByDrag = useCallback((draggedKey: string, targetKey: string) => {
+    if (draggedKey === targetKey) return;
+    const draggedIndex = selectedListings.findIndex((listing) => listing.listingKey === draggedKey);
+    const targetIndex = selectedListings.findIndex((listing) => listing.listingKey === targetKey);
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const nextListings = [...selectedListings];
+    const [dragged] = nextListings.splice(draggedIndex, 1);
+    nextListings.splice(targetIndex, 0, dragged);
+    setSelectedListings(nextListings);
+    recalculateManualPreview(nextListings);
+  }, [recalculateManualPreview, selectedListings]);
 
   const handlePreviewRoute = useCallback(() => {
     if (selectedListings.length < 2) {
@@ -350,6 +378,11 @@ export default function ShowingTour() {
                     {t("showingTour.selectedListings")}
                   </CardTitle>
                   <CardDescription>{t("showingTour.selectedDescription")}</CardDescription>
+                  {routeMode === "manual" ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {t("showingTour.dragHint")}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="secondary">{selectedListings.length} / 10</Badge>
@@ -380,10 +413,48 @@ export default function ShowingTour() {
                     const routeStop = routePreview?.stops.find((stop) => stop.listingKey === listing.listingKey);
                     return (
                       <div key={listing.listingKey} className="rounded-xl border bg-accent/20 p-4">
-                        <div className="flex items-start gap-3">
+                        <div
+                          className={`flex items-start gap-3 ${dragOverListingKey === listing.listingKey ? "rounded-lg bg-primary/5" : ""}`}
+                          draggable={routeMode === "manual"}
+                          onDragStart={(event) => {
+                            if (routeMode !== "manual") return;
+                            setDraggingListingKey(listing.listingKey);
+                            event.dataTransfer.effectAllowed = "move";
+                            event.dataTransfer.setData("text/plain", listing.listingKey);
+                          }}
+                          onDragOver={(event) => {
+                            if (routeMode !== "manual") return;
+                            event.preventDefault();
+                            setDragOverListingKey(listing.listingKey);
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverListingKey === listing.listingKey) {
+                              setDragOverListingKey(null);
+                            }
+                          }}
+                          onDrop={(event) => {
+                            if (routeMode !== "manual") return;
+                            event.preventDefault();
+                            const draggedKey = event.dataTransfer.getData("text/plain") || draggingListingKey;
+                            if (draggedKey) {
+                              moveListingByDrag(draggedKey, listing.listingKey);
+                            }
+                            setDraggingListingKey(null);
+                            setDragOverListingKey(null);
+                          }}
+                          onDragEnd={() => {
+                            setDraggingListingKey(null);
+                            setDragOverListingKey(null);
+                          }}
+                        >
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                             {index + 1}
                           </div>
+                          {routeMode === "manual" ? (
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center text-muted-foreground">
+                              <GripVertical className="h-4 w-4" />
+                            </div>
+                          ) : null}
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-medium">
                               {displayAddress(listing, t("showingTour.addressUnknown"))}
@@ -530,6 +601,10 @@ export default function ShowingTour() {
                       </Button>
                     ) : null}
                   </div>
+                  <ShowingTourRouteMap
+                    stops={routePreview.stops}
+                    emptyState={t("showingTour.routeMapEmpty")}
+                  />
                 </>
               ) : (
                 <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">

@@ -517,6 +517,68 @@ export const postcardEvents = pgTable("postcard_events", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+/**
+ * Postcard automations — lifecycle drip sequences for closed deals.
+ * Each automation defines a template + audience rule + timing.
+ * The background worker checks daily and auto-creates campaigns for matching milestones.
+ */
+export const postcardAutomations = pgTable("postcard_automations", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(), // active | paused | archived
+  triggerType: varchar("trigger_type", { length: 32 }).notNull(),
+  // "closed_deal_milestone" | "listing_event" | "recurring_schedule"
+  channel: postcardMailingChannelEnum("channel").default("postcard").notNull(),
+  templateId: integer("template_id"),
+  // Milestone rules (for closed_deal_milestone)
+  milestoneRules: jsonb("milestone_rules").$type<Array<{
+    daysAfterClose: number;
+    templateId?: number;
+    label: string; // "Thank You", "Home Maintenance", "Anniversary CMA"
+    channel?: "postcard" | "letter";
+  }>>().default([]),
+  // Audience rules
+  audienceFilter: jsonb("audience_filter").$type<{
+    zipCodes?: string[];
+    tags?: string[];
+    source?: string;
+    listingStatus?: string; // "Closed" | "Expired" | "Active"
+  }>().default({}),
+  // Timing
+  lastRunAt: timestamp("last_run_at"),
+  nextRunAt: timestamp("next_run_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+/**
+ * Audience lists — saved audience segments for direct mail targeting.
+ * Can be built from BBO data (zipcode scan), CSV import, or manual selection.
+ */
+export const postcardAudienceLists = pgTable("postcard_audience_lists", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  sourceType: varchar("source_type", { length: 32 }).notNull(),
+  // "zipcode_scan" | "csv_import" | "manual" | "bbo_listing_event" | "external_provider"
+  sourceConfig: jsonb("source_config").$type<{
+    zipCodes?: string[];
+    listingStatus?: string; // "Sold" | "Expired" | "Active" | "Withdrawn"
+    dateRange?: { from?: string; to?: string };
+    propertyTypes?: string[];
+    minPrice?: number;
+    maxPrice?: number;
+    provider?: string; // future: "propertyradar" | "attom"
+  }>().default({}),
+  contactCount: integer("contact_count").default(0).notNull(),
+  lastSyncAt: timestamp("last_sync_at"),
+  status: varchar("status", { length: 20 }).default("active").notNull(), // active | syncing | archived
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export type AgentProfile = typeof agentProfiles.$inferSelect;
 export type InsertAgentProfile = typeof agentProfiles.$inferInsert;
 export type Contact = typeof contacts.$inferSelect;
@@ -539,6 +601,10 @@ export type PostcardMailing = typeof postcardMailings.$inferSelect;
 export type InsertPostcardMailing = typeof postcardMailings.$inferInsert;
 export type PostcardEvent = typeof postcardEvents.$inferSelect;
 export type InsertPostcardEvent = typeof postcardEvents.$inferInsert;
+export type PostcardAutomation = typeof postcardAutomations.$inferSelect;
+export type InsertPostcardAutomation = typeof postcardAutomations.$inferInsert;
+export type PostcardAudienceList = typeof postcardAudienceLists.$inferSelect;
+export type InsertPostcardAudienceList = typeof postcardAudienceLists.$inferInsert;
 
 // Legacy-friendly aliases while migrating donor logic into the unified schema.
 export const chatSessions = conversationSessions;
@@ -1163,6 +1229,21 @@ export const cmaReports = pgTable("cma_reports", {
   pdfUrl: text("pdf_url"),
   status: varchar("status", { length: 20 }).default("draft").notNull(),
   // draft | generating | ready | failed
+
+  // ── Next-Gen CMA Pipeline Fields ──
+  photoUrls: jsonb("photo_urls").$type<string[]>().default([]),
+  // uploaded interior photo R2 URLs
+  photoAnalysis: jsonb("photo_analysis").$type<Record<string, unknown>>(),
+  // Vision analysis result: conditionScore, upgradeLevel, features
+  webSearchResult: jsonb("web_search_result").$type<Record<string, unknown>>(),
+  // Tavily market intelligence: trends, citations, median price
+  reportResult: jsonb("report_result").$type<Record<string, unknown>>(),
+  // full CMAReportResult from the 5-stage pipeline
+  compCount: integer("comp_count").default(0),
+  // number of comparable sales found
+  dataSources: jsonb("data_sources").$type<string[]>().default([]),
+  // e.g. ["bbo_vector", "tavily_web_search", "photo_analysis", "bbo_neighborhood"]
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

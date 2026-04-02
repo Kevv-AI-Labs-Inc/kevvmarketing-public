@@ -8,7 +8,6 @@
 import { randomUUID } from "crypto";
 import { listingDataClient } from "../clients/listingDataClient";
 import type { ListingData, ListingResponse } from "../clients/types";
-import { findComps } from "../cma/cmaAnalyzer";
 import { invokeLLM } from "../_core/llm";
 
 // ─── Types ────────────────────────────────────────────────
@@ -124,11 +123,33 @@ export async function resolveListing(
 }
 
 /**
- * Fetch comparable sales for a listing (degrades gracefully).
+ * Fetch comparable sales for a listing via BBO vector search.
+ * Returns ListingData-shaped objects for prompt building.
  */
 async function fetchComps(listing: ListingData): Promise<ListingData[]> {
   try {
-    return await findComps(listing, 5);
+    const res = await listingDataClient.getCmaByListing(listing.listingKey, 5);
+    // Map CmaComparable back to ListingData shape for prompt compatibility
+    return res.data.comparables.map((c) => ({
+      listingKey: c.listingKey,
+      listingId: c.listingId ?? "",
+      standardStatus: c.status ?? "Closed",
+      unparsedAddress: c.address ?? "Unknown",
+      city: c.city ?? "",
+      stateOrProvince: "",
+      postalCode: c.postalCode ?? "",
+      latitude: "",
+      longitude: "",
+      listPrice: c.price ?? "0",
+      closePrice: c.price ?? undefined,
+      propertyType: c.propertyType ?? "",
+      bedroomsTotal: c.bedrooms,
+      bathroomsTotalInteger: c.bathrooms,
+      livingArea: c.livingArea ?? "",
+      publicRemarks: "",
+      listAgentFullName: "",
+      listOfficeName: "",
+    }));
   } catch (err) {
     console.warn("[briefEngine] Comps unavailable:", (err as Error).message);
     return [];

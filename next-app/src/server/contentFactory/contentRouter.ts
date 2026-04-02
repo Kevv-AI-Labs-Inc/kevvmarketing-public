@@ -394,8 +394,23 @@ ${input.highlights ? `- 亮点: ${input.highlights}` : ""}
       const config = platformConfig[input.platform];
       if (!config) throw new Error(`Unknown platform: ${input.platform}`);
 
-      // Build manual listing context
-      const manualListingPrompt = input.address
+      let listing: import("../clients/types").ListingData | undefined;
+      if (input.listingKey) {
+        try {
+          const { getListingsBatch } = await import("../clients/listingDataClient");
+          const batch = await getListingsBatch([input.listingKey]);
+          listing = batch.get(input.listingKey)?.data;
+        } catch (error) {
+          console.error("[content.socialGenerate] Failed to load listing from BBO", error);
+        }
+      }
+
+      if (input.listingKey && !listing && !input.address) {
+        throw new Error("Selected listing could not be loaded from BBO.");
+      }
+
+      // Build manual listing context only when no listing payload is available.
+      const manualListingPrompt = !listing && input.address
         ? `
 ## ${config.language === "zh" ? "房源数据" : "Listing Data"}
 - ${config.language === "zh" ? "地址" : "Address"}: ${input.address}${input.city ? `, ${input.city}` : ""}
@@ -411,6 +426,7 @@ ${input.highlights ? `- ${config.language === "zh" ? "亮点" : "Highlights"}: $
         format: config.format,
         platform: input.platform,
         language: config.language,
+        listing,
         agentName: input.agentName,
         agentTitle: input.agentTitle,
         tone: input.tone,

@@ -15,15 +15,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
 import { useT } from "@/i18n";
+import { trpc } from "@/lib/trpc";
+import type { LdsProperty } from "@/server/mls/mlsRouter";
 import {
   BookImage,
   Check,
   ClipboardCopy,
   ExternalLink,
+  MapPin,
   ImageIcon,
   Loader2,
+  Search,
   Sparkles,
   Zap,
 } from "lucide-react";
@@ -172,6 +175,31 @@ interface SocialResult {
   language: string;
 }
 
+type SourceMode = "mls" | "manual";
+
+function formatPriceDisplay(value?: string | null): string {
+  if (!value) return "—";
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return value;
+  return `$${numeric.toLocaleString()}`;
+}
+
+function getBathCount(listing?: LdsProperty | null): number | null {
+  if (!listing) return null;
+  return (
+    listing.bathroomsTotalInteger ??
+    listing.bathroomsFull ??
+    null
+  );
+}
+
+function getListingImage(listing?: LdsProperty | null): string | null {
+  if (!listing) return null;
+  const mediaUrl = listing.media?.find((item) => item.mediaURL || item.url)?.mediaURL
+    ?? listing.media?.find((item) => item.mediaURL || item.url)?.url;
+  return mediaUrl ?? listing.thumbnailUrl ?? null;
+}
+
 // ─── Component ─────────────────────────────────────────────
 
 export default function SocialStudio() {
@@ -182,7 +210,12 @@ export default function SocialStudio() {
   const [activePlatform, setActivePlatform] = useState<PlatformId>("xiaohongshu");
   const platform = PLATFORMS.find((p) => p.id === activePlatform)!;
 
-  // Form state
+  // Source mode
+  const [sourceMode, setSourceMode] = useState<SourceMode>("mls");
+  const [listingSearch, setListingSearch] = useState("");
+  const [selectedListingKey, setSelectedListingKey] = useState("");
+
+  // Manual form state
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [price, setPrice] = useState("");
@@ -199,6 +232,77 @@ export default function SocialStudio() {
   const [copied, setCopied] = useState(false);
 
   const currentResult = results[activePlatform] ?? null;
+  const searchResultsQuery = trpc.mls.getProperties.useQuery(
+    {
+      search: listingSearch.trim() || undefined,
+      limit: 12,
+      offset: 0,
+      status: "Active",
+    },
+    {
+      enabled: sourceMode === "mls" && listingSearch.trim().length > 1,
+    },
+  );
+  const selectedListingQuery = trpc.mls.getPropertyById.useQuery(
+    { listingKey: selectedListingKey },
+    {
+      enabled: sourceMode === "mls" && selectedListingKey.length > 0,
+      refetchOnWindowFocus: false,
+    },
+  );
+  const searchResults = (searchResultsQuery.data ?? []) as LdsProperty[];
+  const selectedListing = (selectedListingQuery.data ?? null) as LdsProperty | null;
+
+  const buildMutationInput = useCallback(
+    (platformId: PlatformId) => ({
+      platform: platformId,
+      agentName: user?.name ?? "Agent",
+      agentTitle: undefined,
+      customPrompt: customPrompt.trim() || undefined,
+      tone,
+      listingKey:
+        sourceMode === "mls" && selectedListingKey.length > 0
+          ? selectedListingKey
+          : undefined,
+      address: sourceMode === "manual" ? address.trim() || undefined : undefined,
+      city: sourceMode === "manual" ? city.trim() || undefined : undefined,
+      price: sourceMode === "manual" ? price.trim() || undefined : undefined,
+      propertyType:
+        sourceMode === "manual" ? propertyType.trim() || undefined : undefined,
+      beds: sourceMode === "manual" && beds ? Number(beds) : undefined,
+      baths: sourceMode === "manual" && baths ? Number(baths) : undefined,
+      sqft: sourceMode === "manual" && sqft ? Number(sqft) : undefined,
+      highlights:
+        sourceMode === "manual" ? highlights.trim() || undefined : undefined,
+    }),
+    [
+      address,
+      baths,
+      beds,
+      city,
+      customPrompt,
+      highlights,
+      price,
+      propertyType,
+      selectedListingKey,
+      sourceMode,
+      sqft,
+      tone,
+      user,
+    ],
+  );
+
+  const ensureReady = useCallback(() => {
+    if (sourceMode === "mls" && !selectedListingKey) {
+      toast.error(t("socialStudio.selectListingFirst"));
+      return false;
+    }
+    if (sourceMode === "manual" && !address.trim()) {
+      toast.error(t("socialStudio.enterAddressFirst"));
+      return false;
+    }
+    return true;
+  }, [address, selectedListingKey, sourceMode, t]);
 
   // ── Generate mutation ──
   const generateMutation = trpc.content.socialGenerate.useMutation({
@@ -217,45 +321,19 @@ export default function SocialStudio() {
 
   // ── Generate for current platform ──
   const handleGenerate = useCallback(() => {
-    generateMutation.mutate({
-      platform: activePlatform,
-      agentName: user?.name ?? "Agent",
-      agentTitle: undefined,
-      customPrompt: customPrompt.trim() || undefined,
-      tone,
-      address: address.trim() || undefined,
-      city: city.trim() || undefined,
-      price: price.trim() || undefined,
-      propertyType: propertyType.trim() || undefined,
-      beds: beds ? Number(beds) : undefined,
-      baths: baths ? Number(baths) : undefined,
-      sqft: sqft ? Number(sqft) : undefined,
-      highlights: highlights.trim() || undefined,
-    });
-  }, [activePlatform, user, address, city, price, propertyType, beds, baths, sqft, highlights, customPrompt, tone, generateMutation]);
+    if (!ensureReady()) return;
+    generateMutation.mutate(buildMutationInput(activePlatform));
+  }, [activePlatform, buildMutationInput, ensureReady, generateMutation]);
 
   // ── Generate ALL platforms ──
   const [generatingAll, setGeneratingAll] = useState(false);
   const handleGenerateAll = useCallback(async () => {
+    if (!ensureReady()) return;
     setGeneratingAll(true);
     const platformIds: PlatformId[] = ["xiaohongshu", "instagram", "linkedin", "wechat", "tiktok", "facebook"];
     try {
       const promises = platformIds.map((pid) =>
-        generateMutation.mutateAsync({
-          platform: pid,
-          agentName: user?.name ?? "Agent",
-          agentTitle: undefined,
-          customPrompt: customPrompt.trim() || undefined,
-          tone,
-          address: address.trim() || undefined,
-          city: city.trim() || undefined,
-          price: price.trim() || undefined,
-          propertyType: propertyType.trim() || undefined,
-          beds: beds ? Number(beds) : undefined,
-          baths: baths ? Number(baths) : undefined,
-          sqft: sqft ? Number(sqft) : undefined,
-          highlights: highlights.trim() || undefined,
-        })
+        generateMutation.mutateAsync(buildMutationInput(pid))
       );
       const settled = await Promise.allSettled(promises);
       const newResults: Partial<Record<PlatformId, SocialResult>> = { ...results };
@@ -272,7 +350,7 @@ export default function SocialStudio() {
     } finally {
       setGeneratingAll(false);
     }
-  }, [user, address, city, price, propertyType, beds, baths, sqft, highlights, customPrompt, tone, generateMutation, results, t]);
+  }, [buildMutationInput, ensureReady, generateMutation, results, t]);
 
   // ── Copy ──
   const copyAll = useCallback(async () => {
@@ -383,81 +461,236 @@ export default function SocialStudio() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>{t("socialStudio.address")}</Label>
-                <Input
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="123 Main St"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("socialStudio.city")}</Label>
-                <Input
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="Irvine, CA"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>{t("socialStudio.sourceMode")}</Label>
+              <Tabs
+                value={sourceMode}
+                onValueChange={(value) => setSourceMode(value as SourceMode)}
+              >
+                <TabsList className="grid h-auto w-full grid-cols-2">
+                  <TabsTrigger value="mls" className="py-2.5 text-xs sm:text-sm">
+                    {t("socialStudio.sourceMls")}
+                  </TabsTrigger>
+                  <TabsTrigger value="manual" className="py-2.5 text-xs sm:text-sm">
+                    {t("socialStudio.sourceManual")}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <p className="text-xs text-muted-foreground">
+                {sourceMode === "mls"
+                  ? t("socialStudio.sourceMlsDescription")
+                  : t("socialStudio.sourceManualDescription")}
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="space-y-1.5">
-                <Label>{t("socialStudio.price")}</Label>
-                <Input
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="1250000"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("socialStudio.type")}</Label>
-                <Input
-                  value={propertyType}
-                  onChange={(e) => setPropertyType(e.target.value)}
-                  placeholder="Single Family"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("socialStudio.beds")}</Label>
-                <Input
-                  type="number"
-                  value={beds}
-                  onChange={(e) => setBeds(e.target.value)}
-                  placeholder="4"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("socialStudio.baths")}</Label>
-                <Input
-                  type="number"
-                  value={baths}
-                  onChange={(e) => setBaths(e.target.value)}
-                  placeholder="3"
-                />
-              </div>
-            </div>
+            {sourceMode === "mls" ? (
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>{t("socialStudio.listingSearch")}</Label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={listingSearch}
+                      onChange={(e) => setListingSearch(e.target.value)}
+                      className="pl-9"
+                      placeholder={t("socialStudio.listingSearchPlaceholder")}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t("socialStudio.listingSearchHint")}
+                  </p>
+                </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>{t("socialStudio.sqft")}</Label>
-                <Input
-                  type="number"
-                  value={sqft}
-                  onChange={(e) => setSqft(e.target.value)}
-                  placeholder="2500"
-                />
+                {selectedListing ? (
+                  <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted">
+                        {getListingImage(selectedListing) ? (
+                          <img
+                            src={getListingImage(selectedListing) ?? ""}
+                            alt={selectedListing.unparsedAddress ?? ""}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary">{t("socialStudio.selectedListing")}</Badge>
+                          {selectedListing.listingId ? (
+                            <Badge variant="outline">
+                              {t("socialStudio.mlsNumber")}: {selectedListing.listingId}
+                            </Badge>
+                          ) : null}
+                          {selectedListing.standardStatus ? (
+                            <Badge variant="outline">{selectedListing.standardStatus}</Badge>
+                          ) : null}
+                        </div>
+                        <div>
+                          <p className="font-medium leading-tight">
+                            {selectedListing.unparsedAddress || t("socialStudio.address")}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {[selectedListing.city, selectedListing.stateOrProvince]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span>{formatPriceDisplay(selectedListing.listPrice)}</span>
+                          <span>
+                            {(selectedListing.bedroomsTotal ?? "—")}
+                            {t("socialStudio.bedsShort")}
+                          </span>
+                          <span>
+                            {(getBathCount(selectedListing) ?? "—")}
+                            {t("socialStudio.bathsShort")}
+                          </span>
+                          <span>
+                            {selectedListing.livingArea ?? "—"} sqft
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="rounded-2xl border">
+                  <ScrollArea className="max-h-[280px]">
+                    <div className="space-y-2 p-3">
+                      {searchResultsQuery.isFetching ? (
+                        <div className="flex items-center gap-2 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          {t("socialStudio.searchLoading")}
+                        </div>
+                      ) : listingSearch.trim().length <= 1 ? (
+                        <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                          {t("socialStudio.searchPrompt")}
+                        </div>
+                      ) : searchResults.length === 0 ? (
+                        <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                          {t("socialStudio.searchEmpty")}
+                        </div>
+                      ) : (
+                        searchResults.map((listing) => (
+                          <button
+                            key={listing.listingKey ?? `${listing.unparsedAddress}-${listing.city}`}
+                            type="button"
+                            onClick={() => setSelectedListingKey(listing.listingKey ?? "")}
+                            className={`flex w-full items-start justify-between rounded-xl border px-3 py-3 text-left transition hover:border-primary/30 hover:bg-primary/5 ${
+                              selectedListingKey === listing.listingKey
+                                ? "border-primary/40 bg-primary/5"
+                                : "border-border"
+                            }`}
+                          >
+                            <div className="min-w-0 space-y-1">
+                              <p className="truncate font-medium">
+                                {listing.unparsedAddress || t("socialStudio.address")}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {[listing.city, listing.stateOrProvince]
+                                  .filter(Boolean)
+                                  .join(", ")}
+                              </p>
+                              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                <span>{formatPriceDisplay(listing.listPrice)}</span>
+                                {listing.listingId ? (
+                                  <span>
+                                    {t("socialStudio.mlsNumber")}: {listing.listingId}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                            {selectedListingKey === listing.listingKey ? (
+                              <Badge variant="secondary">{t("socialStudio.selected")}</Badge>
+                            ) : null}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>{t("socialStudio.highlights")}</Label>
-                <Input
-                  value={highlights}
-                  onChange={(e) => setHighlights(e.target.value)}
-                  placeholder={t("socialStudio.highlightsPlaceholder")}
-                />
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>{t("socialStudio.address")}</Label>
+                    <Input
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="123 Main St"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("socialStudio.city")}</Label>
+                    <Input
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="Irvine, CA"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="space-y-1.5">
+                    <Label>{t("socialStudio.price")}</Label>
+                    <Input
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      placeholder="1250000"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("socialStudio.type")}</Label>
+                    <Input
+                      value={propertyType}
+                      onChange={(e) => setPropertyType(e.target.value)}
+                      placeholder="Single Family"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("socialStudio.beds")}</Label>
+                    <Input
+                      type="number"
+                      value={beds}
+                      onChange={(e) => setBeds(e.target.value)}
+                      placeholder="4"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("socialStudio.baths")}</Label>
+                    <Input
+                      type="number"
+                      value={baths}
+                      onChange={(e) => setBaths(e.target.value)}
+                      placeholder="3"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>{t("socialStudio.sqft")}</Label>
+                    <Input
+                      type="number"
+                      value={sqft}
+                      onChange={(e) => setSqft(e.target.value)}
+                      placeholder="2500"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("socialStudio.highlights")}</Label>
+                    <Input
+                      value={highlights}
+                      onChange={(e) => setHighlights(e.target.value)}
+                      placeholder={t("socialStudio.highlightsPlaceholder")}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Tone selector */}
             <div className="space-y-1.5">

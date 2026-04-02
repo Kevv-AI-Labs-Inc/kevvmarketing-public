@@ -63,6 +63,12 @@ export const ENV = {
   // Webhook security
   webhookSecret: process.env.WEBHOOK_SECRET ?? "",
 
+  // Lob — direct mail API (postcards + letters)
+  lobApiKey: process.env.LOB_API_KEY ?? "",
+  lobApiVersion: process.env.LOB_API_VERSION ?? "2020-02-11",
+  lobWebhookSecret: process.env.LOB_WEBHOOK_SECRET ?? "",
+  lobEnvironment: (process.env.LOB_ENVIRONMENT ?? "test") as "live" | "test",
+
   // Video studio providers
   videoProvider: (process.env.VIDEO_PROVIDER ?? "sora") as
     | "local"
@@ -86,4 +92,11 @@ export const ENV = {
   jimengApiBaseUrl: process.env.JIMENG_API_BASE_URL ?? "",
   jimengVideoModel: process.env.JIMENG_VIDEO_MODEL ?? "jimeng-3.0",
   jimengVideoApiPath: process.env.JIMENG_VIDEO_API_PATH ?? "/v1/videos",
+
+  // Tavily Search — AI-optimized web search for CMA market intelligence
+  tavilyApiKey: process.env.TAVILY_API_KEY ?? "",
+  searchProvider: (process.env.SEARCH_PROVIDER ?? "tavily") as
+    | "tavily"
+    | "brave"
+    | "none",
 };

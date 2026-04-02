@@ -39,8 +39,12 @@ export const AI_TASKS = {
   AREA_MAGNET: "area-magnet",
   /** Social/email/XHS content generation */
   CONTENT: "content",
-  /** CMA comparative market analysis narrative */
+  /** CMA comparative market analysis narrative (legacy) */
   CMA: "cma",
+  /** CMA full pipeline — final synthesis report (heavy reasoning) */
+  CMA_REPORT: "cma-report",
+  /** CMA photo analysis — interior condition assessment (Vision) */
+  CMA_PHOTO: "cma-photo",
   /** Smart match market brief / welcome text / share analysis */
   SMART_MATCH: "smart-match",
   /** Vector embedding generation */
@@ -117,7 +121,19 @@ const PROFILES: Record<AITask, AITaskProfile> = {
     model: process.env.AI_TASK_CMA_MODEL || ENV.openaiModel,
     maxTokens: 2000,
     scope: "chat",
-    description: "CMA comparative analysis narrative",
+    description: "CMA comparative analysis narrative (legacy)",
+  },
+  [AI_TASKS.CMA_REPORT]: {
+    model: process.env.AI_TASK_CMA_REPORT_MODEL || ENV.openaiModel,
+    maxTokens: 4000,
+    scope: "chat",
+    description: "CMA full pipeline final synthesis — bilingual report",
+  },
+  [AI_TASKS.CMA_PHOTO]: {
+    model: process.env.AI_TASK_CMA_PHOTO_MODEL || ENV.openaiModel,
+    maxTokens: 1000,
+    scope: "chat",
+    description: "CMA interior photo condition assessment (Vision)",
   },
   [AI_TASKS.SMART_MATCH]: {
     model: process.env.AI_TASK_SMART_MATCH_MODEL || ENV.openaiModel,
