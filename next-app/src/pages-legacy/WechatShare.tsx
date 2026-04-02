@@ -53,6 +53,7 @@ type ShareLink = {
 
 export default function WechatShare() {
   const { t, locale } = useT();
+  const isChinese = locale.startsWith("zh");
 
   // Share card config
   const [shareTitle, setShareTitle] = useState("");
@@ -63,7 +64,7 @@ export default function WechatShare() {
   const [recentLinks] = useState<ShareLink[]>([
     {
       id: "1",
-      title: locale === "zh" ? "法拉盛 2BR 精装公寓" : "Flushing 2BR Luxury Condo",
+      title: isChinese ? "法拉盛 2BR 精装公寓" : "Flushing 2BR Luxury Condo",
       url: "https://share.kevv.co/s/abc123",
       createdAt: "2026-03-28",
       views: 47,
@@ -71,7 +72,7 @@ export default function WechatShare() {
     },
     {
       id: "2",
-      title: locale === "zh" ? "尔湾学区房 · 新上市" : "Irvine School District · Just Listed",
+      title: isChinese ? "尔湾学区房 · 新上市" : "Irvine School District · Just Listed",
       url: "https://share.kevv.co/s/def456",
       createdAt: "2026-03-25",
       views: 132,
@@ -79,7 +80,7 @@ export default function WechatShare() {
     },
     {
       id: "3",
-      title: locale === "zh" ? "曼哈顿下城 Studio" : "Downtown Manhattan Studio",
+      title: isChinese ? "曼哈顿下城 Studio" : "Downtown Manhattan Studio",
       url: "https://share.kevv.co/s/ghi789",
       createdAt: "2026-03-20",
       views: 89,
@@ -230,10 +231,10 @@ export default function WechatShare() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                          {shareTitle || (locale === "zh" ? "分享标题" : "Share Title")}
+                          {shareTitle || (isChinese ? "分享标题" : "Share Title")}
                         </p>
                         <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">
-                          {shareDesc || (locale === "zh" ? "分享描述内容" : "Share description content")}
+                          {shareDesc || (isChinese ? "分享描述内容" : "Share description content")}
                         </p>
                       </div>
                     </div>

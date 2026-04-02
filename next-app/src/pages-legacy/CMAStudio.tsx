@@ -73,6 +73,7 @@ function parseCmaPrefillFromUrl() {
 
 export default function CMAStudio() {
   const { locale } = useT();
+  const isChinese = locale.startsWith("zh");
   const copy = getDashboardPageCopy(locale).cmaStudio;
   const router = useRouter();
   const prefill = useMemo(() => parseCmaPrefillFromUrl(), []);
@@ -136,7 +137,7 @@ export default function CMAStudio() {
 
   async function handlePhotoUpload(file: File) {
     if (photoUrls.length >= 6) {
-      toast.error(locale === "zh" ? "最多上传 6 张照片" : "Maximum 6 photos");
+      toast.error(isChinese ? "最多上传 6 张照片" : "Maximum 6 photos");
       return;
     }
     setUploadingPhoto(true);
@@ -157,11 +158,11 @@ export default function CMAStudio() {
       });
       setPhotoUrls((prev) => [...prev, res.url]);
       toast.success(
-        locale === "zh" ? "照片已上传" : "Photo uploaded",
+        isChinese ? "照片已上传" : "Photo uploaded",
       );
     } catch {
       toast.error(
-        locale === "zh" ? "照片上传失败" : "Photo upload failed",
+        isChinese ? "照片上传失败" : "Photo upload failed",
       );
     } finally {
       setUploadingPhoto(false);
@@ -180,7 +181,7 @@ export default function CMAStudio() {
     }
     if (inputTab === "manual" && !manualAddress.trim()) {
       toast.error(
-        locale === "zh" ? "请输入地址" : "Please enter an address",
+        isChinese ? "请输入地址" : "Please enter an address",
       );
       return;
     }
@@ -192,7 +193,7 @@ export default function CMAStudio() {
     const stages: PipelineStage[] = [
       {
         key: "resolve",
-        label: locale === "zh" ? "房源解析" : "Subject Resolution",
+        label: isChinese ? "房源解析" : "Subject Resolution",
         icon: <Building2 className="w-4 h-4" />,
         status: "running",
       },
@@ -200,7 +201,7 @@ export default function CMAStudio() {
         ? [
             {
               key: "photos",
-              label: locale === "zh" ? "照片分析" : "Photo Analysis",
+              label: isChinese ? "照片分析" : "Photo Analysis",
               icon: <Camera className="w-4 h-4" />,
               status: "idle" as const,
             },
@@ -208,7 +209,7 @@ export default function CMAStudio() {
         : []),
       {
         key: "comps",
-        label: locale === "zh" ? "可比房源" : "Comp Matching",
+        label: isChinese ? "可比房源" : "Comp Matching",
         icon: <BarChart3 className="w-4 h-4" />,
         status: "idle",
       },
@@ -216,7 +217,7 @@ export default function CMAStudio() {
         ? [
             {
               key: "web",
-              label: locale === "zh" ? "市场搜索" : "Market Search",
+              label: isChinese ? "市场搜索" : "Market Search",
               icon: <Globe className="w-4 h-4" />,
               status: "idle" as const,
             },
@@ -224,7 +225,7 @@ export default function CMAStudio() {
         : []),
       {
         key: "synthesis",
-        label: locale === "zh" ? "报告生成" : "Report Generation",
+        label: isChinese ? "报告生成" : "Report Generation",
         icon: <Sparkles className="w-4 h-4" />,
         status: "idle",
       },
@@ -292,10 +293,10 @@ export default function CMAStudio() {
       );
 
       toast.success(
-        locale === "zh" ? "CMA 报告已生成" : "CMA Report Generated",
+        isChinese ? "CMA 报告已生成" : "CMA Report Generated",
         {
           description:
-            locale === "zh"
+            isChinese
               ? `找到 ${data.result?.comparables?.length ?? 0} 套可比房源`
               : `Found ${data.result?.comparables?.length ?? 0} comparable sales`,
         },
@@ -307,7 +308,7 @@ export default function CMAStudio() {
         ),
       );
       toast.error(
-        locale === "zh" ? "CMA 生成失败" : "CMA Generation Failed",
+        isChinese ? "CMA 生成失败" : "CMA Generation Failed",
         { description: (err as Error).message },
       );
     } finally {
@@ -337,15 +338,15 @@ export default function CMAStudio() {
     const map = {
       high: {
         color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-        label: locale === "zh" ? "高置信" : "High",
+        label: isChinese ? "高置信" : "High",
       },
       medium: {
         color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-        label: locale === "zh" ? "中置信" : "Medium",
+        label: isChinese ? "中置信" : "Medium",
       },
       low: {
         color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-        label: locale === "zh" ? "低置信" : "Low",
+        label: isChinese ? "低置信" : "Low",
       },
     };
     const { color, label } = map[confidence] || map.medium;
@@ -427,7 +428,7 @@ export default function CMAStudio() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {locale === "zh" ? "MLS 搜索" : "MLS Search"}
+                  {isChinese ? "MLS 搜索" : "MLS Search"}
                 </button>
                 <button
                   onClick={() => setInputTab("manual")}
@@ -437,7 +438,7 @@ export default function CMAStudio() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {locale === "zh" ? "手动输入" : "Manual Input"}
+                  {isChinese ? "手动输入" : "Manual Input"}
                 </button>
               </div>
             </CardHeader>
@@ -496,7 +497,7 @@ export default function CMAStudio() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="col-span-2">
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {locale === "zh" ? "地址 *" : "Address *"}
+                      {isChinese ? "地址 *" : "Address *"}
                     </label>
                     <Input
                       value={manualAddress}
@@ -506,7 +507,7 @@ export default function CMAStudio() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {locale === "zh" ? "城市" : "City"}
+                      {isChinese ? "城市" : "City"}
                     </label>
                     <Input
                       value={manualCity}
@@ -516,7 +517,7 @@ export default function CMAStudio() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {locale === "zh" ? "州" : "State"}
+                      {isChinese ? "州" : "State"}
                     </label>
                     <Input
                       value={manualState}
@@ -526,7 +527,7 @@ export default function CMAStudio() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {locale === "zh" ? "邮编" : "ZIP"}
+                      {isChinese ? "邮编" : "ZIP"}
                     </label>
                     <Input
                       value={manualZip}
@@ -536,7 +537,7 @@ export default function CMAStudio() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {locale === "zh" ? "价格" : "Price"}
+                      {isChinese ? "价格" : "Price"}
                     </label>
                     <Input
                       value={manualPrice}
@@ -546,7 +547,7 @@ export default function CMAStudio() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {locale === "zh" ? "卧室" : "Beds"}
+                      {isChinese ? "卧室" : "Beds"}
                     </label>
                     <Input
                       type="number"
@@ -557,7 +558,7 @@ export default function CMAStudio() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {locale === "zh" ? "卫浴" : "Baths"}
+                      {isChinese ? "卫浴" : "Baths"}
                     </label>
                     <Input
                       type="number"
@@ -568,7 +569,7 @@ export default function CMAStudio() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {locale === "zh" ? "面积(sqft)" : "Sqft"}
+                      {isChinese ? "面积(sqft)" : "Sqft"}
                     </label>
                     <Input
                       type="number"
@@ -579,7 +580,7 @@ export default function CMAStudio() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      {locale === "zh" ? "建造年份" : "Year Built"}
+                      {isChinese ? "建造年份" : "Year Built"}
                     </label>
                     <Input
                       type="number"
@@ -598,10 +599,10 @@ export default function CMAStudio() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Camera className="w-4 h-4" />
-                {locale === "zh" ? "内景照片" : "Interior Photos"}
+                {isChinese ? "内景照片" : "Interior Photos"}
               </CardTitle>
               <CardDescription>
-                {locale === "zh"
+                {isChinese
                   ? "上传房源内景照片，AI 自动分析装修条件（最多 6 张）"
                   : "Upload interior photos for AI condition assessment (max 6)"}
               </CardDescription>
@@ -637,7 +638,7 @@ export default function CMAStudio() {
                       <>
                         <Upload className="w-5 h-5" />
                         <span className="text-[10px] mt-0.5">
-                          {locale === "zh" ? "上传" : "Upload"}
+                          {isChinese ? "上传" : "Upload"}
                         </span>
                       </>
                     )}
@@ -662,14 +663,14 @@ export default function CMAStudio() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">
-                {locale === "zh" ? "生成设置" : "Settings"}
+                {isChinese ? "生成设置" : "Settings"}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <label className="text-sm">
                   <Globe className="w-3.5 h-3.5 inline mr-1.5" />
-                  {locale === "zh" ? "网络市场搜索 (Tavily)" : "Web Market Search (Tavily)"}
+                  {isChinese ? "网络市场搜索 (Tavily)" : "Web Market Search (Tavily)"}
                 </label>
                 <button
                   onClick={() => setEnableWebSearch(!enableWebSearch)}
@@ -687,7 +688,7 @@ export default function CMAStudio() {
               <div className="flex items-center justify-between">
                 <label className="text-sm">
                   <Camera className="w-3.5 h-3.5 inline mr-1.5" />
-                  {locale === "zh" ? "AI 照片分析" : "AI Photo Analysis"}
+                  {isChinese ? "AI 照片分析" : "AI Photo Analysis"}
                 </label>
                 <button
                   onClick={() =>
@@ -708,7 +709,7 @@ export default function CMAStudio() {
               </div>
               <div>
                 <label className="text-sm mb-1 block">
-                  {locale === "zh" ? "可比房源数量" : "Comparable Count"} ({compLimit})
+                  {isChinese ? "可比房源数量" : "Comparable Count"} ({compLimit})
                 </label>
                 <input
                   type="range"
@@ -721,17 +722,17 @@ export default function CMAStudio() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <Input
-                  placeholder={locale === "zh" ? "经纪人姓名" : "Agent Name"}
+                  placeholder={isChinese ? "经纪人姓名" : "Agent Name"}
                   value={agentName}
                   onChange={(e) => setAgentName(e.target.value)}
                 />
                 <Input
-                  placeholder={locale === "zh" ? "邮箱" : "Email"}
+                  placeholder={isChinese ? "邮箱" : "Email"}
                   value={agentEmail}
                   onChange={(e) => setAgentEmail(e.target.value)}
                 />
                 <Input
-                  placeholder={locale === "zh" ? "电话" : "Phone"}
+                  placeholder={isChinese ? "电话" : "Phone"}
                   value={agentPhone}
                   onChange={(e) => setAgentPhone(e.target.value)}
                 />
@@ -747,7 +748,7 @@ export default function CMAStudio() {
                 {generating ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {locale === "zh" ? "生成中..." : "Generating..."}
+                    {isChinese ? "生成中..." : "Generating..."}
                   </>
                 ) : (
                   <>
@@ -770,7 +771,7 @@ export default function CMAStudio() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-violet-500" />
-                      {locale === "zh" ? "执行摘要" : "Executive Summary"}
+                      {isChinese ? "执行摘要" : "Executive Summary"}
                     </CardTitle>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock3 className="w-3 h-3" />
@@ -780,7 +781,7 @@ export default function CMAStudio() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed">
-                    {locale === "zh"
+                    {isChinese
                       ? result.executiveSummary?.chinese
                       : result.executiveSummary?.english}
                   </p>
@@ -799,7 +800,7 @@ export default function CMAStudio() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-emerald-500" />
-                    {locale === "zh" ? "价格建议" : "Price Recommendation"}
+                    {isChinese ? "价格建议" : "Price Recommendation"}
                     {result.priceRecommendation?.confidence &&
                       confidenceBadge(result.priceRecommendation.confidence)}
                   </CardTitle>
@@ -808,7 +809,7 @@ export default function CMAStudio() {
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        {locale === "zh" ? "低价" : "Low"}
+                        {isChinese ? "低价" : "Low"}
                       </p>
                       <p className="text-lg font-bold text-red-600 dark:text-red-400">
                         {result.priceRecommendation?.low}
@@ -816,7 +817,7 @@ export default function CMAStudio() {
                     </div>
                     <div className="border-x">
                       <p className="text-xs text-muted-foreground">
-                        {locale === "zh" ? "建议价" : "Midpoint"}
+                        {isChinese ? "建议价" : "Midpoint"}
                       </p>
                       <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
                         {result.priceRecommendation?.midpoint}
@@ -824,7 +825,7 @@ export default function CMAStudio() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        {locale === "zh" ? "高价" : "High"}
+                        {isChinese ? "高价" : "High"}
                       </p>
                       <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
                         {result.priceRecommendation?.high}
@@ -842,7 +843,7 @@ export default function CMAStudio() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">
-                      {locale === "zh" ? "可比房源" : "Comparable Sales"} ({result.comparables.length})
+                      {isChinese ? "可比房源" : "Comparable Sales"} ({result.comparables.length})
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -850,11 +851,11 @@ export default function CMAStudio() {
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="border-b text-muted-foreground">
-                            <th className="text-left py-2 pr-3">{locale === "zh" ? "地址" : "Address"}</th>
-                            <th className="text-right py-2 px-2">{locale === "zh" ? "售价" : "Sold"}</th>
-                            <th className="text-right py-2 px-2">{locale === "zh" ? "调整价" : "Adjusted"}</th>
-                            <th className="text-right py-2 px-2">{locale === "zh" ? "相似度" : "Score"}</th>
-                            <th className="text-right py-2 pl-2">{locale === "zh" ? "详情" : "Details"}</th>
+                            <th className="text-left py-2 pr-3">{isChinese ? "地址" : "Address"}</th>
+                            <th className="text-right py-2 px-2">{isChinese ? "售价" : "Sold"}</th>
+                            <th className="text-right py-2 px-2">{isChinese ? "调整价" : "Adjusted"}</th>
+                            <th className="text-right py-2 px-2">{isChinese ? "相似度" : "Score"}</th>
+                            <th className="text-right py-2 pl-2">{isChinese ? "详情" : "Details"}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -892,7 +893,7 @@ export default function CMAStudio() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Globe className="w-4 h-4 text-blue-500" />
-                      {locale === "zh" ? "市场情报" : "Market Intelligence"}
+                      {isChinese ? "市场情报" : "Market Intelligence"}
                       <Badge variant="secondary" className="text-[10px]">
                         Tavily
                       </Badge>
@@ -903,7 +904,7 @@ export default function CMAStudio() {
                       {result.marketIntelligence.medianPrice && (
                         <div className="p-2.5 rounded-lg bg-muted/50 text-center">
                           <p className="text-xs text-muted-foreground">
-                            {locale === "zh" ? "中位价" : "Median Price"}
+                            {isChinese ? "中位价" : "Median Price"}
                           </p>
                           <p className="font-bold text-sm">
                             {result.marketIntelligence.medianPrice}
@@ -913,7 +914,7 @@ export default function CMAStudio() {
                       {result.marketIntelligence.priceChangeYoY && (
                         <div className="p-2.5 rounded-lg bg-muted/50 text-center">
                           <p className="text-xs text-muted-foreground">
-                            {locale === "zh" ? "年涨幅" : "YoY Change"}
+                            {isChinese ? "年涨幅" : "YoY Change"}
                           </p>
                           <p className="font-bold text-sm">
                             {result.marketIntelligence.priceChangeYoY}
@@ -923,17 +924,17 @@ export default function CMAStudio() {
                       {result.marketIntelligence.avgDaysOnMarket != null && (
                         <div className="p-2.5 rounded-lg bg-muted/50 text-center">
                           <p className="text-xs text-muted-foreground">
-                            {locale === "zh" ? "平均 DOM" : "Avg DOM"}
+                            {isChinese ? "平均 DOM" : "Avg DOM"}
                           </p>
                           <p className="font-bold text-sm">
                             {result.marketIntelligence.avgDaysOnMarket}{" "}
-                            {locale === "zh" ? "天" : "days"}
+                            {isChinese ? "天" : "days"}
                           </p>
                         </div>
                       )}
                       <div className="p-2.5 rounded-lg bg-muted/50 text-center">
                         <p className="text-xs text-muted-foreground">
-                          {locale === "zh" ? "市场类型" : "Market Type"}
+                          {isChinese ? "市场类型" : "Market Type"}
                         </p>
                         <p className="font-bold text-sm capitalize">
                           {result.marketIntelligence.marketType}
@@ -965,14 +966,14 @@ export default function CMAStudio() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Camera className="w-4 h-4 text-amber-500" />
-                      {locale === "zh" ? "照片分析" : "Photo Analysis"}
+                      {isChinese ? "照片分析" : "Photo Analysis"}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                       <div className="p-2.5 rounded-lg bg-muted/50 text-center">
                         <p className="text-xs text-muted-foreground">
-                          {locale === "zh" ? "状况评分" : "Condition"}
+                          {isChinese ? "状况评分" : "Condition"}
                         </p>
                         <p className="font-bold text-lg">
                           {result.subject.photoAnalysis.conditionScore}/10
@@ -980,7 +981,7 @@ export default function CMAStudio() {
                       </div>
                       <div className="p-2.5 rounded-lg bg-muted/50 text-center">
                         <p className="text-xs text-muted-foreground">
-                          {locale === "zh" ? "装修等级" : "Upgrade Level"}
+                          {isChinese ? "装修等级" : "Upgrade Level"}
                         </p>
                         <p className="font-bold text-sm capitalize">
                           {result.subject.photoAnalysis.upgradeLevel?.replace(/_/g, " ")}
@@ -988,7 +989,7 @@ export default function CMAStudio() {
                       </div>
                       <div className="p-2.5 rounded-lg bg-muted/50 text-center">
                         <p className="text-xs text-muted-foreground">
-                          {locale === "zh" ? "价值影响" : "Value Impact"}
+                          {isChinese ? "价值影响" : "Value Impact"}
                         </p>
                         <p className="font-bold text-sm capitalize">
                           {result.subject.photoAnalysis.valueImpact?.replace(/_/g, " ")}
@@ -996,7 +997,7 @@ export default function CMAStudio() {
                       </div>
                       <div className="p-2.5 rounded-lg bg-muted/50">
                         <p className="text-xs text-muted-foreground mb-1">
-                          {locale === "zh" ? "检测特征" : "Features"}
+                          {isChinese ? "检测特征" : "Features"}
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {result.subject.photoAnalysis.detectedFeatures?.slice(0, 4).map(
@@ -1010,7 +1011,7 @@ export default function CMAStudio() {
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {locale === "zh"
+                      {isChinese
                         ? result.subject.photoAnalysis.narrative?.chinese
                         : result.subject.photoAnalysis.narrative?.english}
                     </p>
@@ -1026,12 +1027,12 @@ export default function CMAStudio() {
                   <BarChart3 className="w-8 h-8 text-violet-500" />
                 </div>
                 <h3 className="font-semibold mb-1">
-                  {locale === "zh"
+                  {isChinese
                     ? "选择房源或手动输入，开始生成 CMA"
                     : "Select a listing or enter details to generate CMA"}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-sm">
-                  {locale === "zh"
+                  {isChinese
                     ? "系统将整合向量匹配、Tavily 网络搜索、照片分析，生成专业的市场分析报告"
                     : "The system will combine vector matching, Tavily web search, and photo analysis to create a comprehensive market analysis"}
                 </p>

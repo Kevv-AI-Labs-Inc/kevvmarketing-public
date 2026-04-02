@@ -168,6 +168,7 @@ export default function BuyerBoardView({
   trackEvent,
 }: BuyerBoardViewProps) {
   const { locale } = useT();
+  const isChinese = locale.startsWith("zh");
   const copy = getSharePageCopy(locale).listingShare;
 
   const agentName = getString(agentBranding.agentName) || "Agent";
@@ -311,12 +312,12 @@ export default function BuyerBoardView({
 
           {session.clientName && (
             <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">
-              {locale === "zh" ? `为 ${session.clientName} 准备` : `Prepared for ${session.clientName}`}
+              {isChinese ? `为 ${session.clientName} 准备` : `Prepared for ${session.clientName}`}
             </p>
           )}
 
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {session.title || (locale === "zh" ? "买家看房板" : "Buyer Board")}
+            {session.title || (isChinese ? "买家看房板" : "Buyer Board")}
           </h1>
 
           {boardDescription && (
@@ -430,7 +431,7 @@ export default function BuyerBoardView({
                         >
                           <span>{r.emoji}</span>
                           <span className="hidden min-[400px]:inline">
-                            {locale === "zh" ? r.labelZh : r.label}
+                            {isChinese ? r.labelZh : r.label}
                           </span>
                         </button>
                       );
@@ -495,7 +496,7 @@ export default function BuyerBoardView({
         {/* ─── Footer ──────────────────────────────── */}
         <footer className="mt-10 text-center">
           <p className="text-xs text-stone-400">
-            {locale === "zh" ? "由" : "Shared by"} {agentName}
+            {isChinese ? "由" : "Shared by"} {agentName}
             {brokerageName ? ` · ${brokerageName}` : ""}
           </p>
         </footer>

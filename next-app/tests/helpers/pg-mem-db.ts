@@ -37,6 +37,7 @@ const bootstrapSql = `
     years_experience integer default 0,
     template_id varchar(32) default 'classic',
     color_scheme varchar(32) default 'gold',
+    chat_settings jsonb,
     status agent_profile_status not null default 'active',
     tier agent_tier not null default 'free',
     stripe_customer_id varchar(128),

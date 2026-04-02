@@ -114,6 +114,7 @@ function formatDateTime(value: string | null, locale: "zh" | "en") {
   if (!value) return "-";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
+  const isChinese = locale.startsWith("zh");
   return new Intl.DateTimeFormat(localeTag(locale), {
     month: "short",
     day: "numeric",
@@ -245,6 +246,7 @@ export default function AreaMagnetShare({
   trackEvent,
 }: AreaMagnetShareProps) {
   const { locale } = useT();
+  const isChinese = locale.startsWith("zh");
   const copy = getSharePageCopy(locale).areaMagnetShare;
   const pick = (value: string) => value;
   const [activeTab, setActiveTab] = useState("overview");
@@ -543,12 +545,12 @@ export default function AreaMagnetShare({
                   <Home className="h-5 w-5 shrink-0 text-emerald-400" />
                   <div>
                     <p className="font-medium">
-                      {locale === "zh"
+                      {isChinese
                         ? "想知道你的房子值多少？"
                         : "What's your home worth?"}
                     </p>
                     <p className="mt-1 text-xs text-emerald-200/70">
-                      {locale === "zh"
+                      {isChinese
                         ? "免费获取 AI 房屋估价报告"
                         : "Get a free AI home value estimate"}
                     </p>
@@ -628,7 +630,7 @@ export default function AreaMagnetShare({
                             <div className="absolute inset-0 flex flex-col items-center justify-center rounded-[24px] bg-black/40 backdrop-blur-[2px]">
                               <Lock className="mb-2 h-5 w-5 text-stone-400" />
                               <p className="text-xs text-stone-400">
-                                {locale === "zh"
+                                {isChinese
                                   ? "留资后解锁"
                                   : "Submit info to unlock"}
                               </p>
@@ -654,7 +656,7 @@ export default function AreaMagnetShare({
                   {priceRangeDistribution.length > 0 && (
                     <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
                       <p className="mb-4 text-xs uppercase tracking-[0.28em] text-stone-400">
-                        {locale === "zh" ? "价格分布" : "Price Distribution"}
+                        {isChinese ? "价格分布" : "Price Distribution"}
                       </p>
                       <PriceRangeChart data={priceRangeDistribution} />
                     </div>
@@ -662,7 +664,7 @@ export default function AreaMagnetShare({
                   {propertyTypeMix.length > 0 && (
                     <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
                       <p className="mb-4 text-xs uppercase tracking-[0.28em] text-stone-400">
-                        {locale === "zh" ? "物业类型" : "Property Type Mix"}
+                        {isChinese ? "物业类型" : "Property Type Mix"}
                       </p>
                       <PropertyTypePieChart data={propertyTypeMix} />
                     </div>
@@ -794,7 +796,7 @@ export default function AreaMagnetShare({
                           <div className="absolute inset-0 flex flex-col items-center justify-center rounded-[24px] bg-black/40 backdrop-blur-[2px]">
                             <Lock className="mb-2 h-5 w-5 text-stone-400" />
                             <p className="text-xs text-stone-400">
-                              {locale === "zh"
+                              {isChinese
                                 ? "留资后解锁完整报告"
                                 : "Submit your info to unlock the full report"}
                             </p>
@@ -824,7 +826,7 @@ export default function AreaMagnetShare({
               {priceRangeDistribution.length > 0 && (
                 <section className="rounded-[24px] border border-white/10 bg-white/5 p-5">
                   <p className="mb-4 text-xs uppercase tracking-[0.28em] text-stone-400">
-                    {locale === "zh" ? "价格分布" : "Price Distribution"}
+                    {isChinese ? "价格分布" : "Price Distribution"}
                   </p>
                   <PriceRangeChart data={priceRangeDistribution} />
                 </section>

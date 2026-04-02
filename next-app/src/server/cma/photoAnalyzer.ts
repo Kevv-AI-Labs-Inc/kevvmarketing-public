@@ -112,8 +112,9 @@ function buildPhotoPrompt(
   locale: "en" | "zh",
   photoCount: number,
 ): string {
+  const isChinese = locale.startsWith("zh");
   const langNote =
-    locale === "zh"
+    isChinese
       ? 'Write "narrative.english" in English and "narrative.chinese" in Simplified Chinese.'
       : 'Write "narrative.english" in English and "narrative.chinese" in Simplified Chinese.';
 
