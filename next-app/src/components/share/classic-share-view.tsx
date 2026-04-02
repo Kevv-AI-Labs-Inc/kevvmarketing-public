@@ -237,7 +237,7 @@ export default function ClassicShareView({
           {agentNote && (
             <div className="mt-4 rounded-xl bg-stone-50 border border-stone-100 px-4 py-3">
               <p className="text-sm text-stone-600 leading-relaxed italic">
-                "{agentNote}"
+                &ldquo;{agentNote}&rdquo;
               </p>
               <p className="text-xs text-stone-400 mt-1.5">— {agentName}</p>
             </div>

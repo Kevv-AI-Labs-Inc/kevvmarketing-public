@@ -59,11 +59,12 @@ interface ListingCandidate {
 export function ProspectingDashboard() {
   const { t, locale } = useT();
   const utils = trpc.useUtils();
+  const isChinese = locale.startsWith("zh");
 
   // Input state
   const [inputValue, setInputValue] = useState("");
   const [tone, setTone] = useState<Tone>("professional");
-  const [language, setLanguage] = useState<Language>(locale === "zh" ? "zh" : "en");
+  const [language, setLanguage] = useState<Language>(isChinese ? "zh" : "en");
 
   // Results state
   const [activeBriefId, setActiveBriefId] = useState<number | null>(null);

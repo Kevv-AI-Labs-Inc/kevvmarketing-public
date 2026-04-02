@@ -551,24 +551,25 @@ function buildFallbackNarrative(
   snapshot: MarketSnapshot
 ): MagnetNarrative {
   const locale = detectLocale(input);
+  const isChinese = locale.startsWith("zh");
   const sl = snapshot.scopeLabel;
 
   // P0-2: $/sqft stories
   const sqftStory =
     snapshot.activePricePerSqft !== null
-      ? locale === "zh"
+      ? isChinese
         ? `活跃房源每平方英尺均价约 $${Math.round(snapshot.activePricePerSqft)}`
         : `Active listings average ~$${Math.round(snapshot.activePricePerSqft)}/sqft`
       : "";
 
   // P0-1: Neighborhood enrichment
   const neighborhoodStory = snapshot.neighborhood
-    ? locale === "zh"
+    ? isChinese
       ? `该区域学区评分 ${snapshot.neighborhood.schoolRating ?? "N/A"}/10，步行指数 ${snapshot.neighborhood.walkScore ?? "N/A"}/100`
       : `School rating ${snapshot.neighborhood.schoolRating ?? "N/A"}/10, Walk Score ${snapshot.neighborhood.walkScore ?? "N/A"}/100`
     : "";
 
-  if (locale === "zh") {
+  if (isChinese) {
     const priceStory = snapshot.activeMedianPrice
       ? `${sl} 当前在售中位价约 ${formatCurrency(snapshot.activeMedianPrice)}`
       : `${sl} 当前挂牌价格区间正在收紧`;

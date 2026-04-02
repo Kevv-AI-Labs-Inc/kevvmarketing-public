@@ -56,7 +56,8 @@ const LUCKY_NUMBERS = new Set([1, 2, 3, 6, 8, 9]);
 const NEUTRAL_NUMBERS = new Set([5]);
 
 function numberMeaning(n: number, locale: string): { luck: "good" | "neutral" | "bad"; text: string } {
-  if (locale === "zh") {
+  const isChinese = locale.startsWith("zh");
+  if (isChinese) {
     const map: Record<number, { luck: "good" | "neutral" | "bad"; text: string }> = {
       1: { luck: "good", text: "一帆风顺。象征独立与新开始。" },
       2: { luck: "good", text: "好事成双。象征和谐与伙伴关系。" },
@@ -96,7 +97,8 @@ function getElementForNumber(n: number): number {
 }
 
 function getDirectionAdvice(dir: Direction, locale: string): string {
-  if (locale === "zh") {
+  const isChinese = locale.startsWith("zh");
+  if (isChinese) {
     const map: Record<Direction, string> = {
       N: "坐北朝南，采光充足，冬暖夏凉，传统最佳朝向。",
       NE: "东北方属艮卦，适合书房和安静空间。",
@@ -177,6 +179,7 @@ function getMonthDays(year: number, month: number): DayInfo[] {
 
 export default function Cultural() {
   const { t, locale } = useT();
+  const isChinese = locale.startsWith("zh");
 
   // Feng Shui state
   const [address, setAddress] = useState("");
@@ -214,13 +217,13 @@ export default function Cultural() {
   }, [calMonth]);
 
   const monthLabel = useMemo(() => {
-    return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+    return new Intl.DateTimeFormat(isChinese ? "zh-CN" : "en-US", {
       year: "numeric",
       month: "long",
     }).format(new Date(calYear, calMonth - 1));
-  }, [calYear, calMonth, locale]);
+  }, [calYear, calMonth, isChinese]);
 
-  const weekHeaders = locale === "zh"
+  const weekHeaders = isChinese
     ? ["日", "一", "二", "三", "四", "五", "六"]
     : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -316,9 +319,9 @@ export default function Cultural() {
                     {t("cultural.elementTitle")}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-lg font-semibold">{locale === "zh" ? ELEMENTS_ZH[elementIdx] : ELEMENTS_EN[elementIdx]}</span>
+                    <span className="text-lg font-semibold">{isChinese ? ELEMENTS_ZH[elementIdx] : ELEMENTS_EN[elementIdx]}</span>
                     <span className="text-sm text-muted-foreground">
-                      ({locale === "zh" ? ELEMENTS_EN[elementIdx] : ELEMENTS_ZH[elementIdx]})
+                      ({isChinese ? ELEMENTS_EN[elementIdx] : ELEMENTS_ZH[elementIdx]})
                     </span>
                   </div>
                 </div>
@@ -429,8 +432,8 @@ export default function Cultural() {
               <CardContent className="space-y-3">
                 {selectedDay.chong && (
                   <p className="text-xs text-muted-foreground">
-                    {locale === "zh" ? "冲" : "Clash"}: {selectedDay.chong}
-                    {selectedDay.sha && ` · ${locale === "zh" ? "煞" : "Sha"}: ${selectedDay.sha}`}
+                    {isChinese ? "冲" : "Clash"}: {selectedDay.chong}
+                    {selectedDay.sha && ` · ${isChinese ? "煞" : "Sha"}: ${selectedDay.sha}`}
                   </p>
                 )}
                 <div>

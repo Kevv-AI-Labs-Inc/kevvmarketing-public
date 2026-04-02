@@ -2,10 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ENV } from "@/server/_core/env";
 import { generateHomeValueEstimate } from "@/server/homeValue/valuationEngine";
-import { searchListings } from "@/server/clients/listingDataClient";
+import { resolveByAddress } from "@/server/clients/listingDataClient";
 
 vi.mock("@/server/clients/listingDataClient", () => ({
-  searchListings: vi.fn(),
+  resolveByAddress: vi.fn(),
+  getCmaByListing: vi.fn(),
+  getNeighborhoodSummary: vi.fn(),
 }));
 
 describe("generateHomeValueEstimate", () => {
@@ -41,18 +43,18 @@ describe("generateHomeValueEstimate", () => {
 
   it("hydrates valuation inputs from listing data when the service is configured", async () => {
     ENV.listingDataServiceUrl = "https://listing-data.kevv.ai";
-    vi.mocked(searchListings).mockResolvedValue({
-      data: [
-        {
-          city: "Irvine",
-          listPrice: "2150000",
-          bedroomsTotal: 5,
-          bathroomsTotalInteger: 4,
-          livingArea: "3100",
-          yearBuilt: 2014,
-          propertyType: "Single Family",
-        },
-      ],
+    vi.mocked(resolveByAddress).mockResolvedValue({
+      property: {
+        listingKey: "abc123",
+        city: "Irvine",
+        unparsedAddress: "8 Harbor Ridge, Irvine, CA",
+        listPrice: "2150000",
+        bedroomsTotal: 5,
+        bathroomsTotalInteger: 4,
+        livingArea: "3100",
+        yearBuilt: 2014,
+        propertyType: "Single Family",
+      },
     } as never);
 
     const estimate = await generateHomeValueEstimate({
@@ -60,12 +62,10 @@ describe("generateHomeValueEstimate", () => {
       locale: "en",
     });
 
-    expect(searchListings).toHaveBeenCalledWith({
-      search: "8 Harbor Ridge, Irvine, CA",
-      perPage: 1,
-      page: 1,
+    expect(resolveByAddress).toHaveBeenCalledWith({
+      address: "8 Harbor Ridge, Irvine, CA",
     });
-    expect(estimate.provider).toBe("listing-data+heuristic");
+    expect(estimate.provider).toBe("bbo-listing+heuristic");
     expect(estimate.result.estimatedValue).toBe(2150000);
     expect(estimate.result.propertyDetails).toMatchObject({
       beds: 5,

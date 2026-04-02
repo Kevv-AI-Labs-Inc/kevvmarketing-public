@@ -65,6 +65,7 @@ const PROCESS_STEPS: ProcessStep[] = [
 
 export default function CrossBorder() {
   const { t, locale } = useT();
+  const isChinese = locale.startsWith("zh");
 
   // Currency converter
   const [usdAmount, setUsdAmount] = useState("1000000");
@@ -87,7 +88,7 @@ export default function CrossBorder() {
   const sampleListings = [
     {
       id: "1",
-      address: locale === "zh" ? "法拉盛 · 39大道 公寓" : "Flushing · 39th Ave Condo",
+      address: isChinese ? "法拉盛 · 39大道 公寓" : "Flushing · 39th Ave Condo",
       usd: 580000,
       beds: 2,
       baths: 1,
@@ -95,7 +96,7 @@ export default function CrossBorder() {
     },
     {
       id: "2",
-      address: locale === "zh" ? "曼哈顿下东区 · 1BR" : "Manhattan LES · 1BR",
+      address: isChinese ? "曼哈顿下东区 · 1BR" : "Manhattan LES · 1BR",
       usd: 920000,
       beds: 1,
       baths: 1,
@@ -103,7 +104,7 @@ export default function CrossBorder() {
     },
     {
       id: "3",
-      address: locale === "zh" ? "布鲁克林 Sunset Park · 3BR" : "Brooklyn Sunset Park · 3BR",
+      address: isChinese ? "布鲁克林 Sunset Park · 3BR" : "Brooklyn Sunset Park · 3BR",
       usd: 1250000,
       beds: 3,
       baths: 2,
@@ -111,7 +112,7 @@ export default function CrossBorder() {
     },
     {
       id: "4",
-      address: locale === "zh" ? "尔湾 · 学区房 4BR" : "Irvine · School District 4BR",
+      address: isChinese ? "尔湾 · 学区房 4BR" : "Irvine · School District 4BR",
       usd: 1680000,
       beds: 4,
       baths: 3,
@@ -230,7 +231,7 @@ export default function CrossBorder() {
                         {formatCurrency(listing.usd, "USD")}
                       </span>
                       <span className="text-sm text-muted-foreground tabular-nums">
-                        ≈ ¥{(listing.usd * rate / 10000).toFixed(0)}{locale === "zh" ? "万" : "0k"}
+                        ≈ ¥{(listing.usd * rate / 10000).toFixed(0)}{isChinese ? "万" : "0k"}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
