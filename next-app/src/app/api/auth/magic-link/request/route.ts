@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, lt } from "drizzle-orm";
+import { and, eq, lt, ne } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { DEFAULT_AUTHENTICATED_PATH } from "@/const";
 import { getDb } from "@/lib/db";
@@ -59,16 +59,24 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 
-  await db.delete(magicLinks).where(lt(magicLinks.expiresAt, new Date()));
-  await db.delete(magicLinks).where(eq(magicLinks.email, email));
-
-  // Insert new token
+  // Insert new token first so the rate limiter counts it on the next request,
+  // then clean up old tokens (avoids defeating the email cooldown window).
   await db.insert(magicLinks).values({
     email,
     tokenHash,
     requestIp,
     expiresAt,
   });
+
+  // Remove previous tokens for this email (keep the one we just created)
+  await db
+    .delete(magicLinks)
+    .where(and(eq(magicLinks.email, email), ne(magicLinks.tokenHash, tokenHash)));
+
+  // Prune globally expired tokens (cheap — only targets rows past expiry)
+  db.delete(magicLinks)
+    .where(lt(magicLinks.expiresAt, new Date()))
+    .catch(() => {}); // fire-and-forget, non-blocking
 
   const signInUrl = buildMagicLinkUrl(token, callbackUrl);
   const text = buildMagicLinkEmailText(signInUrl);
@@ -81,6 +89,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[MagicLink] Failed to send:", error);
+    // Clean up the token so the cooldown isn't burned by a send failure
+    await db
+      .delete(magicLinks)
+      .where(eq(magicLinks.tokenHash, tokenHash))
+      .catch(() => {});
     return NextResponse.json(
       { error: "Failed to send sign-in email" },
       { status: 500 }

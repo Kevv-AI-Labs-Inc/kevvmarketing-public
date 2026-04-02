@@ -509,7 +509,7 @@ export const profileRouter = router({
             timeline: reply.timeline,
           },
           sourceType: "agent_site_chat",
-          sourceId: session.sessionKey,
+          sourceId: profile.slug,
           sessionToken: session.sessionKey,
           ipAddress: ctx.ip,
           userAgent: ctx.userAgent,
