@@ -3,12 +3,6 @@
  * Supports Google OAuth, Microsoft Entra ID, and one-time magic links.
  */
 
-// NextAuth v5 reads AUTH_SECRET automatically.
-// Fall back to JWT_SECRET for backward compat with old Express env config.
-if (!process.env.AUTH_SECRET && process.env.JWT_SECRET) {
-  process.env.AUTH_SECRET = process.env.JWT_SECRET;
-}
-
 // Ensure AUTH_URL is set so NextAuth knows its public origin when
 // running behind Railway's reverse proxy (which internally listens on
 // localhost:8080). Without this, baseUrl resolves to localhost:8080

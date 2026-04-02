@@ -5,32 +5,24 @@ function nonEmpty(value: string | undefined) {
 }
 
 export function getGoogleClientId() {
-  return process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID || "";
+  return process.env.AUTH_GOOGLE_ID || "";
 }
 
 export function getGoogleClientSecret() {
-  return process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET || "";
+  return process.env.AUTH_GOOGLE_SECRET || "";
 }
 
 export function getMicrosoftClientId() {
-  return process.env.AUTH_MICROSOFT_ENTRA_ID_ID || process.env.MICROSOFT_CLIENT_ID || "";
+  return process.env.AUTH_MICROSOFT_ENTRA_ID_ID || "";
 }
 
 export function getMicrosoftClientSecret() {
-  return process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET || process.env.MICROSOFT_CLIENT_SECRET || "";
+  return process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET || "";
 }
 
 export function getMicrosoftIssuer() {
   if (process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER) {
     return process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER;
-  }
-
-  if (process.env.MICROSOFT_ISSUER) {
-    return process.env.MICROSOFT_ISSUER;
-  }
-
-  if (process.env.MICROSOFT_TENANT_ID) {
-    return `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID}/v2.0`;
   }
 
   return "https://login.microsoftonline.com/common/v2.0";

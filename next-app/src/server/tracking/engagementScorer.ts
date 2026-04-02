@@ -37,6 +37,7 @@ export async function recalculateScore(
     .where(
       and(
         eq(clientEvents.contactId, contactId),
+        ...(agentId !== undefined ? [eq(clientEvents.agentId, agentId)] : []),
         gte(clientEvents.createdAt, thirtyDaysAgo),
       ),
     )

@@ -1,17 +1,10 @@
-import { resolveDatabaseUrl } from "./database-url";
-
 export const ENV = {
-  // 基础
-  databaseUrl: resolveDatabaseUrl() ?? "",
-  isProduction: process.env.NODE_ENV === "production",
-
   // AI Provider — default to OpenAI in production runtime
   aiProvider: (process.env.AI_PROVIDER ?? "openai") as "gemini" | "openai",
 
   // Google Gemini
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   geminiModel: process.env.GEMINI_MODEL ?? "gemini-2.0-flash",
-  geminiEmbeddingModel: process.env.GEMINI_EMBEDDING_MODEL ?? "gemini-embedding-001",
 
   // OpenAI (fallback provider)
   openaiApiStyle: process.env.OPENAI_API_STYLE ?? "",
@@ -22,18 +15,12 @@ export const ENV = {
     process.env.AZURE_OPENAI_EMBEDDING_ENDPOINT ?? "",
   azureOpenaiEmbeddingApiKey:
     process.env.AZURE_OPENAI_EMBEDDING_API_KEY ?? "",
-  azureOpenaiBatchEndpoint: process.env.AZURE_OPENAI_BATCH_ENDPOINT ?? "",
-  azureOpenaiBatchApiKey: process.env.AZURE_OPENAI_BATCH_API_KEY ?? "",
   azureOpenaiVideoEndpoint: process.env.AZURE_OPENAI_VIDEO_ENDPOINT ?? "",
   azureOpenaiVideoApiKey: process.env.AZURE_OPENAI_VIDEO_API_KEY ?? "",
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
   openaiBaseUrl: process.env.OPENAI_BASE_URL ?? "https://api.openai.com",
   openaiModel: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
-  openaiAreaMagnetModel: process.env.OPENAI_AREA_MAGNET_MODEL ?? "gpt-5.3-chat",
-  openaiSearchModel: process.env.OPENAI_SEARCH_MODEL ?? "gpt-5.4-mini",
   openaiEmbeddingModel: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small",
-  openaiBatchEndpoint: process.env.OPENAI_BATCH_ENDPOINT ?? "/v1/embeddings",
-  openaiBatchRequestUrl: process.env.OPENAI_BATCH_REQUEST_URL ?? "/v1/embeddings",
 
   // Cloudflare R2 — 文件存储
   r2AccountId: process.env.R2_ACCOUNT_ID ?? "",
@@ -66,14 +53,8 @@ export const ENV = {
   // Lob — direct mail API (postcards + letters)
   lobApiKey: process.env.LOB_API_KEY ?? "",
   lobApiVersion: process.env.LOB_API_VERSION ?? "2020-02-11",
-  lobWebhookSecret: process.env.LOB_WEBHOOK_SECRET ?? "",
   lobEnvironment: (process.env.LOB_ENVIRONMENT ?? "test") as "live" | "test",
 
-  // Video studio providers
-  videoProvider: (process.env.VIDEO_PROVIDER ?? "sora") as
-    | "local"
-    | "sora"
-    | "jimeng",
   videoRequestTimeoutMs: (() => {
     const parsed = Number.parseInt(
       process.env.VIDEO_REQUEST_TIMEOUT_MS ?? "30000",

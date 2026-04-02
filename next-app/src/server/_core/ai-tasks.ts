@@ -103,10 +103,7 @@ const PROFILES: Record<AITask, AITaskProfile> = {
     description: "Prospecting pitch brief for expired/FSBO listings",
   },
   [AI_TASKS.AREA_MAGNET]: {
-    model:
-      process.env.AI_TASK_AREA_MAGNET_MODEL ||
-      ENV.openaiAreaMagnetModel ||
-      ENV.openaiModel,
+    model: process.env.AI_TASK_AREA_MAGNET_MODEL || ENV.openaiModel,
     maxTokens: 4000,
     scope: "chat",
     description: "Area magnet market snapshot report",

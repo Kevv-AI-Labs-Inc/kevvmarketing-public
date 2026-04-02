@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { localeTag } from "@/i18n/copy";
 import { useT } from "@/i18n";
 import type { MessageKey } from "@/i18n";
 import { getDashboardPageCopy } from "@/i18n/dashboard-pages";
@@ -13,7 +12,6 @@ import {
   dashboardMenuSections,
   getLocalizedText,
 } from "@/lib/marketing-capabilities";
-import { trpc } from "@/lib/trpc";
 import { siteConfig } from "@/lib/site";
 import {
   ArrowRight,
@@ -36,47 +34,11 @@ function getGreetingKey():
   return "dashboard.greetingEvening";
 }
 
-function formatSyncStamp(locale: "zh" | "en", raw: string | null | undefined, fallback: string) {
-  if (!raw) return fallback;
-
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return fallback;
-
-  return new Intl.DateTimeFormat(localeTag(locale), {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function normalizeCount(raw: unknown): number | null {
-  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
-  if (typeof raw === "string") {
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  if (typeof raw === "bigint") return Number(raw);
-  return null;
-}
-
 export default function Home() {
   const { user } = useAuth();
   const { t, locale } = useT();
   const copy = getDashboardPageCopy(locale).home;
-  const { data: statsData, isLoading: isStatsLoading, isError: isStatsError } =
-    trpc.mls.getSyncStatus.useQuery(undefined, {
-      refetchOnWindowFocus: true,
-      refetchInterval: 60_000,
-    });
-
-  const propertyCountValue = normalizeCount(statsData?.totalProperties);
-  const propertyCount = isStatsLoading || isStatsError ? "—" : (propertyCountValue ?? 0).toLocaleString();
-  const lastSyncLabel = formatSyncStamp(
-    locale,
-    statsData?.lastSyncAt ?? null,
-    copy.stats.syncUnknown,
-  );
+  const propertyCount = copy.stats.syncUnknown;
 
   const moduleSections = dashboardMenuSections.filter((section) => section.id !== "overview");
 
@@ -203,7 +165,7 @@ export default function Home() {
                 {siteConfig.shortName} · {copy.heroBadge}
               </Badge>
               <Badge variant="outline" className="rounded-full border-stone-300/70 bg-white/60 px-3 py-1 text-[11px] text-stone-600">
-                {copy.stats.syncLabel} · {lastSyncLabel}
+                {copy.stats.syncLabel} · {copy.stats.inventoryTitle}
               </Badge>
             </div>
 

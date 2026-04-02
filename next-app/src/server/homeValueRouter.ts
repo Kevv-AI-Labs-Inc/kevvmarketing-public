@@ -11,6 +11,7 @@ import { generateHomeValueEstimate } from "@/server/homeValue/valuationEngine";
 import { captureLead, recordClientEvent } from "@/server/leads/leadCaptureService";
 import { triggerLeadAutomation } from "@/server/leads/leadAutomationService";
 import { recalculateScore } from "@/server/tracking/engagementScorer";
+import { assertPublicEventRateLimit } from "@/server/security/publicRateLimit";
 
 const slugSchema = z.object({
   slug: z.string().trim().min(2).max(64),
@@ -173,6 +174,16 @@ export const homeValueRouter = router({
     .input(runValuationInputSchema)
     .mutation(async ({ ctx, input }) => {
       const profile = await getActiveProfileBySlug(input.slug);
+      await assertPublicEventRateLimit({
+        db: getDb(),
+        ipAddress: ctx.ip,
+        eventType: "home_value_requested",
+        sourceType: "home_value",
+        sourceId: profile.slug,
+        windowMs: 60 * 60 * 1000,
+        maxRequests: 10,
+        message: "Too many valuation requests from this IP. Please try again later.",
+      });
       const locale = input.locale ?? "en";
       const estimate = await generateHomeValueEstimate({
         address: input.address,
@@ -230,6 +241,16 @@ export const homeValueRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       const profile = await getActiveProfileBySlug(input.slug);
+      await assertPublicEventRateLimit({
+        db,
+        ipAddress: ctx.ip,
+        eventType: "home_value_gate_submit",
+        sourceType: "home_value",
+        sourceId: profile.slug,
+        windowMs: 60 * 60 * 1000,
+        maxRequests: 5,
+        message: "Too many lead submissions from this IP. Please try again later.",
+      });
       const [run] = await db
         .select()
         .from(valuationRuns)

@@ -9,6 +9,7 @@ import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { User } from "@/lib/db/schema";
 import type { ApiKeyContext } from "@/server/apiKeyAuth";
+import { isDevAuthBypassEnabled } from "@/server/security/publicRateLimit";
 
 export type TrpcContext = {
   user: User | null;
@@ -54,7 +55,7 @@ export async function createContext(
   }
 
   // Dev-mode bypass: provide a fake demo user when not authenticated
-  if (!user && process.env.NODE_ENV !== "production") {
+  if (!user && isDevAuthBypassEnabled()) {
     const now = new Date();
     user = {
       id: 0,

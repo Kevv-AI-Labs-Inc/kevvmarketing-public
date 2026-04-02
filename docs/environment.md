@@ -1,0 +1,134 @@
+# Environment Variables
+
+This project now uses a cleaned deployment surface. The list below is split into `required`, `optional`, and `removed/deprecated`.
+
+## Required for every deployment
+
+- `DATABASE_URL`
+- `AUTH_SECRET`
+- `NEXT_PUBLIC_APP_URL`
+
+## Required when the corresponding feature is enabled
+
+### Authentication providers
+- `AUTH_GOOGLE_ID`
+- `AUTH_GOOGLE_SECRET`
+- `AUTH_MICROSOFT_ENTRA_ID_ID`
+- `AUTH_MICROSOFT_ENTRA_ID_SECRET`
+- `AUTH_MICROSOFT_ENTRA_ID_ISSUER`
+
+### Listing data / MLS-backed features
+- `LISTING_DATA_SERVICE_URL`
+- `LISTING_DATA_SERVICE_API_KEY`
+
+### Public route maps
+- `NEXT_PUBLIC_MAP_UI_PROVIDER`
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+- `NEXT_PUBLIC_GOOGLE_MAP_ID`
+- `MAP_ROUTE_PROVIDER`
+- `GOOGLE_MAPS_SERVER_API_KEY`
+- `MAP_ROUTE_REQUEST_TIMEOUT_MS`
+
+### AI runtime
+- `AI_PROVIDER`
+- `OPENAI_API_STYLE`
+- `AZURE_OPENAI_ENDPOINT`
+- `OPENAI_API_KEY`
+- `AZURE_OPENAI_CHAT_ENDPOINT`
+- `AZURE_OPENAI_CHAT_API_KEY`
+- `AZURE_OPENAI_EMBEDDING_ENDPOINT`
+- `AZURE_OPENAI_EMBEDDING_API_KEY`
+- `AZURE_OPENAI_VIDEO_ENDPOINT`
+- `AZURE_OPENAI_VIDEO_API_KEY`
+- `OPENAI_MODEL`
+- `OPENAI_EMBEDDING_MODEL`
+- `AI_TASK_HOME_VALUE_MODEL`
+- `AI_TASK_PROSPECTING_MODEL`
+- `AI_TASK_AREA_MAGNET_MODEL`
+- `AI_TASK_CONTENT_MODEL`
+- `AI_TASK_CMA_MODEL`
+- `AI_TASK_CMA_REPORT_MODEL`
+- `AI_TASK_CMA_PHOTO_MODEL`
+- `AI_TASK_SMART_MATCH_MODEL`
+- `AI_TASK_EMBEDDING_MODEL`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
+
+### Email / magic-link sign-in
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `RESEND_REPLY_TO_EMAIL`
+
+### Storage
+- `R2_ACCOUNT_ID`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_BUCKET_NAME`
+- `R2_PUBLIC_URL`
+
+### Postcards
+- `LOB_API_KEY`
+- `LOB_API_VERSION`
+- `LOB_ENVIRONMENT`
+
+### Webhooks
+- `WEBHOOK_SECRET`
+
+### CMA market research
+- `SEARCH_PROVIDER`
+- `TAVILY_API_KEY`
+
+### Video studio
+- `OPENAI_VIDEO_MODEL`
+- `OPENAI_VIDEO_API_PATH`
+- `VIDEO_REQUEST_TIMEOUT_MS`
+- `JIMENG_API_KEY`
+- `JIMENG_API_BASE_URL`
+- `JIMENG_VIDEO_MODEL`
+- `JIMENG_VIDEO_API_PATH`
+
+## Host-provided or derived; usually do not set manually
+
+- `AUTH_URL`
+- `RAILWAY_PUBLIC_DOMAIN`
+- `VERCEL_URL`
+
+## Branding-only optional public metadata
+
+- `NEXT_PUBLIC_APP_NAME`
+- `NEXT_PUBLIC_APP_SHORT_NAME`
+- `NEXT_PUBLIC_COMPANY_NAME`
+- `NEXT_PUBLIC_SUPPORT_EMAIL`
+- `NEXT_PUBLIC_PROJECT_URL`
+- `NEXT_PUBLIC_PROJECT_LABEL`
+
+## Local-only debugging
+
+- `ENABLE_DEV_AUTH_BYPASS`
+- `NEXT_PUBLIC_ENABLE_DEV_AUTH_BYPASS`
+
+Both are intentionally opt-in now. Production deployments should not set them.
+
+## Removed / deprecated
+
+These were previously accepted or documented, but are no longer part of the supported deploy contract:
+
+- `OWNER_OPEN_ID`
+- `WECHAT_APP_ID`
+- `JWT_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `MICROSOFT_CLIENT_ID`
+- `MICROSOFT_CLIENT_SECRET`
+- `MICROSOFT_ISSUER`
+- `MICROSOFT_TENANT_ID`
+- `EMAIL_FROM`
+- `RESEND_FROM`
+- `OPENAI_AREA_MAGNET_MODEL`
+- `OPENAI_SEARCH_MODEL`
+- `AZURE_OPENAI_BATCH_ENDPOINT`
+- `AZURE_OPENAI_BATCH_API_KEY`
+- `OPENAI_BATCH_ENDPOINT`
+- `OPENAI_BATCH_REQUEST_URL`
+- `LOB_WEBHOOK_SECRET`
+- `VIDEO_PROVIDER`

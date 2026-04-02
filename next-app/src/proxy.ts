@@ -12,7 +12,10 @@ export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Dev-mode bypass: skip auth check entirely for local demo
-  if (process.env.NODE_ENV !== "production") {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.ENABLE_DEV_AUTH_BYPASS === "true"
+  ) {
     return NextResponse.next();
   }
 

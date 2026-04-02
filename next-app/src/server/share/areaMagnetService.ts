@@ -779,7 +779,7 @@ async function generateNarrative(
 }> {
   const candidateModels = Array.from(
     new Set(
-      [ENV.openaiAreaMagnetModel, ENV.openaiModel].filter(Boolean)
+      [ENV.openaiModel].filter(Boolean)
     )
   );
 
