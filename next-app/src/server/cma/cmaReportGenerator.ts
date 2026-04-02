@@ -1,122 +1,91 @@
 /**
- * CMA Report Generator — creates branded CMA presentations.
+ * CMA Report Generator — Presentation layer for CMA reports.
  *
- * For now generates structured JSON/data that can be rendered
- * into a PDF by the frontend or a PDF library.
- * TODO: Integrate with jsPDF or Puppeteer for server-side PDF generation.
+ * Takes the CMAReportResult from the pipeline and formats it for:
+ *   - Frontend preview display
+ *   - Future PDF generation (stub for now)
+ *   - Share-ready data packages
+ *
+ * PDF generation is a placeholder — will be replaced with a proper
+ * PDF engine (Puppeteer, react-pdf, etc.) in a future iteration.
  */
 
-import type { CMAResult } from "./cmaAnalyzer";
+import type { CMAReportResult, AgentBranding } from "./cmaAnalyzer";
 
-// ─── Types ─────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────
 
-export interface AgentBranding {
-  name: string;
-  email: string;
-  phone: string;
-  logoUrl?: string;
-  company?: string;
-  colors?: { primary: string; secondary: string };
-}
-
-export interface CMAReportData {
+export interface CMAPresentation {
   coverPage: {
     title: string;
     subtitle: string;
-    agentBranding: AgentBranding;
     address: string;
-    generatedDate: string;
+    agentName: string;
+    agentCompany: string;
+    agentPhone: string;
+    agentEmail: string;
+    logoUrl?: string;
+    date: string;
   };
-  targetSummary: {
-    address: string;
-    price: string;
-    beds: number | null;
-    baths: number | null;
-    sqft: string;
-    yearBuilt: number | undefined;
-    photo?: string;
-  };
-  compsTable: Array<{
-    address: string;
-    soldPrice: string;
-    soldDate: string | undefined;
-    beds: number | null;
-    baths: number | null;
-    sqft: string;
-    adjustedPrice: string;
-    adjustment: string;
-  }>;
-  priceRecommendation: {
-    low: string;
-    high: string;
-    midpoint: string;
-  };
-  aiAnalysis: string;
-  marketTrends: Record<string, unknown>;
+  subject: CMAReportResult["subject"];
+  comparables: CMAReportResult["comparables"];
+  marketIntelligence: CMAReportResult["marketIntelligence"];
+  neighborhood: CMAReportResult["neighborhood"];
+  priceRecommendation: CMAReportResult["priceRecommendation"];
+  executiveSummary: CMAReportResult["executiveSummary"];
+  dataSources: string[];
 }
 
-// ─── Report Builder ────────────────────────────────────────
+// ─── Build Presentation ───────────────────────────────────────
 
 /**
- * Build a structured CMA report from analysis results.
+ * Build a presentation-ready structure from the pipeline result.
  */
-export function buildCMAReport(
-  cma: CMAResult,
+export function buildCMAPresentation(
+  result: CMAReportResult,
   branding: AgentBranding,
-): CMAReportData {
-  const target = cma.target;
-
+): CMAPresentation {
   return {
     coverPage: {
-      title: "Comparative Market Analysis\n房产市场对比分析报告",
-      subtitle: target.unparsedAddress ?? "Property Analysis",
-      agentBranding: branding,
-      address: `${target.unparsedAddress}, ${target.city}, ${target.stateOrProvince} ${target.postalCode}`,
-      generatedDate: new Date().toISOString().split("T")[0],
+      title: "Comparative Market Analysis",
+      subtitle: result.subject.address,
+      address: `${result.subject.address}, ${result.subject.city}, ${result.subject.state} ${result.subject.zipCode}`,
+      agentName: branding.name,
+      agentCompany: branding.company ?? "",
+      agentPhone: branding.phone,
+      agentEmail: branding.email,
+      logoUrl: branding.logoUrl,
+      date: new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
     },
-
-    targetSummary: {
-      address: target.unparsedAddress,
-      price: `$${parseInt(target.listPrice).toLocaleString()}`,
-      beds: target.bedroomsTotal,
-      baths: target.bathroomsTotalInteger,
-      sqft: target.livingArea,
-      yearBuilt: target.yearBuilt,
-    },
-
-    compsTable: cma.comps.map((comp) => ({
-      address: comp.listing.unparsedAddress,
-      soldPrice: `$${parseInt(comp.listing.closePrice ?? comp.listing.listPrice).toLocaleString()}`,
-      soldDate: comp.listing.closeDate,
-      beds: comp.listing.bedroomsTotal,
-      baths: comp.listing.bathroomsTotalInteger,
-      sqft: comp.listing.livingArea,
-      adjustedPrice: `$${comp.adjustments.adjustedPrice.toLocaleString()}`,
-      adjustment: `${comp.adjustments.total >= 0 ? "+" : ""}$${comp.adjustments.total.toLocaleString()}`,
-    })),
-
-    priceRecommendation: {
-      low: `$${parseInt(cma.suggestedPriceLow).toLocaleString()}`,
-      high: `$${parseInt(cma.suggestedPriceHigh).toLocaleString()}`,
-      midpoint: `$${Math.round(
-        (parseInt(cma.suggestedPriceLow) + parseInt(cma.suggestedPriceHigh)) / 2,
-      ).toLocaleString()}`,
-    },
-
-    aiAnalysis: cma.aiAnalysis,
-    marketTrends: cma.marketTrends,
+    subject: result.subject,
+    comparables: result.comparables,
+    marketIntelligence: result.marketIntelligence,
+    neighborhood: result.neighborhood,
+    priceRecommendation: result.priceRecommendation,
+    executiveSummary: result.executiveSummary,
+    dataSources: result.dataSources,
   };
 }
 
+// ─── PDF Generation (Stub) ────────────────────────────────────
+
 /**
- * Generate PDF from CMA report.
- * TODO: Implement with jsPDF or Puppeteer.
- * Currently returns a placeholder URL.
+ * Generate a PDF for the CMA report.
+ *
+ * TODO: Replace with a proper PDF engine:
+ *   - Option A: html2canvas + jsPDF (client-side)
+ *   - Option B: Puppeteer (server-side, highest quality)
+ *   - Option C: @react-pdf/renderer (React native)
+ *
+ * For now, returns a placeholder URL.
  */
 export async function generateCMAPdf(
-  report: CMAReportData,
-): Promise<string> {
-  console.log(`[cmaReportGenerator] Stub: generateCMAPdf for ${report.coverPage.address}`);
-  // TODO: Implement PDF generation
-  return `https://example.com/cma/${Date.now()}.pdf`;
+  _presentation: CMAPresentation,
+): Promise<string | null> {
+  // Stub — PDF generation to be implemented in a future iteration
+  console.info("[cmaReportGenerator] PDF generation is a stub. Will be implemented later.");
+  return null;
 }
