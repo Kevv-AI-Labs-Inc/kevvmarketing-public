@@ -46,6 +46,7 @@ export default defineConfig({
         stderr: "pipe",
         env: {
           NEXT_TELEMETRY_DISABLED: "1",
+          AUTH_SECRET: "playwright-auth-secret-32-chars-long",
         },
       },
 });
