@@ -28,6 +28,7 @@ import {
   buildAgentSlug,
 } from "@/lib/agent-site";
 import { getPresignedPutUrl, isR2Configured } from "@/server/storage";
+import { assertPublicEventRateLimit } from "@/server/security/publicRateLimit";
 
 
 const slugSchema = z.object({
@@ -343,6 +344,16 @@ export const profileRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       const profile = await requirePublicProfile(input.slug);
+      await assertPublicEventRateLimit({
+        db,
+        ipAddress: ctx.ip,
+        eventType: "agent_site_inquiry",
+        sourceType: "agent_site_form",
+        sourceId: profile.slug,
+        windowMs: 60 * 60 * 1000,
+        maxRequests: 5,
+        message: "Too many inquiries from this IP. Please try again later.",
+      });
       const firstName = input.senderName.split(" ")[0] ?? input.senderName;
 
       const contact = await captureLead(
@@ -404,6 +415,16 @@ export const profileRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       const profile = await requirePublicProfile(input.slug);
+      await assertPublicEventRateLimit({
+        db,
+        ipAddress: ctx.ip,
+        eventType: "agent_chat_message",
+        sourceType: "agent_site_chat",
+        sourceId: profile.slug,
+        windowMs: 10 * 60 * 1000,
+        maxRequests: 12,
+        message: "Too many chat messages from this IP. Please try again shortly.",
+      });
 
       const existingSession = input.sessionKey
         ? await getConversationSessionByKey(input.sessionKey, db)

@@ -2,10 +2,9 @@
  * Embedding Service — OpenAI Embeddings for Marketing App
  *
  * Extracted from vectorService.ts — only the embedding generation functions
- * needed by dealStoryRouter, showingFeedbackRouter, and future marketing features.
+ * needed by dealStoryRouter and future marketing features.
  */
 
-import { ENV } from "./_core/env";
 import { AI_TASKS, resolveTaskProfile } from "./_core/ai-tasks";
 import {
   buildOpenAiApiUrl,

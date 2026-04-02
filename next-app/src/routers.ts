@@ -7,10 +7,8 @@ import { systemRouter } from "./server/_core/systemRouter";
 import { shareRouter } from "./server/shareRouter";
 import { smartMatchRouter } from "./server/smartMatchRouter";
 import { dealStoryRouter } from "./server/dealStoryRouter";
-import { showingFeedbackRouter } from "./server/showingFeedbackRouter";
 import { studioRouter } from "./server/studioRouter";
 import { showingTourRouter } from "./server/showingTourRouter";
-import { trackingRouter } from "./server/tracking/trackingRouter";
 import { contentRouter } from "./server/contentFactory/contentRouter";
 import { cmaRouter } from "./server/cma/cmaRouter";
 import { mlsRouter } from "./server/mls/mlsRouter";
@@ -30,10 +28,8 @@ export const appRouter = router({
   share: shareRouter,
   smartMatch: smartMatchRouter,
   dealStory: dealStoryRouter,
-  showingFeedback: showingFeedbackRouter,
   studio: studioRouter,
   showingTour: showingTourRouter,
-  tracking: trackingRouter,
   content: contentRouter,
   cma: cmaRouter,
   ai: aiRouter,

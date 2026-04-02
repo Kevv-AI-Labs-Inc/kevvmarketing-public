@@ -5,7 +5,6 @@ export type OpenAIApiScope =
   | "default"
   | "chat"
   | "embeddings"
-  | "batch"
   | "video";
 
 function trimTrailingSlash(value: string): string {
@@ -89,13 +88,6 @@ function resolveAzureEndpointForScope(scope: OpenAIApiScope): string {
         ENV.azureOpenaiEndpoint ||
         ENV.openaiBaseUrl
       );
-    case "batch":
-      return (
-        ENV.azureOpenaiBatchEndpoint ||
-        ENV.azureOpenaiEmbeddingEndpoint ||
-        ENV.azureOpenaiEndpoint ||
-        ENV.openaiBaseUrl
-      );
     case "video":
       return (
         ENV.azureOpenaiVideoEndpoint ||
@@ -113,12 +105,6 @@ function resolveAzureApiKeyForScope(scope: OpenAIApiScope): string {
       return ENV.azureOpenaiChatApiKey || ENV.openaiApiKey;
     case "embeddings":
       return ENV.azureOpenaiEmbeddingApiKey || ENV.openaiApiKey;
-    case "batch":
-      return (
-        ENV.azureOpenaiBatchApiKey ||
-        ENV.azureOpenaiEmbeddingApiKey ||
-        ENV.openaiApiKey
-      );
     case "video":
       return ENV.azureOpenaiVideoApiKey || ENV.openaiApiKey;
     default:

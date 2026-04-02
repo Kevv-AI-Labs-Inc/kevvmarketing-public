@@ -32,7 +32,9 @@ export function useAuth(options?: UseAuthOptions) {
     }, [router]);
 
     const isDevBypass =
-        process.env.NODE_ENV !== "production" && status === "unauthenticated";
+        process.env.NODE_ENV !== "production" &&
+        process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH_BYPASS === "true" &&
+        status === "unauthenticated";
 
     const state = useMemo(() => {
         // Dev-mode bypass: provide a fake demo user when not logged in

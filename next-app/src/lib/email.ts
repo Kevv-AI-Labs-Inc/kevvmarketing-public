@@ -29,8 +29,6 @@ function getResendApiKey() {
 function getSystemFromAddress() {
   return (
     process.env.RESEND_FROM_EMAIL ||
-    process.env.EMAIL_FROM ||
-    process.env.RESEND_FROM ||
     `${brandConfig.appName} <noreply@example.com>`
   );
 }

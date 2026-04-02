@@ -70,6 +70,7 @@ export const magicLinks = pgTable("magic_links", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 320 }).notNull(),
   tokenHash: varchar("tokenHash", { length: 128 }).notNull().unique(),
+  requestIp: varchar("requestIp", { length: 45 }),
   expiresAt: timestamp("expiresAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

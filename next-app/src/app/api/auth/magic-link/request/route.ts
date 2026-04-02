@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, lt } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { DEFAULT_AUTHENTICATED_PATH } from "@/const";
 import { getDb } from "@/lib/db";
 import { magicLinks } from "@/lib/db/schema";
@@ -12,6 +13,10 @@ import {
 } from "@/lib/magic-link";
 import { isSystemEmailConfigured, sendSystemEmail } from "@/lib/email";
 import { siteConfig } from "@/lib/site";
+import {
+  assertMagicLinkRequestAllowed,
+  normalizeRateLimitIp,
+} from "@/server/security/publicRateLimit";
 
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as {
@@ -35,16 +40,33 @@ export async function POST(request: NextRequest) {
   const { token, tokenHash } = createMagicLinkToken();
   const expiresAt = getMagicLinkExpiry();
   const callbackUrl = body?.callbackUrl || DEFAULT_AUTHENTICATED_PATH;
+  const requestIp = normalizeRateLimitIp(
+    request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip")
+  );
 
   const db = getDb();
 
-  // Remove expired tokens for this email
+  try {
+    await assertMagicLinkRequestAllowed({
+      db,
+      email,
+      ipAddress: requestIp,
+    });
+  } catch (error) {
+    if (error instanceof TRPCError && error.code === "TOO_MANY_REQUESTS") {
+      return NextResponse.json({ error: error.message }, { status: 429 });
+    }
+    throw error;
+  }
+
+  await db.delete(magicLinks).where(lt(magicLinks.expiresAt, new Date()));
   await db.delete(magicLinks).where(eq(magicLinks.email, email));
 
   // Insert new token
   await db.insert(magicLinks).values({
     email,
     tokenHash,
+    requestIp,
     expiresAt,
   });
 

@@ -109,6 +109,15 @@ const bootstrapSql = `
 
   create unique index buyer_profiles_contact_unique on buyer_profiles (contact_id);
 
+  create table magic_links (
+    id serial primary key,
+    email varchar(320) not null,
+    "tokenHash" varchar(128) not null unique,
+    "requestIp" varchar(45),
+    "expiresAt" timestamp not null,
+    "createdAt" timestamp not null default now()
+  );
+
   create table smart_match_runs (
     id serial primary key,
     agent_id integer,
