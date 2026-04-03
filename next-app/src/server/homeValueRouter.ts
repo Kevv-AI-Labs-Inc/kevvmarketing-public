@@ -231,8 +231,14 @@ export const homeValueRouter = router({
 
       return {
         valuationRunId: run.id,
-        result: estimate.result,
+        result: {
+          ...estimate.result,
+          dataConfidence: estimate.dataConfidence,
+          dataSource: estimate.dataSource,
+        },
         summary: estimate.summary,
+        dataConfidence: estimate.dataConfidence,
+        dataSource: estimate.dataSource,
       };
     }),
 

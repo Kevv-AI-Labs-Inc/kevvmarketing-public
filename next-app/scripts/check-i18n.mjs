@@ -20,6 +20,7 @@ const allowedLocaleTernaryFiles = new Set([
   path.join(srcRoot, "i18n", "copy.ts"),
   path.join(srcRoot, "i18n", "share-pages.ts"),
   path.join(srcRoot, "components", "LocaleToggleButton.tsx"),
+  path.join(srcRoot, "components", "home-value", "public-home-value-page.tsx"),
   path.join(srcRoot, "server", "homeValue", "valuationEngine.ts"),
 ]);
 

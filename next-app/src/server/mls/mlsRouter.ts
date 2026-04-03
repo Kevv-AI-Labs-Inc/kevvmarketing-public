@@ -137,17 +137,21 @@ export const mlsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const data = await ldsGet<LdsProperty[]>("/api/v1/properties", {
-        search: input.search,
-        city: input.city,
-        minPrice: input.minPrice?.toString(),
-        maxPrice: input.maxPrice?.toString(),
-        propertyType: input.propertyType,
-        status: input.status,
-        limit: input.limit.toString(),
-        offset: input.offset.toString(),
-      });
-      return (data ?? []) as LdsProperty[];
+      // BBO endpoint is /api/v1/listings/search with param `q` (not `search`)
+      // and returns { items: [...], nextCursor } (not a plain array)
+      const data = await ldsGet<{ items: LdsProperty[]; nextCursor?: string | null }>(
+        "/api/v1/listings/search",
+        {
+          q: input.search,
+          city: input.city,
+          minPrice: input.minPrice?.toString(),
+          maxPrice: input.maxPrice?.toString(),
+          propertyType: input.propertyType,
+          status: input.status,
+          limit: input.limit.toString(),
+        },
+      );
+      return (data?.items ?? []) as LdsProperty[];
     }),
 
   /**
@@ -159,7 +163,7 @@ export const mlsRouter = router({
     .query(async ({ input }) => {
       if (!input.listingKey) return null;
       const data = await ldsGet<LdsProperty>(
-        `/api/v1/properties/${encodeURIComponent(input.listingKey)}`
+        `/api/v1/listings/by-key/${encodeURIComponent(input.listingKey)}`
       );
       return data ?? null;
     }),
@@ -172,10 +176,10 @@ export const mlsRouter = router({
     .input(z.object({ listingKeys: z.array(z.string()) }))
     .query(async ({ input }) => {
       if (input.listingKeys.length === 0) return [];
-      const data = await ldsPost<LdsProperty[]>("/api/v1/properties/by-keys", {
+      const data = await ldsPost<{ items: LdsProperty[] }>("/api/v1/listings/batch", {
         listingKeys: input.listingKeys,
       });
-      return (data ?? []) as LdsProperty[];
+      return (data?.items ?? []) as LdsProperty[];
     }),
 
 });

@@ -25,7 +25,10 @@ import { Input } from "@/components/ui/input";
 
 interface PlacesAutocompleteInstance {
   addListener: (event: string, handler: () => void) => void;
-  getPlace: () => { formatted_address?: string };
+  getPlace: () => {
+    formatted_address?: string;
+    geometry?: { location?: { lat: () => number; lng: () => number } };
+  };
 }
 
 // Access window.google safely via unknown to avoid redeclare conflicts
@@ -56,6 +59,8 @@ interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   onSelect?: (formattedAddress: string) => void;
+  /** Callback that also provides lat/lng extracted from Google Places geometry. */
+  onSelectWithGeo?: (data: { formattedAddress: string; latitude?: number; longitude?: number }) => void;
   placeholder?: string;
   /** className applied to the outer wrapper div (when Maps key is set) */
   className?: string;
@@ -70,6 +75,7 @@ export function AddressAutocomplete({
   value,
   onChange,
   onSelect,
+  onSelectWithGeo,
   placeholder,
   className,
   inputClassName,
@@ -87,7 +93,7 @@ export function AddressAutocomplete({
     const ac = new Places.Autocomplete(inputRef.current, {
       types: ["address"],
       componentRestrictions: { country: ["us", "ca"] },
-      fields: ["formatted_address"],
+      fields: ["formatted_address", "geometry"],
     });
 
     ac.addListener("place_changed", () => {
@@ -96,11 +102,19 @@ export function AddressAutocomplete({
       if (addr) {
         onChange(addr);
         onSelect?.(addr);
+        // Extract geometry if available
+        const lat = place.geometry?.location?.lat();
+        const lng = place.geometry?.location?.lng();
+        onSelectWithGeo?.({
+          formattedAddress: addr,
+          latitude: typeof lat === "number" && Number.isFinite(lat) ? lat : undefined,
+          longitude: typeof lng === "number" && Number.isFinite(lng) ? lng : undefined,
+        });
       }
     });
 
     acRef.current = ac;
-  }, [onChange, onSelect]);
+  }, [onChange, onSelect, onSelectWithGeo]);
 
   // Init after script loads
   useEffect(() => {

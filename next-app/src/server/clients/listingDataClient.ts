@@ -16,6 +16,7 @@ import axios, { AxiosInstance, AxiosError } from "axios";
 import { ENV } from "../_core/env";
 import type {
   // Listing lookup
+  ListingData,
   ListingResponse,
   ListingSearchResponse,
   AddressResolveResponse,
@@ -137,6 +138,24 @@ export async function getAddressCandidates(
 ): Promise<AddressCandidatesResponse> {
   const res = await getClient().post<AddressCandidatesResponse>(
     "/api/v1/listings/address-candidates",
+    input,
+  );
+  return res.data;
+}
+
+/**
+ * POST /api/v1/listings/by-location
+ * Spatial proximity search — find listings near a lat/lng coordinate.
+ * Uses Haversine formula on BBO's stored coordinates.
+ */
+export async function getListingsByLocation(input: {
+  latitude: number;
+  longitude: number;
+  radiusKm?: number;
+  limit?: number;
+}): Promise<{ items: Array<{ data: ListingData; imageUrls?: string[]; distanceKm?: number }> }> {
+  const res = await getClient().post(
+    "/api/v1/listings/by-location",
     input,
   );
   return res.data;
@@ -291,6 +310,7 @@ export const listingDataClient = {
   getListingByMls,
   resolveByAddress,
   getAddressCandidates,
+  getListingsByLocation,
   searchListings,
   getListingsBatch,
   getListingMedia,

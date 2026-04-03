@@ -353,6 +353,8 @@ export type ValuationComparableSale = {
   beds: number;
   baths: number;
   sqft: number;
+  /** First property photo from MLS (if available) */
+  imageUrl?: string;
 };
 
 export type ValuationResult = {
@@ -373,6 +375,12 @@ export type ValuationResult = {
   neighborhoodTrend: string;
   marketSummary: string;
   equity?: number;
+  /** Confidence level: "high" = real comps, "medium" = listing only, "low" = heuristic */
+  dataConfidence?: "high" | "medium" | "low";
+  /** Human-readable data source label */
+  dataSource?: string;
+  /** Subject property hero image from MLS (if available) */
+  subjectImageUrl?: string;
 };
 
 export const valuationRuns = pgTable("valuation_runs", {

@@ -1,22 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Bath,
-  BedDouble,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
-  Copy,
+  Heart,
   Mail,
-  MapPin,
   MessageCircle,
   Phone,
-  Ruler,
+  X,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
-import { localeTag } from "@/i18n/copy";
 import { getSharePageCopy } from "@/i18n/share-pages";
 import { toast } from "sonner";
 
@@ -97,8 +95,93 @@ function buildAddress(listing: MlsListing) {
 }
 
 /* ────────────────────────────────────────────────────────────── */
+/*  Lightbox Component                                           */
+/* ────────────────────────────────────────────────────────────── */
+
+function Lightbox({
+  images,
+  index,
+  onClose,
+  onChange,
+}: {
+  images: string[];
+  index: number;
+  onClose: () => void;
+  onChange: (index: number) => void;
+}) {
+  const handlePrev = useCallback(() => {
+    onChange(index <= 0 ? images.length - 1 : index - 1);
+  }, [index, images.length, onChange]);
+
+  const handleNext = useCallback(() => {
+    onChange(index >= images.length - 1 ? 0 : index + 1);
+  }, [index, images.length, onChange]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") handlePrev();
+      if (e.key === "ArrowRight") handleNext();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose, handlePrev, handleNext]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      {/* Close */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
+        aria-label="Close"
+      >
+        <X className="h-6 w-6" />
+      </button>
+
+      {/* Counter */}
+      <div className="absolute top-5 left-1/2 -translate-x-1/2 text-sm text-white/80 font-medium">
+        {index + 1} / {images.length}
+      </div>
+
+      {/* Prev */}
+      {images.length > 1 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+          className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
+          aria-label="Previous image"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+      )}
+
+      {/* Image */}
+      <img
+        src={images[index]}
+        alt={`Photo ${index + 1}`}
+        className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
+        onClick={(e) => e.stopPropagation()}
+      />
+
+      {/* Next */}
+      {images.length > 1 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); handleNext(); }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
+          aria-label="Next image"
+        >
+          <ChevronRight className="h-6 w-6" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
 /*  Classic Share View                                           */
-/*  Clean, light, data-focused — "just the facts" for buyers     */
+/*  Magazine-quality, editorial feel — refined for buyers        */
 /* ────────────────────────────────────────────────────────────── */
 
 export default function ClassicShareView({
@@ -112,6 +195,7 @@ export default function ClassicShareView({
   const { locale } = useT();
   const copy = getSharePageCopy(locale).listingShare;
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
   const agentName = getString(agentBranding.agentName) || "Agent";
   const agentTitle = getString(agentBranding.agentTitle);
@@ -121,6 +205,24 @@ export default function ClassicShareView({
   const wechatId = getString(agentBranding.wechatId);
   const avatarUrl = getString(agentBranding.avatarUrl);
   const agentNote = getString(shareConfig.agentNote);
+
+  /* Price range summary */
+  const priceSummary = useMemo(() => {
+    const prices = listings
+      .map((l) => Number(l.listPrice))
+      .filter((p) => Number.isFinite(p) && p > 0);
+    if (prices.length === 0) return null;
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const fmt = (n: number) =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }).format(n);
+    if (min === max) return fmt(min);
+    return `${fmt(min)} \u2013 ${fmt(max)}`;
+  }, [listings]);
 
   const handleCall = () => {
     if (!phone) return;
@@ -154,28 +256,51 @@ export default function ClassicShareView({
     toast.success(copy.interestLogged);
   };
 
+  const openLightbox = (images: string[], index: number) => {
+    setLightbox({ images, index });
+  };
+
   return (
-    <div className="min-h-[100dvh] bg-white text-stone-900">
+    <div className="min-h-[100dvh] bg-white text-gray-900">
+      {/* Lightbox overlay */}
+      {lightbox && (
+        <Lightbox
+          images={lightbox.images}
+          index={lightbox.index}
+          onClose={() => setLightbox(null)}
+          onChange={(i) => setLightbox({ images: lightbox.images, index: i })}
+        />
+      )}
+
       {/* ─── Sticky bottom CTA bar (mobile) ─────── */}
-      <div className="fixed bottom-0 inset-x-0 z-50 border-t bg-white/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between gap-3 sm:hidden">
+      <div className="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between gap-3 sm:hidden shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
         <div className="flex items-center gap-2.5 min-w-0">
           <Avatar className="h-8 w-8 shrink-0">
             {avatarUrl && <AvatarImage src={avatarUrl} alt={agentName} />}
-            <AvatarFallback className="text-xs bg-stone-100">
+            <AvatarFallback className="text-xs bg-gray-100">
               {agentName.slice(0, 1).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <p className="truncate text-sm font-medium">{agentName}</p>
+          <p className="truncate text-sm font-medium text-gray-900">{agentName}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {phone && (
-            <Button size="sm" onClick={handleCall} className="rounded-full h-9 px-4">
+            <Button
+              size="sm"
+              onClick={handleCall}
+              className="rounded-full h-9 px-4 bg-[#0d9488] hover:bg-[#0f766e] text-white"
+            >
               <Phone className="h-3.5 w-3.5 mr-1.5" />
               Call
             </Button>
           )}
           {email && (
-            <Button size="sm" variant="outline" onClick={handleEmail} className="rounded-full h-9 px-4">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleEmail}
+              className="rounded-full h-9 px-4 border-gray-200 text-gray-700 hover:bg-gray-50"
+            >
               <Mail className="h-3.5 w-3.5 mr-1.5" />
               Email
             </Button>
@@ -184,39 +309,55 @@ export default function ClassicShareView({
       </div>
 
       {/* ─── Main content ──────────────────────────── */}
-      <div className="mx-auto max-w-3xl px-4 py-6 pb-24 sm:pb-8 md:px-6">
-        {/* Header — minimal */}
-        <header className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <Avatar className="h-10 w-10 border">
+      <div className="mx-auto max-w-4xl px-4 py-8 pb-28 sm:pb-10 md:px-8">
+        {/* ─── Header ──────────────────────────────── */}
+        <header className="mb-10">
+          {/* Agent bar */}
+          <div className="flex items-center gap-3.5 pb-6 mb-6 border-b border-gray-100">
+            <Avatar className="h-11 w-11 border border-gray-200 shadow-sm">
               {avatarUrl && <AvatarImage src={avatarUrl} alt={agentName} />}
-              <AvatarFallback className="bg-stone-100 text-sm">
+              <AvatarFallback className="bg-gray-50 text-sm font-medium">
                 {agentName.slice(0, 1).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
-              <p className="text-sm font-semibold">{agentName}</p>
-              <p className="text-xs text-stone-500">
-                {[agentTitle, brokerageName].filter(Boolean).join(" · ")}
+              <p className="text-sm font-semibold text-gray-900">{agentName}</p>
+              <p className="text-xs text-gray-500">
+                {[agentTitle, brokerageName].filter(Boolean).join(" \u00b7 ")}
               </p>
             </div>
 
             {/* Desktop contact buttons */}
             <div className="hidden sm:flex items-center gap-2 ml-auto">
               {phone && (
-                <Button size="sm" variant="outline" onClick={handleCall} className="rounded-full">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCall}
+                  className="rounded-full border-gray-200 text-gray-700 hover:bg-gray-50"
+                >
                   <Phone className="h-3.5 w-3.5 mr-1.5" />
                   {phone}
                 </Button>
               )}
               {email && (
-                <Button size="sm" variant="outline" onClick={handleEmail} className="rounded-full">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleEmail}
+                  className="rounded-full border-gray-200 text-gray-700 hover:bg-gray-50"
+                >
                   <Mail className="h-3.5 w-3.5 mr-1.5" />
                   Email
                 </Button>
               )}
               {wechatId && (
-                <Button size="sm" variant="outline" onClick={handleCopyWechat} className="rounded-full">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCopyWechat}
+                  className="rounded-full border-gray-200 text-gray-700 hover:bg-gray-50"
+                >
                   <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
                   WeChat
                 </Button>
@@ -224,131 +365,153 @@ export default function ClassicShareView({
             </div>
           </div>
 
+          {/* Prepared for */}
           {session.clientName && (
-            <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">
+            <p className="text-[11px] text-gray-400 uppercase tracking-[0.15em] font-medium mb-3">
               Prepared for {session.clientName}
             </p>
           )}
 
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          {/* Title */}
+          <h1 className="text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
             {session.title}
           </h1>
 
+          {/* Agent note — quote block */}
           {agentNote && (
-            <div className="mt-4 rounded-xl bg-stone-50 border border-stone-100 px-4 py-3">
-              <p className="text-sm text-stone-600 leading-relaxed italic">
+            <div className="mt-5 pl-4 border-l-2 border-[#0d9488]/40">
+              <p className="text-sm text-gray-600 leading-relaxed italic">
                 &ldquo;{agentNote}&rdquo;
               </p>
-              <p className="text-xs text-stone-400 mt-1.5">— {agentName}</p>
+              <p className="text-xs text-gray-400 mt-1.5">&mdash; {agentName}</p>
             </div>
           )}
 
-          <p className="mt-3 text-sm text-stone-500">
+          {/* Summary line */}
+          <p className="mt-4 text-sm text-gray-500">
             {listings.length} {listings.length === 1 ? "listing" : "listings"}
+            {priceSummary && <span className="ml-1">&middot; {priceSummary}</span>}
           </p>
         </header>
 
         {/* ─── Listings ──────────────────────────────── */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {listings.map((listing, index) => {
             const address = buildAddress(listing);
             const price = formatPrice(listing.listPrice);
             const ppsqft = formatPricePerSqft(listing.listPrice, listing.livingArea);
             const images = listing.images ?? [];
-            const mainImage = images[0] ?? null;
             const expanded = expandedId === listing.listingKey;
+
+            /* Build compact metrics string */
+            const metrics: string[] = [];
+            if (listing.bedroomsTotal != null) metrics.push(`${listing.bedroomsTotal} bd`);
+            if (listing.bathroomsTotalInteger != null) metrics.push(`${listing.bathroomsTotalInteger} ba`);
+            if (listing.livingArea) metrics.push(`${Number(listing.livingArea).toLocaleString()} sqft`);
+            if (ppsqft) metrics.push(ppsqft);
+
+            /* Secondary info */
+            const secondaryParts: string[] = [];
+            if (listing.yearBuilt) secondaryParts.push(`Built ${listing.yearBuilt}`);
+            if (listing.propertyType) secondaryParts.push(listing.propertyType);
 
             return (
               <article
                 key={listing.listingKey}
-                className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm"
+                className="overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
               >
-                {/* Image */}
-                {mainImage && (
-                  <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden">
+                {/* Image carousel or hero */}
+                {images.length === 1 && (
+                  <div className="relative aspect-[16/9] w-full bg-gray-100 overflow-hidden">
+                    {listing.standardStatus && (
+                      <span className="absolute top-3 right-3 z-10 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-medium text-gray-700 shadow-sm">
+                        {listing.standardStatus}
+                      </span>
+                    )}
                     <img
-                      src={mainImage}
+                      src={images[0]}
                       alt={address}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover cursor-pointer hover:scale-[1.02] transition-transform duration-300"
                       loading={index < 3 ? "eager" : "lazy"}
+                      onClick={() => openLightbox(images, 0)}
                     />
                   </div>
                 )}
 
-                <div className="p-4 sm:p-5">
-                  {/* Address + Price */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="text-lg font-semibold text-stone-900 leading-tight">
-                        {address}
-                      </h2>
-                      {listing.city && (
-                        <p className="mt-0.5 flex items-center gap-1 text-xs text-stone-500">
-                          <MapPin className="h-3 w-3" />
-                          {[listing.city, listing.stateOrProvince, listing.postalCode]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right shrink-0">
-                      {price && (
-                        <p className="text-xl font-bold text-stone-900">
-                          {price}
-                        </p>
-                      )}
-                      {ppsqft && (
-                        <p className="text-xs text-stone-500">{ppsqft}</p>
-                      )}
+                {images.length > 1 && (
+                  <div className="relative">
+                    {listing.standardStatus && (
+                      <span className="absolute top-3 right-3 z-10 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-medium text-gray-700 shadow-sm">
+                        {listing.standardStatus}
+                      </span>
+                    )}
+                    <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 px-2 pt-2">
+                      {images.map((url, i) => (
+                        <div
+                          key={url}
+                          className="snap-start shrink-0 first:rounded-l-xl last:rounded-r-xl overflow-hidden"
+                        >
+                          <img
+                            src={url}
+                            alt={`${address} photo ${i + 1}`}
+                            className="h-48 w-72 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                            loading={index < 3 && i < 3 ? "eager" : "lazy"}
+                            onClick={() => openLightbox(images, i)}
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
+                )}
 
-                  {/* Key metrics */}
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-stone-600">
-                    {listing.bedroomsTotal != null && (
-                      <span className="inline-flex items-center gap-1.5">
-                        <BedDouble className="h-4 w-4 text-stone-400" />
-                        {listing.bedroomsTotal} Beds
-                      </span>
-                    )}
-                    {listing.bathroomsTotalInteger != null && (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Bath className="h-4 w-4 text-stone-400" />
-                        {listing.bathroomsTotalInteger} Baths
-                      </span>
-                    )}
-                    {listing.livingArea && (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Ruler className="h-4 w-4 text-stone-400" />
-                        {Number(listing.livingArea).toLocaleString()} sqft
-                      </span>
-                    )}
-                    {listing.propertyType && (
-                      <span className="text-stone-400">
-                        {listing.propertyType}
-                      </span>
-                    )}
-                    {listing.yearBuilt && (
-                      <span className="text-stone-400">
-                        Built {listing.yearBuilt}
-                      </span>
-                    )}
+                {images.length === 0 && listing.standardStatus && (
+                  <div className="px-5 pt-4">
+                    <span className="inline-block rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                      {listing.standardStatus}
+                    </span>
                   </div>
+                )}
 
-                  {/* Actions */}
+                <div className="p-5 sm:p-6">
+                  {/* Price */}
+                  {price && (
+                    <p className="text-2xl font-bold text-gray-900 mb-1">{price}</p>
+                  )}
+
+                  {/* Address */}
+                  <h2 className="text-lg text-gray-900 leading-tight">{address}</h2>
+
+                  {/* Compact metrics */}
+                  {metrics.length > 0 && (
+                    <p className="mt-2 text-sm text-gray-600">
+                      {metrics.join(" \u00b7 ")}
+                    </p>
+                  )}
+
+                  {/* Secondary info */}
+                  {secondaryParts.length > 0 && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      {secondaryParts.join(" \u00b7 ")}
+                    </p>
+                  )}
+
+                  {/* Action row */}
                   <div className="mt-4 flex items-center gap-2">
+                    {/* Primary: Schedule Showing */}
                     <Button
                       size="sm"
-                      className="rounded-full"
+                      className="rounded-full bg-[#0d9488] hover:bg-[#0f766e] text-white px-5"
                       onClick={() => handleInterested(listing)}
                     >
                       {copy.interestedHome}
                     </Button>
-                    {listing.publicRemarks && (
+
+                    {/* Secondary: Details toggle */}
+                    {(listing.publicRemarks || images.length > 1) && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="rounded-full text-stone-500"
+                        className="rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                         onClick={() => {
                           if (!expanded) {
                             trackEvent("listing_open", {
@@ -367,32 +530,39 @@ export default function ClassicShareView({
                         {expanded ? copy.hideDetails : copy.showDetails}
                       </Button>
                     )}
+
+                    {/* Save / heart icon */}
+                    <button
+                      onClick={() => handleInterested(listing)}
+                      className="ml-auto rounded-full p-2 text-gray-400 hover:text-[#0d9488] hover:bg-[#0d9488]/5 transition-colors"
+                      aria-label="Save listing"
+                    >
+                      <Heart className="h-5 w-5" />
+                    </button>
                   </div>
 
-                  {/* Expanded details */}
-                  {expanded && listing.publicRemarks && (
-                    <div className="mt-4 rounded-xl bg-stone-50 border border-stone-100 p-4">
-                      <p className="text-sm leading-relaxed text-stone-600">
-                        {listing.publicRemarks}
-                      </p>
+                  {/* Expanded section */}
+                  {expanded && (
+                    <div className="mt-5 pt-5 border-t border-gray-100">
+                      {listing.publicRemarks && (
+                        <p className="text-sm leading-relaxed text-gray-600 mb-4">
+                          {listing.publicRemarks}
+                        </p>
+                      )}
 
-                      {/* Thumbnail strip */}
+                      {/* Full thumbnail strip */}
                       {images.length > 1 && (
-                        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-                          {images.slice(1, 7).map((url, i) => (
+                        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                          {images.map((url, i) => (
                             <img
                               key={url}
                               src={url}
-                              alt={`Photo ${i + 2}`}
-                              className="h-16 w-20 shrink-0 rounded-lg border object-cover"
+                              alt={`Photo ${i + 1}`}
+                              className="h-20 w-28 shrink-0 rounded-lg border border-gray-100 object-cover cursor-pointer hover:opacity-80 transition-opacity"
                               loading="lazy"
+                              onClick={() => openLightbox(images, i)}
                             />
                           ))}
-                          {images.length > 7 && (
-                            <div className="flex h-16 w-20 shrink-0 items-center justify-center rounded-lg border bg-stone-100 text-xs text-stone-500">
-                              +{images.length - 7}
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
@@ -404,10 +574,13 @@ export default function ClassicShareView({
         </div>
 
         {/* ─── Footer ──────────────────────────────── */}
-        <footer className="mt-10 text-center">
-          <p className="text-xs text-stone-400">
+        <footer className="mt-12 pt-6 border-t border-gray-100 text-center space-y-1.5">
+          <p className="text-xs text-gray-400">
             Shared by {agentName}
-            {brokerageName ? ` · ${brokerageName}` : ""}
+            {brokerageName ? ` \u00b7 ${brokerageName}` : ""}
+          </p>
+          <p className="text-[10px] text-gray-300 tracking-wide">
+            Powered by Kevv
           </p>
         </footer>
       </div>
