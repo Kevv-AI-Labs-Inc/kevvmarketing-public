@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-import { AgentSiteShell } from "@/components/agent-site/agent-site-shell";
+import { TemplateRenderer } from "@/components/agent-site/templates";
+import { AgentSiteChatWidget } from "@/components/agent-site/agent-site-chat-widget";
 import { useT } from "@/i18n";
 import { trpc } from "@/lib/trpc";
 
@@ -52,5 +53,19 @@ export function PublicAgentSitePage({ slug }: { slug: string }) {
     );
   }
 
-  return <AgentSiteShell profile={query.data} />;
+  const profile = query.data;
+  const chatEnabled = profile.chatSettings?.enabled !== false;
+
+  return (
+    <>
+      <TemplateRenderer profile={profile} />
+      {chatEnabled && (
+        <AgentSiteChatWidget
+          accentClassName="bg-primary text-primary-foreground hover:bg-primary/90"
+          agentName={profile.name}
+          agentSlug={profile.slug}
+        />
+      )}
+    </>
+  );
 }

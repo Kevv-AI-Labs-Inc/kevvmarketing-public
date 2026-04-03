@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { AgentSiteShell } from "@/components/agent-site/agent-site-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
@@ -48,6 +47,7 @@ import {
 } from "@/lib/agent-site";
 import type { AgentProfile } from "@/lib/db/schema";
 import { trpc } from "@/lib/trpc";
+import { TemplateRenderer } from "@/components/agent-site/templates";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -140,9 +140,20 @@ function buildFormState(profile: AgentProfile): FormState {
   };
 }
 
+/** Format digits as US phone: (XXX) XXX-XXXX */
+function formatUSPhone(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  // Strip leading 1 (country code)
+  const d = digits.startsWith("1") && digits.length > 10 ? digits.slice(1) : digits;
+  if (d.length === 0) return "";
+  if (d.length <= 3) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6, 10)}`;
+}
+
 function createEmptyFormState(): FormState {
   return {
-    slug: "agent-profile",
+    slug: "",
     name: "",
     email: "",
     phone: "",
@@ -392,7 +403,7 @@ export function AgentSiteDashboard() {
   const handleSave = async () => {
     try {
       await saveMutation.mutateAsync({
-        slug: form.slug,
+        slug: form.slug || buildAgentSlug(form.name) || "agent-profile",
         name: form.name,
         email: form.email,
         phone: form.phone,
@@ -451,19 +462,90 @@ export function AgentSiteDashboard() {
 
   const profile = query.data?.profile;
 
+  // Build a live-preview profile object from form state
+  const previewProfile: AgentProfile = {
+    id: profile?.id ?? 0,
+    userId: profile?.userId ?? null,
+    slug: form.slug || buildAgentSlug(form.name) || "agent-profile",
+    email: form.email,
+    name: form.name || "Your Name",
+    phone: form.phone || null,
+    title: form.title || null,
+    brokerage: form.brokerage || null,
+    licenseState: form.licenseState || null,
+    officeAddress: form.officeAddress || null,
+    bookingUrl: form.bookingUrl || null,
+    photoUrl: form.photoUrl || null,
+    logoUrl: profile?.logoUrl ?? null,
+    heroImageUrl: form.heroImageUrl || null,
+    bio: form.bio || null,
+    serviceAreas: splitAndCleanList(form.serviceAreasText),
+    specialties: splitAndCleanList(form.specialtiesText),
+    languages: splitAndCleanList(form.languagesText),
+    awards: splitAndCleanList(form.awardsText),
+    testimonials: parseTestimonialsText(form.testimonialsText),
+    transactions: parseTransactionsText(form.transactionsText),
+    neighborhoodKnowledge: profile?.neighborhoodKnowledge ?? {},
+    socialLinks: sanitizeSocialLinks(form.socialUrls),
+    visibilitySettings: {
+      showPhone: form.showPhone,
+      showEmail: form.showEmail,
+      showTransactions: form.showTransactions,
+      showAwards: form.showAwards,
+      showTestimonials: form.showTestimonials,
+      showAddress: form.showAddress,
+    },
+    yearsExperience: Number(form.yearsExperience) || 0,
+    templateId: form.templateId || "classic",
+    colorScheme: form.colorScheme || "gold",
+    chatSettings: {
+      enabled: form.chatEnabled,
+      widgetLabel: form.chatWidgetLabel,
+      greeting: form.chatGreeting,
+      systemPrompt: form.chatSystemPrompt,
+      style: form.chatStyle,
+      suggestedPrompts: [form.chatSuggestedPrompt1, form.chatSuggestedPrompt2, form.chatSuggestedPrompt3].filter(Boolean),
+    },
+    status: profile?.status ?? "active",
+    tier: profile?.tier ?? "free",
+    stripeCustomerId: profile?.stripeCustomerId ?? null,
+    stripeSubscriptionId: profile?.stripeSubscriptionId ?? null,
+    subscriptionStatus: profile?.subscriptionStatus ?? null,
+    currentPeriodEnd: profile?.currentPeriodEnd ?? null,
+    lastPublishedAt: profile?.lastPublishedAt ?? null,
+    createdAt: profile?.createdAt ?? new Date(),
+    updatedAt: new Date(),
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-full">
+    <div className="flex h-screen flex-col overflow-hidden">
       {/* ── Page header ─────────────────────────────────────────────────────── */}
-      <div className="border-b border-border bg-card/50 px-6 py-5">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-muted-foreground">
-              {t("agentSiteDashboard.eyebrow")}
-            </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight">
-              {t("agentSiteDashboard.heroTitle")}
-            </h1>
+      <div className="shrink-0 border-b border-border bg-card/50 px-6 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-muted-foreground">
+                {t("agentSiteDashboard.eyebrow")}
+              </p>
+              <h1 className="mt-0.5 text-lg font-semibold tracking-tight">
+                {t("agentSiteDashboard.heroTitle")}
+              </h1>
+            </div>
+            {/* Compact stat badges */}
+            <div className="hidden lg:flex items-center gap-3 ml-4">
+              {[
+                { icon: Globe, value: query.data?.analytics.profileViews ?? 0, label: "Views" },
+                { icon: MessageCircle, value: query.data?.analytics.chatMessages ?? 0, label: "Chats" },
+                { icon: Users, value: query.data?.analytics.inquiries ?? 0, label: "Leads" },
+              ].map(({ icon: Icon, value, label }) => (
+                <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="font-semibold text-foreground">{value}</span>
+                  {label}
+                </div>
+              ))}
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {query.data?.publicUrl && (
@@ -500,32 +582,23 @@ export function AgentSiteDashboard() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        {/* ── Stat strip ──────────────────────────────────────────────────── */}
-        <div className="mb-8 grid grid-cols-3 gap-4">
-          {[
-            { icon: Globe, label: t("agentSiteDashboard.profileViews30d"), value: query.data?.analytics.profileViews ?? 0, color: "text-sky-500 bg-sky-500/8" },
-            { icon: MessageCircle, label: t("agentSiteDashboard.chatMessages30d"), value: query.data?.analytics.chatMessages ?? 0, color: "text-violet-500 bg-violet-500/8" },
-            { icon: Users, label: t("agentSiteDashboard.inquiries30d"), value: query.data?.analytics.inquiries ?? 0, color: "text-amber-500 bg-amber-500/8" },
-          ].map(({ icon: Icon, label, value, color }) => (
-            <div key={label} className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${color}`}>
-                <Icon className="h-4 w-4" />
+      {/* ── Split-screen layout ───────────────────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left: Editor panel */}
+        <div className="w-full lg:w-[480px] xl:w-[520px] shrink-0 overflow-y-auto border-r border-border bg-background">
+          <div className="px-5 py-6 space-y-6">
+            {/* Completeness bar */}
+            <CompletenessBar form={form} profile={profile} />
+
+            {/* Public URL */}
+            <div className="rounded-lg bg-muted/50 px-3.5 py-2.5">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                {t("agentSiteDashboard.publicRoute")}
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground">{label}</div>
-                <div className="text-2xl font-semibold leading-none mt-0.5">
-                  {query.isLoading ? <span className="inline-block h-6 w-8 animate-pulse rounded bg-muted" /> : value}
-                </div>
+              <div className="mt-0.5 truncate font-mono text-xs font-medium">
+                {query.data?.publicUrl ?? `/agents/${form.slug || "your-name"}`}
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* ── Main layout ─────────────────────────────────────────────────── */}
-        <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
-          {/* Left: Tab editor */}
-          <div className="min-w-0">
             {/* Tab bar */}
             <div className="mb-6 flex gap-1 rounded-xl border border-border bg-muted/30 p-1">
               {TABS.map(({ id, label, icon: Icon }) => (
@@ -580,12 +653,16 @@ export function AgentSiteDashboard() {
                 <section className="space-y-4">
                   <SectionHeader icon={User} title="基本信息" description="公开可见的身份信息" />
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <FieldGroup label="公开链接 Slug">
+                    <FieldGroup label="公开链接 Slug" hint={`公开地址: /agents/${form.slug || "your-name"}`}>
                       <Input
                         className="text-sm font-mono"
-                        placeholder="your-name"
+                        placeholder={buildAgentSlug(form.name) || "your-name"}
                         value={form.slug}
-                        onChange={(e) => set("slug", buildAgentSlug(e.target.value))}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          // Allow empty — placeholder shows fallback
+                          set("slug", raw ? buildAgentSlug(raw) : "");
+                        }}
                       />
                     </FieldGroup>
                     <FieldGroup label="从业年数">
@@ -608,7 +685,8 @@ export function AgentSiteDashboard() {
                           setForm((prev) => ({
                             ...prev,
                             name,
-                            slug: prev.slug === "agent-profile" || prev.slug.length === 0
+                            // Only auto-derive slug when user hasn't customized it
+                            slug: prev.slug === "" || prev.slug === buildAgentSlug(prev.name)
                               ? buildAgentSlug(name)
                               : prev.slug,
                           }));
@@ -624,14 +702,15 @@ export function AgentSiteDashboard() {
                         onChange={(e) => set("email", e.target.value)}
                       />
                     </FieldGroup>
-                    <FieldGroup label="电话">
+                    <FieldGroup label="电话" hint="输入数字自动格式化为美国号码">
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                         <Input
                           className="pl-8 text-sm"
-                          placeholder="+1 (212) 555-0142"
+                          placeholder="(212) 555-0142"
                           value={form.phone}
-                          onChange={(e) => set("phone", e.target.value)}
+                          onChange={(e) => set("phone", formatUSPhone(e.target.value))}
+                          maxLength={14}
                         />
                       </div>
                     </FieldGroup>
@@ -1019,88 +1098,23 @@ export function AgentSiteDashboard() {
             )}
 
           </div>
+        </div>
 
-          {/* Right: Publish panel */}
-          <div className="space-y-4">
-            {/* Status card */}
-            <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  {t("agentSiteDashboard.publishTargets")}
-                </span>
-                <Badge variant={query.data?.isPersisted ? "default" : "secondary"} className="text-[10px]">
-                  {query.data?.isPersisted ? t("agentSiteDashboard.liveProfile") : t("agentSiteDashboard.draftProfile")}
-                </Badge>
-              </div>
-
-              <CompletenessBar form={form} profile={profile} />
-
-              <div className="space-y-2">
-                <div className="rounded-lg bg-muted/50 px-3.5 py-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                    {t("agentSiteDashboard.publicRoute")}
-                  </div>
-                  <div className="mt-1 truncate font-mono text-xs font-medium">
-                    {query.data?.publicUrl ?? `/agents/${form.slug}`}
-                  </div>
-                </div>
-                <div className="rounded-lg bg-muted/50 px-3.5 py-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                    {t("agentSiteDashboard.homeValueRoute")}
-                  </div>
-                  <div className="mt-1 truncate font-mono text-xs font-medium">
-                    {query.data?.homeValueUrl ?? `/agents/${form.slug}/home-value`}
-                  </div>
-                </div>
-              </div>
+        {/* Right: Live template preview */}
+        <div className="hidden lg:flex flex-1 flex-col overflow-hidden bg-muted/30">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-card/50">
+            <div className="flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-semibold text-muted-foreground">实时预览</span>
+              <Badge variant="secondary" className="text-[10px]">{form.templateId || "classic"}</Badge>
             </div>
-
-            {/* Recent leads */}
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <div className="border-b border-border px-5 py-3.5">
-                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  {t("agentSiteDashboard.recentCapturedLeads")}
-                </span>
-              </div>
-              <div className="divide-y divide-border">
-                {query.isLoading ? (
-                  [1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center gap-3 px-5 py-3.5">
-                      <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-3 w-24 animate-pulse rounded bg-muted" />
-                        <div className="h-2.5 w-36 animate-pulse rounded bg-muted" />
-                      </div>
-                    </div>
-                  ))
-                ) : query.data?.recentLeads.length ? (
-                  query.data.recentLeads.slice(0, 5).map((lead) => (
-                    <div className="flex items-center justify-between gap-3 px-5 py-3.5" key={lead.id}>
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                          {(lead.name || "?")[0]?.toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium">
-                            {lead.name || t("agentSiteDashboard.anonymousLead")}
-                          </div>
-                          <div className="truncate text-xs text-muted-foreground">
-                            {lead.email || lead.phone || t("agentSiteDashboard.noDirectContact")}
-                          </div>
-                        </div>
-                      </div>
-                      <Badge className="shrink-0 text-[10px]" variant="secondary">
-                        {lead.source}
-                      </Badge>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center gap-2 px-5 py-8 text-center">
-                    <Users className="h-6 w-6 text-muted-foreground/40" />
-                    <p className="text-xs text-muted-foreground">{t("agentSiteDashboard.noLeadsYet")}</p>
-                  </div>
-                )}
-              </div>
+            <Badge variant={query.data?.isPersisted ? "default" : "secondary"} className="text-[10px]">
+              {query.data?.isPersisted ? t("agentSiteDashboard.liveProfile") : t("agentSiteDashboard.draftProfile")}
+            </Badge>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <div className="origin-top-left" style={{ transform: "scale(0.55)", width: "181.8%", transformOrigin: "top left" }}>
+              <TemplateRenderer profile={previewProfile} preview />
             </div>
           </div>
         </div>
