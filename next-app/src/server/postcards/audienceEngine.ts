@@ -60,14 +60,13 @@ async function queryLdsByZipcode(params: {
   // Query per zipcode (LDS may not support multi-zip in one call)
   for (const zip of params.zipCodes) {
     try {
-      const url = new URL("/api/v1/properties", LDS_URL);
-      url.searchParams.set("search", zip);
+      const url = new URL("/api/v1/listings/search", LDS_URL);
+      url.searchParams.set("postalCode", zip);
       if (params.status) url.searchParams.set("status", params.status);
       if (params.propertyTypes?.length) url.searchParams.set("propertyType", params.propertyTypes[0]);
       if (params.minPrice) url.searchParams.set("minPrice", params.minPrice.toString());
       if (params.maxPrice) url.searchParams.set("maxPrice", params.maxPrice.toString());
       url.searchParams.set("limit", (params.limit ?? 200).toString());
-      url.searchParams.set("offset", "0");
 
       const res = await fetch(url.toString(), {
         headers: {
@@ -78,7 +77,8 @@ async function queryLdsByZipcode(params: {
       });
 
       if (res.ok) {
-        const data = (await res.json()) as LdsPropertyForAudience[];
+        const json = (await res.json()) as { items?: LdsPropertyForAudience[] };
+        const data = json?.items ?? (Array.isArray(json) ? json : []);
         // Filter to exact zipcode match
         const filtered = (data ?? []).filter(
           (p) => p.postalCode?.startsWith(zip)
