@@ -11,11 +11,13 @@ import {
   Globe2,
   GraduationCap,
   Home,
+  Info,
   Loader2,
   Mail,
   MapPin,
   Phone,
   Share2,
+  ShieldCheck,
   Sparkles,
   TrendingUp,
 } from "lucide-react";
@@ -37,6 +39,8 @@ type ValuationResponse = {
   valuationRunId: number;
   result: ValuationResult;
   summary: string;
+  dataConfidence?: "high" | "medium" | "low";
+  dataSource?: string;
 };
 
 function formatMoney(value: number) {
@@ -45,6 +49,57 @@ function formatMoney(value: number) {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+const confidenceConfig = {
+  high: {
+    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    dotColor: "bg-emerald-500",
+    icon: ShieldCheck,
+    labelEn: "High Confidence",
+    labelZh: "高可信度",
+  },
+  medium: {
+    color: "bg-amber-100 text-amber-700 border-amber-200",
+    dotColor: "bg-amber-500",
+    icon: Info,
+    labelEn: "Moderate Confidence",
+    labelZh: "中等可信度",
+  },
+  low: {
+    color: "bg-orange-100 text-orange-700 border-orange-200",
+    dotColor: "bg-orange-500",
+    icon: Info,
+    labelEn: "Preliminary Estimate",
+    labelZh: "初步估算",
+  },
+} as const;
+
+function ConfidenceBadge({
+  level,
+  source,
+  locale,
+}: {
+  level: "high" | "medium" | "low";
+  source?: string;
+  locale: Locale;
+}) {
+  const cfg = confidenceConfig[level];
+  const Icon = cfg.icon;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${cfg.color}`}
+      >
+        <span className={`inline-block h-1.5 w-1.5 rounded-full ${cfg.dotColor}`} />
+        <Icon className="h-3 w-3" />
+        {locale === "zh" ? cfg.labelZh : cfg.labelEn}
+      </span>
+      {source && (
+        <span className="text-xs text-slate-400">{source}</span>
+      )}
+    </div>
+  );
 }
 
 export function PublicHomeValuePage({ slug, linkToken }: { slug: string; linkToken?: string }) {
@@ -280,7 +335,7 @@ export function PublicHomeValuePage({ slug, linkToken }: { slug: string; linkTok
                 <div className="mt-5 space-y-4">
                   <AddressAutocomplete
                     inputClassName="h-12 border-white/10 bg-white/10 text-white placeholder:text-white/35"
-                    placeholder={c.inputPlaceholder}
+                    placeholder={locale === "zh" ? "输入地址或 MLS 编号" : "Enter address or MLS ID"}
                     value={address}
                     onChange={setAddress}
                     onSelect={(standardized) => {
@@ -323,6 +378,13 @@ export function PublicHomeValuePage({ slug, linkToken }: { slug: string; linkTok
                   <Home className="h-4 w-4 text-teal-600" />
                   {c.sections.estimatedRange}
                 </div>
+                {valuation.dataConfidence && (
+                  <ConfidenceBadge
+                    level={valuation.dataConfidence}
+                    source={valuation.dataSource}
+                    locale={locale}
+                  />
+                )}
                 <div className="space-y-2">
                   <div className="text-4xl font-semibold blur-[10px]">
                     {formatMoney(valuation.result.estimatedValueLow)} -{" "}
@@ -414,7 +476,17 @@ export function PublicHomeValuePage({ slug, linkToken }: { slug: string; linkTok
         {stage === "report" && valuation?.result ? (
           <div className="space-y-8">
             <div className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
-              <Card className="border-none bg-white shadow-sm">
+              <Card className="border-none bg-white shadow-sm overflow-hidden">
+                {valuation.result.subjectImageUrl ? (
+                  <div className="relative h-48 w-full">
+                    <img
+                      alt={address}
+                      className="h-full w-full object-cover"
+                      src={valuation.result.subjectImageUrl}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent" />
+                  </div>
+                ) : null}
                 <CardContent className="space-y-6 p-8">
                   <div>
                     <div className="text-xs uppercase tracking-[0.32em] text-slate-500">
@@ -423,6 +495,15 @@ export function PublicHomeValuePage({ slug, linkToken }: { slug: string; linkTok
                     <h2 className="mt-2 text-4xl font-semibold tracking-tight">
                       {formatMoney(valuation.result.estimatedValue)}
                     </h2>
+                    {valuation.dataConfidence && (
+                      <div className="mt-2">
+                        <ConfidenceBadge
+                          level={valuation.dataConfidence}
+                          source={valuation.dataSource}
+                          locale={locale}
+                        />
+                      </div>
+                    )}
                     <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-500">
                       {valuation.summary}
                     </p>
@@ -524,24 +605,36 @@ export function PublicHomeValuePage({ slug, linkToken }: { slug: string; linkTok
                   <div className="space-y-4">
                     {valuation.result.comparableSales.map((comp: ValuationResult["comparableSales"][number]) => (
                       <div
-                        className="grid gap-3 rounded-[24px] bg-slate-50 p-5 md:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr]"
+                        className="flex gap-4 rounded-[24px] bg-slate-50 p-4"
                         key={`${comp.address}-${comp.date}`}
                       >
-                        <div>
-                          <div className="font-semibold">{comp.address}</div>
-                          <div className="mt-1 text-sm text-slate-500">{comp.date}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{c.sections.price}</div>
-                          <div className="mt-2 font-medium">{formatMoney(comp.price)}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Layout</div>
-                          <div className="mt-2 font-medium">{comp.beds} / {comp.baths}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Sqft</div>
-                          <div className="mt-2 font-medium">{comp.sqft.toLocaleString()}</div>
+                        {comp.imageUrl ? (
+                          <div className="hidden h-20 w-28 flex-shrink-0 overflow-hidden rounded-xl sm:block">
+                            <img
+                              alt={comp.address}
+                              className="h-full w-full object-cover"
+                              src={comp.imageUrl}
+                              loading="lazy"
+                            />
+                          </div>
+                        ) : null}
+                        <div className={`grid flex-1 gap-3 ${comp.imageUrl ? "md:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr]" : "md:grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr]"}`}>
+                          <div>
+                            <div className="font-semibold">{comp.address}</div>
+                            <div className="mt-1 text-sm text-slate-500">{comp.date}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{c.sections.price}</div>
+                            <div className="mt-2 font-medium">{formatMoney(comp.price)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Layout</div>
+                            <div className="mt-2 font-medium">{comp.beds} / {comp.baths}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Sqft</div>
+                            <div className="mt-2 font-medium">{comp.sqft.toLocaleString()}</div>
+                          </div>
                         </div>
                       </div>
                     ))}

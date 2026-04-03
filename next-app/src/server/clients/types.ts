@@ -231,6 +231,13 @@ export interface AddressLookupInput {
   postalCode?: string;
 }
 
+export interface ProximitySearchInput {
+  latitude: number;
+  longitude: number;
+  radiusKm?: number;
+  limit?: number;
+}
+
 export interface VectorSearchParams {
   embedding: number[];
   topK?: number;
