@@ -63,7 +63,10 @@ describe("generateHomeValueEstimate", () => {
     });
 
     expect(resolveByAddress).toHaveBeenCalledWith({
-      address: "8 Harbor Ridge, Irvine, CA",
+      address: "8 Harbor Ridge",
+      city: "Irvine",
+      stateOrProvince: "CA",
+      postalCode: undefined,
     });
     expect(estimate.provider).toBe("bbo-listing+heuristic");
     expect(estimate.result.estimatedValue).toBe(2150000);

@@ -313,6 +313,39 @@ export default function ListingShare({ token }: ListingShareProps) {
     });
   };
 
+  /* ── Hooks (must be before any early returns) ─────────── */
+  const [lightboxImages, setLightboxImages] = useState<string[] | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const mlsListingMap = useMemo(() => {
+    const map = new Map<string, MlsListing>();
+    if (data) {
+      for (const l of data.listings) map.set(l.listingKey, l);
+    }
+    return map;
+  }, [data]);
+
+  const priceRange = useMemo(() => {
+    const nums = displayListings
+      .map((l) => {
+        const n = Number(l.price.replace(/[^0-9.]/g, ""));
+        return Number.isFinite(n) && n > 0 ? n : null;
+      })
+      .filter((n): n is number => n !== null);
+    if (nums.length === 0) return null;
+    const min = Math.min(...nums);
+    const max = Math.max(...nums);
+    const fmt = (v: number) =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }).format(v);
+    return min === max ? fmt(min) : `${fmt(min)} - ${fmt(max)}`;
+  }, [displayListings]);
+
+  /* ── Early returns ──────────────────────────────────── */
+
   if (isLoading) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-[#101412] px-6 text-stone-100">
@@ -402,43 +435,11 @@ export default function ListingShare({ token }: ListingShareProps) {
     );
   }
 
-  /* ── Lightbox state ─────────────────────────────────── */
-  const [lightboxImages, setLightboxImages] = useState<string[] | null>(null);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-
-  /* ── Derived data for the new layout ─────────────────── */
-  const mlsListingMap = useMemo(() => {
-    const map = new Map<string, MlsListing>();
-    if (data) {
-      for (const l of data.listings) map.set(l.listingKey, l);
-    }
-    return map;
-  }, [data]);
-
   const heroListing = displayListings[0] ?? null;
   const heroImages = heroListing
     ? getStringArray(mlsListingMap.get(heroListing.id)?.images)
     : [];
   const heroImage = heroImages[0] ?? heroListing?.image ?? null;
-
-  const priceRange = useMemo(() => {
-    const nums = displayListings
-      .map((l) => {
-        const n = Number(l.price.replace(/[^0-9.]/g, ""));
-        return Number.isFinite(n) && n > 0 ? n : null;
-      })
-      .filter((n): n is number => n !== null);
-    if (nums.length === 0) return null;
-    const min = Math.min(...nums);
-    const max = Math.max(...nums);
-    const fmt = (v: number) =>
-      new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0,
-      }).format(v);
-    return min === max ? fmt(min) : `${fmt(min)} - ${fmt(max)}`;
-  }, [displayListings]);
 
   return (
     <div className="min-h-[100dvh] bg-[#0a0f0d] text-stone-100">
