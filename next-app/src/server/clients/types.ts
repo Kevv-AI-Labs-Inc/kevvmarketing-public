@@ -40,6 +40,10 @@ export interface ListingData {
   originalListPrice?: string;
   closePrice?: string;
   closeDate?: string;
+  thumbnailUrl?: string | null;
+  modificationTimestamp?: string | null;
+  countyOrParish?: string | null;
+  lotSizeArea?: number | null;
 }
 
 // ─── Listing Lookup Responses ──────────────────────────────────
@@ -48,9 +52,14 @@ export interface ListingResponse {
   data: ListingData;
   source: "MLSGrid" | "manual";
   fallbackUsed: boolean;
-  freshness: string;
+  freshness?: string | null;
   media: MediaItem[];
   imageUrls: string[];
+  lookup?: {
+    input: string;
+    matchedBy: string;
+  };
+  thumbnailUrl?: string | null;
 }
 
 export interface ListingSearchResponse {
@@ -61,6 +70,7 @@ export interface ListingSearchResponse {
     perPage: number;
     totalPages: number;
   };
+  nextCursor?: string | null;
 }
 
 /**
@@ -220,8 +230,11 @@ export interface SearchFilters {
   propertyType?: string;
   minBedrooms?: number;
   maxBedrooms?: number;
+  minBathrooms?: number;
   page?: number;
   perPage?: number;
+  limit?: number;
+  cursor?: string;
 }
 
 export interface AddressLookupInput {

@@ -12,6 +12,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc";
 import { ENV } from "../_core/env";
+import { getListing, getListingsBatch, searchListings } from "../clients/listingDataClient";
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ export interface LdsProperty {
   bathroomsFull?: number | null;
   bathroomsHalf?: number | null;
   bathroomsTotalInteger?: number | null;
-  livingArea?: number | null;
+  livingArea?: string | number | null;
   standardStatus?: string | null;
   propertyType?: string | null;
   media?: Array<{ url?: string; mediaURL?: string; id?: number | string; order?: number; type?: string }> | null;
@@ -51,69 +52,71 @@ export interface LdsProperty {
   [key: string]: unknown; // allow extra fields from upstream API
 }
 
-const LDS_URL = ENV.listingDataServiceUrl.replace(/\/+$/, "");
-const LDS_KEY = ENV.listingDataServiceApiKey;
-
 function ldsConfigured(): boolean {
-  return LDS_URL.length > 0;
+  return ENV.listingDataServiceUrl.trim().length > 0;
 }
 
-async function ldsGet<T = unknown>(
-  path: string,
-  params?: Record<string, string | undefined>
-): Promise<T | null> {
-  if (!ldsConfigured()) return null;
-  const url = new URL(path, LDS_URL);
-  if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined && v !== "") url.searchParams.set(k, v);
-    }
-  }
-  try {
-    const res = await fetch(url.toString(), {
-      headers: {
-        ...(LDS_KEY ? { "x-api-key": LDS_KEY } : {}),
-        Accept: "application/json",
-      },
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!res.ok) {
-      console.error(`[MLS] LDS ${path} responded ${res.status}`);
-      return null;
-    }
-    return (await res.json()) as T;
-  } catch (err) {
-    console.error(`[MLS] LDS fetch failed for ${path}:`, err);
-    return null;
-  }
-}
-
-async function ldsPost<T = unknown>(
-  path: string,
-  body?: Record<string, unknown>
-): Promise<T | null> {
-  if (!ldsConfigured()) return null;
-  const url = new URL(path, LDS_URL);
-  try {
-    const res = await fetch(url.toString(), {
-      method: "POST",
-      headers: {
-        ...(LDS_KEY ? { "x-api-key": LDS_KEY } : {}),
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!res.ok) {
-      console.error(`[MLS] LDS POST ${path} responded ${res.status}`);
-      return null;
-    }
-    return (await res.json()) as T;
-  } catch (err) {
-    console.error(`[MLS] LDS POST failed for ${path}:`, err);
-    return null;
-  }
+function toLdsProperty(input: Record<string, unknown>): LdsProperty {
+  return {
+    ...input,
+    id:
+      typeof input.id === "number" || typeof input.id === "string"
+        ? input.id
+        : null,
+    listingKey:
+      typeof input.listingKey === "string" ? input.listingKey : null,
+    listingId:
+      typeof input.listingId === "string" ? input.listingId : null,
+    unparsedAddress:
+      typeof input.unparsedAddress === "string" ? input.unparsedAddress : null,
+    city: typeof input.city === "string" ? input.city : null,
+    stateOrProvince:
+      typeof input.stateOrProvince === "string" ? input.stateOrProvince : null,
+    postalCode:
+      typeof input.postalCode === "string" ? input.postalCode : null,
+    latitude:
+      typeof input.latitude === "string" || typeof input.latitude === "number"
+        ? input.latitude
+        : null,
+    longitude:
+      typeof input.longitude === "string" || typeof input.longitude === "number"
+        ? input.longitude
+        : null,
+    listPrice:
+      typeof input.listPrice === "string" ? input.listPrice : null,
+    bedroomsTotal:
+      typeof input.bedroomsTotal === "number" ? input.bedroomsTotal : null,
+    bathroomsTotalInteger:
+      typeof input.bathroomsTotalInteger === "number"
+        ? input.bathroomsTotalInteger
+        : null,
+    livingArea:
+      typeof input.livingArea === "string" || typeof input.livingArea === "number"
+        ? input.livingArea
+        : null,
+    propertyType:
+      typeof input.propertyType === "string" ? input.propertyType : null,
+    standardStatus:
+      typeof input.standardStatus === "string" ? input.standardStatus : null,
+    publicRemarks:
+      typeof input.publicRemarks === "string" ? input.publicRemarks : null,
+    thumbnailUrl:
+      typeof input.thumbnailUrl === "string" ? input.thumbnailUrl : null,
+    daysOnMarket:
+      typeof input.daysOnMarket === "number" ? input.daysOnMarket : null,
+    mlsStatus:
+      typeof input.mlsStatus === "string" ? input.mlsStatus : null,
+    modificationTimestamp:
+      typeof input.modificationTimestamp === "string"
+        ? input.modificationTimestamp
+        : null,
+    countyOrParish:
+      typeof input.countyOrParish === "string" ? input.countyOrParish : null,
+    lotSizeArea:
+      typeof input.lotSizeArea === "number" ? input.lotSizeArea : null,
+    yearBuilt:
+      typeof input.yearBuilt === "number" ? input.yearBuilt : null,
+  };
 }
 
 // ─── Router ─────────────────────────────────────────────────
@@ -137,21 +140,24 @@ export const mlsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      // BBO endpoint is /api/v1/listings/search with param `q` (not `search`)
-      // and returns { items: [...], nextCursor } (not a plain array)
-      const data = await ldsGet<{ items: LdsProperty[]; nextCursor?: string | null }>(
-        "/api/v1/listings/search",
-        {
-          q: input.search,
+      if (!ldsConfigured()) return [] as LdsProperty[];
+      try {
+        const data = await searchListings({
+          search: input.search,
           city: input.city,
-          minPrice: input.minPrice?.toString(),
-          maxPrice: input.maxPrice?.toString(),
+          minPrice: input.minPrice,
+          maxPrice: input.maxPrice,
           propertyType: input.propertyType,
           status: input.status,
-          limit: input.limit.toString(),
-        },
-      );
-      return (data?.items ?? []) as LdsProperty[];
+          perPage: input.limit,
+        });
+        return data.data.map((item) =>
+          toLdsProperty(item as unknown as Record<string, unknown>),
+        );
+      } catch (error) {
+        console.error("[MLS] getProperties failed:", error);
+        return [] as LdsProperty[];
+      }
     }),
 
   /**
@@ -162,10 +168,19 @@ export const mlsRouter = router({
     .input(z.object({ listingKey: z.string() }))
     .query(async ({ input }) => {
       if (!input.listingKey) return null;
-      const data = await ldsGet<LdsProperty>(
-        `/api/v1/listings/by-key/${encodeURIComponent(input.listingKey)}`
-      );
-      return data ?? null;
+      if (!ldsConfigured()) return null;
+      try {
+        const data = await getListing(input.listingKey);
+        return toLdsProperty({
+          ...data.data,
+          media: data.media,
+          imageUrls: data.imageUrls,
+          thumbnailUrl: data.thumbnailUrl ?? data.imageUrls[0] ?? null,
+        });
+      } catch (error) {
+        console.error("[MLS] getPropertyById failed:", error);
+        return null;
+      }
     }),
 
   /**
@@ -176,10 +191,23 @@ export const mlsRouter = router({
     .input(z.object({ listingKeys: z.array(z.string()) }))
     .query(async ({ input }) => {
       if (input.listingKeys.length === 0) return [];
-      const data = await ldsPost<{ items: LdsProperty[] }>("/api/v1/listings/batch", {
-        listingKeys: input.listingKeys,
-      });
-      return (data?.items ?? []) as LdsProperty[];
+      if (!ldsConfigured()) return [] as LdsProperty[];
+      try {
+        const data = await getListingsBatch(input.listingKeys);
+        return input.listingKeys
+          .map((listingKey) => {
+            const item = data.get(listingKey);
+            if (!item?.data) return null;
+            return toLdsProperty({
+              ...item.data,
+              thumbnailUrl: item.thumbnailUrl ?? item.imageUrls?.[0] ?? null,
+            });
+          })
+          .filter((item): item is LdsProperty => item !== null);
+      } catch (error) {
+        console.error("[MLS] getPropertiesByKeys failed:", error);
+        return [] as LdsProperty[];
+      }
     }),
 
 });

@@ -5,14 +5,15 @@
  * Phase 2 (future): Integrate PropertyRadar, ATTOM, or other data providers.
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb, type Db } from "@/lib/db";
 import {
   contacts,
   postcardAddressValidations,
   postcardAudienceLists,
 } from "@/lib/db/schema";
-import { ENV } from "@/server/_core/env";
+import type { ListingData } from "@/server/clients/types";
+import { searchListings } from "@/server/clients/listingDataClient";
 import { verifyAddress } from "@/server/postcards/provider";
 
 // ─── Types ────────────────────────────────────────────────
@@ -28,22 +29,9 @@ export type AudienceScanInput = {
   dateRange?: { from?: string; to?: string };
 };
 
-type LdsPropertyForAudience = {
-  listingKey?: string | null;
-  unparsedAddress?: string | null;
-  city?: string | null;
-  stateOrProvince?: string | null;
-  postalCode?: string | null;
-  listPrice?: string | null;
-  propertyType?: string | null;
-  standardStatus?: string | null;
-  [key: string]: unknown;
-};
+type LdsPropertyForAudience = Partial<ListingData>;
 
 // ─── LDS Query ────────────────────────────────────────────
-
-const LDS_URL = ENV.listingDataServiceUrl.replace(/\/+$/, "");
-const LDS_KEY = ENV.listingDataServiceApiKey;
 
 async function queryLdsByZipcode(params: {
   zipCodes: string[];
@@ -53,38 +41,23 @@ async function queryLdsByZipcode(params: {
   maxPrice?: number;
   limit?: number;
 }): Promise<LdsPropertyForAudience[]> {
-  if (!LDS_URL) return [];
-
   const allResults: LdsPropertyForAudience[] = [];
 
-  // Query per zipcode (LDS may not support multi-zip in one call)
   for (const zip of params.zipCodes) {
     try {
-      const url = new URL("/api/v1/listings/search", LDS_URL);
-      url.searchParams.set("postalCode", zip);
-      if (params.status) url.searchParams.set("status", params.status);
-      if (params.propertyTypes?.length) url.searchParams.set("propertyType", params.propertyTypes[0]);
-      if (params.minPrice) url.searchParams.set("minPrice", params.minPrice.toString());
-      if (params.maxPrice) url.searchParams.set("maxPrice", params.maxPrice.toString());
-      url.searchParams.set("limit", (params.limit ?? 200).toString());
-
-      const res = await fetch(url.toString(), {
-        headers: {
-          ...(LDS_KEY ? { "x-api-key": LDS_KEY } : {}),
-          Accept: "application/json",
-        },
-        signal: AbortSignal.timeout(15_000),
+      const response = await searchListings({
+        postalCode: zip,
+        status: params.status,
+        propertyType: params.propertyTypes?.[0],
+        minPrice: params.minPrice,
+        maxPrice: params.maxPrice,
+        limit: params.limit ?? 200,
       });
 
-      if (res.ok) {
-        const json = (await res.json()) as { items?: LdsPropertyForAudience[] };
-        const data = json?.items ?? (Array.isArray(json) ? json : []);
-        // Filter to exact zipcode match
-        const filtered = (data ?? []).filter(
-          (p) => p.postalCode?.startsWith(zip)
-        );
-        allResults.push(...filtered);
-      }
+      const filtered = (response.data ?? []).filter((property) =>
+        property.postalCode?.startsWith(zip),
+      );
+      allResults.push(...filtered);
     } catch (err) {
       console.error(`[AudienceEngine] Failed to query LDS for zip ${zip}:`, err);
     }
