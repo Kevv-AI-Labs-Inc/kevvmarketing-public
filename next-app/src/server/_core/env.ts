@@ -74,6 +74,9 @@ export const ENV = {
   jimengVideoModel: process.env.JIMENG_VIDEO_MODEL ?? "jimeng-3.0",
   jimengVideoApiPath: process.env.JIMENG_VIDEO_API_PATH ?? "/v1/videos",
 
+  // RentCast — property valuation + comparable sales data
+  rentcastApiKey: process.env.RENTCAST_API_KEY ?? "",
+
   // Tavily Search — AI-optimized web search for CMA market intelligence
   tavilyApiKey: process.env.TAVILY_API_KEY ?? "",
   searchProvider: (process.env.SEARCH_PROVIDER ?? "tavily") as

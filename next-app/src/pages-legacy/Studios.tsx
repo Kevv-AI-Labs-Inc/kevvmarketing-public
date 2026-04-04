@@ -176,15 +176,22 @@ export default function Studios() {
   const [downloadUrl, setDownloadUrl] = useState("");
   const [downloadFileName, setDownloadFileName] = useState("");
   const [pollingJobId, setPollingJobId] = useState("");
+  const trimmedSearch = search.trim();
+  const shouldSearchListings = trimmedSearch.length >= 2;
 
   // ─── Queries ───────────────────────────────────────
   const providerStatusQuery = trpc.studio.providerStatus.useQuery();
-  const listingsQuery = trpc.mls.getProperties.useQuery({
-    search: search || undefined,
-    status: "Active",
-    limit: 24,
-    offset: 0,
-  });
+  const listingsQuery = trpc.mls.getProperties.useQuery(
+    {
+      search: trimmedSearch || undefined,
+      status: "Active",
+      limit: 24,
+      offset: 0,
+    },
+    {
+      enabled: shouldSearchListings,
+    },
+  );
   const listingDetailQuery = trpc.mls.getPropertyById.useQuery(
     { listingKey: selectedListingKey },
     { enabled: Boolean(selectedListingKey) }
@@ -244,13 +251,6 @@ export default function Studios() {
       return [...mls, ...uploaded];
     });
   }, [mlsImageUrls]);
-
-  // ─── Auto-select first listing ─────────────────────
-  useEffect(() => {
-    if (!selectedListingKey && listingResults.length > 0) {
-      setSelectedListingKey(listingResults[0].listingKey);
-    }
-  }, [listingResults, selectedListingKey]);
 
   // ─── Poll job completion ───────────────────────────
   useEffect(() => {
@@ -523,7 +523,11 @@ export default function Studios() {
             <CardContent>
               <ScrollArea className="h-[480px] pr-3">
                 <div className="space-y-1.5">
-                  {listingsQuery.isLoading ? (
+                  {!shouldSearchListings ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      {t("studios.startSearch")}
+                    </p>
+                  ) : listingsQuery.isLoading ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {t("studios.loadingListings")}

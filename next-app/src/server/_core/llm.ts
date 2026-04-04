@@ -307,7 +307,15 @@ async function invokeOpenAI(params: InvokeParams): Promise<InvokeResult> {
   );
   if (normalizedToolChoice) payload.tool_choice = normalizedToolChoice;
 
-  payload.max_tokens = 16384;
+  const resolvedMaxCompletionTokens =
+    params.maxTokens ?? params.max_tokens ?? 16384;
+  if (
+    typeof resolvedMaxCompletionTokens === "number" &&
+    Number.isFinite(resolvedMaxCompletionTokens) &&
+    resolvedMaxCompletionTokens > 0
+  ) {
+    payload.max_completion_tokens = Math.floor(resolvedMaxCompletionTokens);
+  }
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat: params.responseFormat,

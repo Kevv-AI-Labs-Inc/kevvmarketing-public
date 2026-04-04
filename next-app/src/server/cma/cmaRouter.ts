@@ -2,11 +2,12 @@
  * CMA Router — tRPC endpoints for Next-Gen Comparative Market Analysis.
  *
  * Endpoints:
- *   cma.generate     — Run the 5-stage CMA pipeline (BBO + Tavily + Vision → report)
- *   cma.uploadPhoto  — Upload interior photos to R2 for Vision analysis
- *   cma.list         — List saved CMA reports for the authenticated agent
- *   cma.get          — Get a CMA report by ID
- *   cma.delete       — Delete a CMA report
+ *   cma.generate        — Run the 5-stage CMA pipeline (BBO + RentCast + Tavily + Vision → report)
+ *   cma.lookupProperty  — Auto-fill property details from RentCast by address
+ *   cma.uploadPhoto     — Upload interior photos to R2 for Vision analysis
+ *   cma.list            — List saved CMA reports for the authenticated agent
+ *   cma.get             — Get a CMA report by ID
+ *   cma.delete          — Delete a CMA report
  */
 
 import { z } from "zod";
@@ -17,6 +18,10 @@ import { cmaReports } from "../../drizzle/schema";
 import { runCMAPipeline } from "./cmaAnalyzer";
 import type { CMAReportResult } from "./cmaAnalyzer";
 import { storagePut } from "../storage";
+import {
+  isRentCastConfigured,
+  getPropertyDetails,
+} from "../clients/rentCastClient";
 
 // ─── Input Schemas ─────────────────────────────────────────────
 
@@ -33,7 +38,6 @@ const manualInputSchema = z.object({
   city: z.string(),
   state: z.string(),
   zipCode: z.string(),
-  price: z.string().optional(),
   beds: z.number().optional(),
   baths: z.number().optional(),
   sqft: z.number().optional(),
@@ -52,6 +56,7 @@ const generateInput = z.object({
   compLimit: z.number().min(3).max(15).default(8),
   enableWebSearch: z.boolean().default(true),
   enablePhotoAnalysis: z.boolean().default(true),
+  enableRentCast: z.boolean().default(true),
   locale: z.enum(["en", "zh"]).default("en"),
   // Agent branding
   branding: brandingSchema,
@@ -63,9 +68,10 @@ export const cmaRouter = router({
   /**
    * Generate a comprehensive CMA report using the 5-stage pipeline.
    *
-   * Stage 1: Subject Resolution (BBO)
+   * Stage 1: Subject Resolution (BBO + RentCast auto-fill)
    * Stage 2a: Photo Analysis (Azure GPT Vision)
    * Stage 2b: Vector Comp Match (BBO)
+   * Stage 2c: RentCast AVM + Comps
    * Stage 3: Tavily Web Search
    * Stage 4: Neighborhood Context (BBO)
    * Stage 5: LLM Synthesis
@@ -88,6 +94,7 @@ export const cmaRouter = router({
         compLimit: input.compLimit,
         enableWebSearch: input.enableWebSearch,
         enablePhotoAnalysis: input.enablePhotoAnalysis,
+        enableRentCast: input.enableRentCast,
         locale: input.locale,
         branding: input.branding,
       });
@@ -129,6 +136,50 @@ export const cmaRouter = router({
       }
 
       return { report: null, result };
+    }),
+
+  /**
+   * Look up property details from RentCast by address.
+   * Used for auto-filling subject property info when doing manual input.
+   * Returns null if RentCast is not configured or property not found.
+   */
+  lookupProperty: protectedProcedure
+    .input(
+      z.object({
+        address: z.string(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        zipCode: z.string().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      if (!isRentCastConfigured()) return null;
+
+      const fullAddress = [
+        input.address,
+        input.city,
+        input.state && input.zipCode
+          ? `${input.state} ${input.zipCode}`
+          : input.state || input.zipCode,
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      try {
+        const prop = await getPropertyDetails(fullAddress);
+        if (!prop) return null;
+        return {
+          beds: prop.bedrooms ?? null,
+          baths: prop.bathrooms ?? null,
+          sqft: prop.squareFootage ?? null,
+          yearBuilt: prop.yearBuilt ?? null,
+          propertyType: prop.propertyType ?? null,
+          lastSalePrice: prop.lastSalePrice ?? null,
+          lastSaleDate: prop.lastSaleDate ?? null,
+        };
+      } catch {
+        return null;
+      }
     }),
 
   /**

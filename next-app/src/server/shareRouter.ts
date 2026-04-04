@@ -47,6 +47,7 @@ type ListingPreview = {
   livingArea: string | null;
   publicRemarks: string | null;
   standardStatus: string | null;
+  thumbnailUrl?: string | null;
 };
 
 type TourConfig = {
@@ -1070,6 +1071,7 @@ async function getListingsByKeys(
         livingArea: d.livingArea ?? null,
         publicRemarks: d.publicRemarks ?? null,
         standardStatus: d.standardStatus ?? null,
+        thumbnailUrl: response.thumbnailUrl ?? response.imageUrls?.[0] ?? null,
       });
     }
   }
@@ -1090,10 +1092,23 @@ async function getListingMediaMap(_db: Database, listingKeys: string[]) {
     listingKeys.map(async (key) => {
       try {
         const response = await getListingMedia(key);
-        const urls = response.data
-          ?.map((item: { mediaURL?: string }) => item.mediaURL)
-          .filter((url: unknown): url is string => typeof url === "string" && url.length > 0)
-          ?? [];
+        const mediaUrls =
+          response.data
+            ?.map((item: { mediaURL?: string; url?: string }) => item.mediaURL ?? item.url)
+            .filter((url: unknown): url is string => typeof url === "string" && url.length > 0) ??
+          [];
+        const imageUrls = Array.isArray(response.imageUrls)
+          ? response.imageUrls.filter(
+              (url): url is string => typeof url === "string" && url.length > 0
+            )
+          : [];
+        const urls = Array.from(
+          new Set([
+            ...mediaUrls,
+            ...imageUrls,
+            ...(response.thumbnailUrl ? [response.thumbnailUrl] : []),
+          ]),
+        );
         if (urls.length > 0) byKey.set(key, urls);
       } catch {
         // Media not available for this listing
@@ -2356,7 +2371,9 @@ export const shareRouter = router({
 
       const enrichedListings = listings.map((listing) => ({
         ...listing,
-        images: mediaMap.get(listing.listingKey) ?? [],
+        images:
+          mediaMap.get(listing.listingKey) ??
+          (listing.thumbnailUrl ? [listing.thumbnailUrl] : []),
       }));
 
       const agentBranding = asRecord(session.agentBranding) ?? {};

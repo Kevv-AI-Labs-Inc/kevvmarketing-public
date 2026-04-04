@@ -154,6 +154,7 @@ function ListingSearchCard({
   selectedListings,
   selectedKeySet,
   searchResults,
+  searchReady,
   searchLoading,
   selectedLoading,
   t,
@@ -167,6 +168,7 @@ function ListingSearchCard({
   selectedListings: MlsListing[];
   selectedKeySet: Set<string>;
   searchResults: MlsListing[];
+  searchReady: boolean;
   searchLoading: boolean;
   selectedLoading: boolean;
   t: (...args: any[]) => string;
@@ -287,6 +289,10 @@ function ListingSearchCard({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {t("magicShare.loadingSearch")}
                 </div>
+              ) : !searchReady ? (
+                <p className="text-sm text-muted-foreground">
+                  {t("magicShare.startSearch")}
+                </p>
               ) : searchResults.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {t("magicShare.noResults")}
@@ -451,6 +457,8 @@ export default function MagicShareStudio() {
   const [agentWechatId, setAgentWechatId] = useState("");
   const [agentAvatarUrl, setAgentAvatarUrl] = useState("");
   const [agentCompany, setAgentCompany] = useState("");
+  const trimmedSearch = search.trim();
+  const shouldSearchListings = trimmedSearch.length >= 2;
 
   useEffect(() => {
     const p = profileQuery.data?.profile;
@@ -468,12 +476,17 @@ export default function MagicShareStudio() {
   }, [profileQuery.data, user]);
 
   // ─── Queries ───────────────────────────────────────
-  const searchQuery = trpc.mls.getProperties.useQuery({
-    search: search || undefined,
-    limit: 20,
-    offset: 0,
-    status: "Active",
-  });
+  const searchQuery = trpc.mls.getProperties.useQuery(
+    {
+      search: trimmedSearch || undefined,
+      limit: 20,
+      offset: 0,
+      status: "Active",
+    },
+    {
+      enabled: shouldSearchListings,
+    },
+  );
 
   const selectedQuery = trpc.mls.getPropertiesByKeys.useQuery(
     { listingKeys: selectedKeys },
@@ -770,6 +783,7 @@ export default function MagicShareStudio() {
             selectedListings={selectedListings}
             selectedKeySet={selectedKeySet}
             searchResults={searchResults}
+            searchReady={shouldSearchListings}
             searchLoading={searchQuery.isLoading}
             selectedLoading={selectedQuery.isLoading}
             t={t}
@@ -919,6 +933,7 @@ export default function MagicShareStudio() {
             selectedListings={selectedListings}
             selectedKeySet={selectedKeySet}
             searchResults={searchResults}
+            searchReady={shouldSearchListings}
             searchLoading={searchQuery.isLoading}
             selectedLoading={selectedQuery.isLoading}
             t={t}
@@ -1116,6 +1131,7 @@ export default function MagicShareStudio() {
             selectedListings={selectedListings}
             selectedKeySet={selectedKeySet}
             searchResults={searchResults}
+            searchReady={shouldSearchListings}
             searchLoading={searchQuery.isLoading}
             selectedLoading={selectedQuery.isLoading}
             t={t}
@@ -1220,6 +1236,7 @@ export default function MagicShareStudio() {
             selectedListings={selectedListings}
             selectedKeySet={selectedKeySet}
             searchResults={searchResults}
+            searchReady={shouldSearchListings}
             searchLoading={searchQuery.isLoading}
             selectedLoading={selectedQuery.isLoading}
             t={t}
@@ -1348,6 +1365,7 @@ export default function MagicShareStudio() {
             selectedListings={selectedListings}
             selectedKeySet={selectedKeySet}
             searchResults={searchResults}
+            searchReady={shouldSearchListings}
             searchLoading={searchQuery.isLoading}
             selectedLoading={selectedQuery.isLoading}
             t={t}

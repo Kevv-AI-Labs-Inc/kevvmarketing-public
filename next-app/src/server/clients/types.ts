@@ -146,8 +146,11 @@ export interface CmaComparable {
   bedrooms: number | null;
   bathrooms: number | null;
   livingArea: string | null;
+  yearBuilt: number | null;
   status: string | null;
   score: number | null;          // vector similarity score (0-1)
+  soldDate?: string | null;      // close date for sold comps
+  source?: "bbo_vector" | "bbo_search" | "rentcast"; // origin of this comp
 }
 
 /**
