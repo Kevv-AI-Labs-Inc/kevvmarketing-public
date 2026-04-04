@@ -134,7 +134,7 @@ export async function parseSearchQuery(query: string): Promise<ParsedSearchQuery
       lifestyle: Array.isArray(parsed.lifestyle) ? parsed.lifestyle.filter((l: unknown) => typeof l === "string") : [],
       residualText: typeof parsed.residualText === "string" ? parsed.residualText : "",
       originalQuery: trimmed,
-      locale: parsed.locale === "zh" ? "zh" : "en",
+      locale: `${parsed.locale}` === "zh" ? "zh" : "en",
     };
   } catch (err) {
     console.warn("[queryParser] LLM extraction failed, falling back to passthrough:", err);

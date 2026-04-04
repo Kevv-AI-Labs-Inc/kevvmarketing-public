@@ -114,7 +114,6 @@ type NLParsedQuery = {
 
 export function SmartMatchDashboard() {
   const { t, locale } = useT();
-  const isChinese = locale.startsWith("zh");
   const router = trpc.useUtils();
 
   // Mode toggle
@@ -168,7 +167,7 @@ export function SmartMatchDashboard() {
       }
     },
     onError: (error) => {
-      toast.error(isChinese ? "搜索失败" : "Search failed", {
+      toast.error(t("smartMatchWorkspace.nlSearchFailed"), {
         description: error.message,
       });
     },
@@ -250,7 +249,7 @@ export function SmartMatchDashboard() {
   const handleNLSearch = async () => {
     const trimmed = nlQuery.trim();
     if (!trimmed) {
-      toast.error(isChinese ? "请输入搜索内容" : "Please enter a search query");
+      toast.error(t("smartMatchWorkspace.nlSearchEmpty"));
       return;
     }
     setNlParsedQuery(null);
@@ -308,7 +307,7 @@ export function SmartMatchDashboard() {
           }`}
         >
           <MessageSquare className="h-3.5 w-3.5" />
-          {isChinese ? "AI 自然语言搜索" : "AI Natural Language Search"}
+          {t("smartMatchWorkspace.nlSearchTab")}
         </button>
         <button
           onClick={() => { setSearchMode("contact"); setLatestResult(null); setSelectedListingKeys([]); setNlParsedQuery(null); }}
@@ -319,7 +318,7 @@ export function SmartMatchDashboard() {
           }`}
         >
           <UserRoundSearch className="h-3.5 w-3.5" />
-          {isChinese ? "客户匹配" : "Contact Matching"}
+          {t("smartMatchWorkspace.contactMatchTab")}
         </button>
       </div>
 
@@ -331,12 +330,10 @@ export function SmartMatchDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Search className="h-4 w-4" />
-                  {isChinese ? "自然语言搜房" : "Natural Language Search"}
+                  {t("smartMatchWorkspace.nlSearchTitle")}
                 </CardTitle>
                 <CardDescription>
-                  {isChinese
-                    ? "用自然语言描述你想要的房子，AI 自动解析为精确搜索条件"
-                    : "Describe the property you're looking for — AI parses it into precise search criteria"}
+                  {t("smartMatchWorkspace.nlSearchDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -344,11 +341,7 @@ export function SmartMatchDashboard() {
                   rows={4}
                   value={nlQuery}
                   onChange={(e) => setNlQuery(e.target.value)}
-                  placeholder={
-                    isChinese
-                      ? "例如：Irvine 好学区 150万以内 4房 带院子 现代装修\n或：3 bed homes near good schools in Arcadia under 1.2M with garage"
-                      : "e.g., 3 bed homes near good schools in Arcadia under 1.2M with garage\nor: Irvine 好学区 150万以内 4房 带院子"
-                  }
+                  placeholder={t("smartMatchWorkspace.nlSearchPlaceholder")}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                       e.preventDefault();
@@ -365,12 +358,12 @@ export function SmartMatchDashboard() {
                     {nlSearchMutation.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        {isChinese ? "AI 解析中..." : "AI parsing..."}
+                        {t("smartMatchWorkspace.nlSearchParsing")}
                       </>
                     ) : (
                       <>
                         <Zap className="h-4 w-4" />
-                        {isChinese ? "AI 智能搜索" : "AI Smart Search"}
+                        {t("smartMatchWorkspace.nlSearchButton")}
                       </>
                     )}
                   </Button>
@@ -387,7 +380,7 @@ export function SmartMatchDashboard() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Sparkles className="h-3.5 w-3.5" />
-                    {isChinese ? "AI 解析结果" : "AI Parsed Query"}
+                    {t("smartMatchWorkspace.nlParsedTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -395,7 +388,7 @@ export function SmartMatchDashboard() {
                   {Object.entries(nlParsedQuery.filters).filter(([, v]) => v != null).length > 0 && (
                     <div>
                       <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-                        {isChinese ? "结构化条件" : "Structured Filters"}
+                        {t("smartMatchWorkspace.nlFiltersLabel")}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {Object.entries(nlParsedQuery.filters)
@@ -412,7 +405,7 @@ export function SmartMatchDashboard() {
                   {nlParsedQuery.features.length > 0 && (
                     <div>
                       <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-                        {isChinese ? "房产特征" : "Features"}
+                        {t("smartMatchWorkspace.nlFeaturesLabel")}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {nlParsedQuery.features.map((f) => (
@@ -427,7 +420,7 @@ export function SmartMatchDashboard() {
                   {nlParsedQuery.lifestyle.length > 0 && (
                     <div>
                       <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-                        {isChinese ? "生活方式" : "Lifestyle"}
+                        {t("smartMatchWorkspace.nlLifestyleLabel")}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {nlParsedQuery.lifestyle.map((l) => (
@@ -442,7 +435,7 @@ export function SmartMatchDashboard() {
                   {nlParsedQuery.residualText && (
                     <div>
                       <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
-                        {isChinese ? "语义搜索项" : "Semantic Search"}
+                        {t("smartMatchWorkspace.nlSemanticLabel")}
                       </div>
                       <p className="text-xs text-muted-foreground italic">
                         &ldquo;{nlParsedQuery.residualText}&rdquo;
@@ -461,11 +454,11 @@ export function SmartMatchDashboard() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <CardTitle>{t("smartMatchWorkspace.resultsTitle")}</CardTitle>
-                    <CardDescription>{isChinese ? "AI 解析 + 结构化检索 + 语义重排" : "AI parse → structured retrieve → semantic re-rank"}</CardDescription>
+                    <CardDescription>{t("smartMatchWorkspace.nlResultsDescription")}</CardDescription>
                   </div>
                   {latestResult ? (
                     <Badge variant="secondary">
-                      {latestResult.candidateCount} {isChinese ? "候选" : "candidates"} → {latestResult.recommendations.length} {isChinese ? "推荐" : "results"}
+                      {latestResult.candidateCount} {t("smartMatchWorkspace.nlCandidates")} → {latestResult.recommendations.length} {t("smartMatchWorkspace.nlResults")}
                     </Badge>
                   ) : null}
                 </div>
@@ -497,7 +490,7 @@ export function SmartMatchDashboard() {
                     <div className="space-y-4">
                       {latestResult.recommendations.length === 0 ? (
                         <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-                          {isChinese ? "未找到匹配的房源，请尝试放宽条件" : "No matching listings found. Try broadening your search."}
+                          {t("smartMatchWorkspace.nlNoResults")}
                         </div>
                       ) : (
                         latestResult.recommendations.map((item) => (
@@ -558,12 +551,10 @@ export function SmartMatchDashboard() {
                 ) : (
                   <div className="rounded-2xl border border-dashed p-8 text-sm text-muted-foreground">
                     <div className="font-medium">
-                      {isChinese ? "输入自然语言搜索条件" : "Enter a natural language search"}
+                      {t("smartMatchWorkspace.nlEmptyTitle")}
                     </div>
                     <div className="mt-2">
-                      {isChinese
-                        ? "AI 将自动解析你的需求为结构化条件 + 语义特征，先精确筛选再智能排序"
-                        : "AI automatically decomposes your query into structured filters + semantic features, retrieves precisely then re-ranks intelligently"}
+                      {t("smartMatchWorkspace.nlEmptyDescription")}
                     </div>
                   </div>
                 )}
