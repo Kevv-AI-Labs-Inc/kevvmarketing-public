@@ -222,6 +222,7 @@ export function getDashboardPageCopy(locale: Locale) {
         title: t("dashboardPages.cmaStudio.subjectCard.title"),
         description: t("dashboardPages.cmaStudio.subjectCard.description"),
         searchPlaceholder: t("dashboardPages.cmaStudio.subjectCard.searchPlaceholder"),
+        startSearch: t("dashboardPages.cmaStudio.subjectCard.startSearch"),
         currentSubject: t("dashboardPages.cmaStudio.subjectCard.currentSubject"),
         notSelected: t("dashboardPages.cmaStudio.subjectCard.notSelected"),
         comparableCount: t("dashboardPages.cmaStudio.subjectCard.comparableCount"),

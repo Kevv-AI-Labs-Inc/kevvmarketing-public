@@ -2,15 +2,22 @@
  * CMA Pipeline Engine — 5-Stage Comparative Market Analysis.
  *
  * Flow:
- *   Stage 1 — Subject Resolution    (BBO getListing / resolveByAddress)
+ *   Stage 1 — Subject Resolution    (BBO getListing / resolveByAddress / RentCast)
  *   Stage 2a — Photo Analysis        (Azure GPT Vision)       ┐
  *   Stage 2b — Vector Comp Match     (BBO getCmaByListing)    ├── parallel
+ *   Stage 2c — RentCast AVM + Comps  (RentCast /v1/avm/value) │
  *   Stage 3  — Tavily Web Search     (3 parallel queries)     │
  *   Stage 4  — Neighborhood Context  (BBO getNeighborhoodSummary) ┘
  *   Stage 5 — Final LLM Synthesis    (Azure GPT → structured JSON)
  *
  * Each stage degrades gracefully so the pipeline never crashes —
  * it just produces a report with fewer data sources.
+ *
+ * Adjustment methodology:
+ *   - GLA (sqft): 1/3 of median price-per-sqft × sqft difference
+ *   - Bedroom: market-calibrated from comp pool median price per bedroom
+ *   - Age: 0.3% of comp price per year difference
+ *   - Condition: from photo analysis (-$30k to +$50k)
  *
  * Cost per call: ~$0.06 (no photos) to ~$0.15 (with 6 photos)
  * Latency p50:  ~4.5-5.5s (all stages enabled)
@@ -21,6 +28,7 @@ import {
   getListing,
   getCmaByListing,
   getNeighborhoodSummary,
+  searchListings,
 } from "../clients/listingDataClient";
 import type {
   ListingData,
@@ -28,6 +36,13 @@ import type {
   NeighborhoodSummary,
 } from "../clients/types";
 import { ListingDataServiceError } from "../clients/types";
+import {
+  isRentCastConfigured,
+  getPropertyValuation,
+  getPropertyDetails,
+} from "../clients/rentCastClient";
+import type { RentCastAvmResponse, RentCastComparable } from "../clients/rentCastClient";
+import { RentCastError } from "../clients/rentCastClient";
 import { ENV } from "../_core/env";
 import { searchMarketIntelligence } from "./tavilyClient";
 import type { MarketIntelligence } from "./tavilyClient";
@@ -41,7 +56,6 @@ export interface ManualPropertyInput {
   city: string;
   state: string;
   zipCode: string;
-  price?: string;
   beds?: number;
   baths?: number;
   sqft?: number;
@@ -65,6 +79,7 @@ export interface CMAPipelineInput {
   compLimit?: number;
   enableWebSearch?: boolean;
   enablePhotoAnalysis?: boolean;
+  enableRentCast?: boolean;
   locale?: "en" | "zh";
   branding: AgentBranding;
 }
@@ -85,9 +100,19 @@ export interface CMAComparableEntry {
   beds?: number;
   baths?: number;
   sqft?: string;
+  yearBuilt?: number;
   similarityScore?: number;
   adjustedPrice: string;
   adjustmentBreakdown: CompAdjustmentBreakdown;
+  status?: string;
+  source?: string;
+}
+
+export interface RentCastValuation {
+  estimatedPrice: number | null;
+  priceLow: number | null;
+  priceHigh: number | null;
+  pricePerSqft: number | null;
 }
 
 export interface CMAReportResult {
@@ -114,6 +139,7 @@ export interface CMAReportResult {
     medianHomePrice?: string;
     profileText?: string;
   };
+  rentCastValuation?: RentCastValuation;
   priceRecommendation: {
     low: string;
     high: string;
@@ -134,33 +160,56 @@ export interface CMAReportResult {
 
 async function resolveSubject(
   input: CMAPipelineInput,
-): Promise<{ listing: ListingData | null; listingKey: string | null }> {
+): Promise<{
+  listing: ListingData | null;
+  listingKey: string | null;
+  rentCastProperty: { beds?: number; baths?: number; sqft?: number; yearBuilt?: number; propertyType?: string } | null;
+}> {
   // If a listingKey is provided, fetch from BBO
   if (input.listingKey) {
     try {
       const response = await getListing(input.listingKey);
-      return { listing: response.data, listingKey: input.listingKey };
+      return { listing: response.data, listingKey: input.listingKey, rentCastProperty: null };
     } catch (err) {
       if (
         err instanceof ListingDataServiceError &&
         err.statusCode === 404
       ) {
-        return { listing: null, listingKey: input.listingKey };
+        return { listing: null, listingKey: input.listingKey, rentCastProperty: null };
       }
       console.warn("[cmaPipeline] getListing failed:", err);
-      return { listing: null, listingKey: input.listingKey };
+      return { listing: null, listingKey: input.listingKey, rentCastProperty: null };
     }
   }
 
-  // If manual input, create a synthetic listing-like object
-  if (input.manualInput) {
-    return {
-      listing: null,
-      listingKey: null,
-    };
+  // If manual input and RentCast is configured, try to auto-fill property details
+  if (input.manualInput && isRentCastConfigured()) {
+    try {
+      const fullAddress = [
+        input.manualInput.address,
+        input.manualInput.city,
+        `${input.manualInput.state} ${input.manualInput.zipCode}`,
+      ].filter(Boolean).join(", ");
+      const rcProp = await getPropertyDetails(fullAddress);
+      if (rcProp) {
+        return {
+          listing: null,
+          listingKey: null,
+          rentCastProperty: {
+            beds: rcProp.bedrooms ?? undefined,
+            baths: rcProp.bathrooms ?? undefined,
+            sqft: rcProp.squareFootage ?? undefined,
+            yearBuilt: rcProp.yearBuilt ?? undefined,
+            propertyType: rcProp.propertyType ?? undefined,
+          },
+        };
+      }
+    } catch (err) {
+      console.warn("[cmaPipeline] RentCast property lookup failed:", err);
+    }
   }
 
-  return { listing: null, listingKey: null };
+  return { listing: null, listingKey: null, rentCastProperty: null };
 }
 
 // ─── Stage 2b: Vector Comp Match ──────────────────────────────
@@ -183,6 +232,48 @@ async function fetchVectorComps(
   }
 }
 
+// ─── Stage 2c: RentCast AVM + Comps ──────────────────────────
+
+async function fetchRentCastData(
+  address: string,
+  compLimit: number,
+): Promise<{ avm: RentCastAvmResponse | null; comps: CmaComparable[] }> {
+  if (!isRentCastConfigured() || !address) {
+    return { avm: null, comps: [] };
+  }
+
+  try {
+    const avm = await getPropertyValuation(address, compLimit);
+    const comps: CmaComparable[] = (avm.comparables ?? []).map(
+      (rc: RentCastComparable, idx: number) => ({
+        listingKey: rc.id ?? `rentcast-${idx}`,
+        listingId: null,
+        address: rc.formattedAddress ?? rc.addressLine1 ?? null,
+        city: rc.city ?? null,
+        postalCode: rc.zipCode ?? null,
+        price: rc.lastSalePrice != null ? String(rc.lastSalePrice) : (rc.price != null ? String(rc.price) : null),
+        propertyType: rc.propertyType ?? null,
+        bedrooms: rc.bedrooms ?? null,
+        bathrooms: rc.bathrooms ?? null,
+        livingArea: rc.squareFootage != null ? String(rc.squareFootage) : null,
+        yearBuilt: rc.yearBuilt ?? null,
+        status: "Closed",
+        score: rc.correlation ?? null,
+        soldDate: rc.lastSaleDate ?? null,
+        source: "rentcast" as const,
+      }),
+    );
+    return { avm, comps };
+  } catch (err) {
+    if (err instanceof RentCastError) {
+      console.warn("[cmaPipeline] RentCast AVM failed:", err.message);
+    } else {
+      console.warn("[cmaPipeline] RentCast AVM failed:", err);
+    }
+    return { avm: null, comps: [] };
+  }
+}
+
 // ─── Stage 4: Neighborhood Context ──────────────────────────
 
 async function fetchNeighborhood(
@@ -196,31 +287,81 @@ async function fetchNeighborhood(
   }
 }
 
-// ─── Price Adjustments ────────────────────────────────────────
+// ─── Price Adjustments (Market-Calibrated) ───────────────────
+
+interface AdjustmentContext {
+  medianPricePerSqft: number;
+  medianPricePerBedroom: number;
+}
+
+function buildAdjustmentContext(
+  comps: CmaComparable[],
+): AdjustmentContext {
+  // Calculate median price per sqft from all comps
+  const pricesPerSqft: number[] = [];
+  const pricesPerBedroom: number[] = [];
+
+  for (const comp of comps) {
+    const price = parseInt(comp.price ?? "0", 10);
+    if (price <= 0) continue;
+
+    const sqft = parseInt(comp.livingArea ?? "0", 10);
+    if (sqft > 0) pricesPerSqft.push(price / sqft);
+
+    const beds = comp.bedrooms ?? 0;
+    if (beds > 0) pricesPerBedroom.push(price / beds);
+  }
+
+  const median = (arr: number[]) => {
+    if (arr.length === 0) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0
+      ? (sorted[mid - 1]! + sorted[mid]!) / 2
+      : sorted[mid]!;
+  };
+
+  return {
+    medianPricePerSqft: median(pricesPerSqft) || 200,
+    medianPricePerBedroom: median(pricesPerBedroom) || 50000,
+  };
+}
 
 function calculateCompAdjustments(
   subject: { beds?: number; sqft?: number; yearBuilt?: number; conditionScore?: number },
   comp: CmaComparable,
+  ctx: AdjustmentContext,
 ): CompAdjustmentBreakdown {
-  const subjectBeds = subject.beds ?? 3;
-  const compBeds = comp.bedrooms ?? 3;
-  const subjectSqft = subject.sqft ?? 2000;
-  const compSqft = parseInt(comp.livingArea ?? "2000", 10) || 2000;
+  const subjectBeds = subject.beds;
+  const compBeds = comp.bedrooms;
+  const subjectSqft = subject.sqft;
+  const compSqft = parseInt(comp.livingArea ?? "0", 10) || 0;
   const compPrice = parseInt(comp.price ?? "0", 10) || 0;
 
-  // Bedroom: ~$25,000 per bedroom difference
-  const bedroomAdj = (subjectBeds - compBeds) * 25000;
+  // Bedroom adjustment: market-calibrated from comp pool
+  // Only apply when both subject and comp have bedroom data
+  let bedroomAdj = 0;
+  if (subjectBeds != null && compBeds != null && subjectBeds !== compBeds) {
+    bedroomAdj = Math.round((subjectBeds - compBeds) * ctx.medianPricePerBedroom * 0.3);
+  }
 
-  // Sqft: cost per sqft based on comp price
-  const pricePerSqft = compSqft > 0 ? compPrice / compSqft : 200;
-  const sqftAdj = Math.round((subjectSqft - compSqft) * Math.min(pricePerSqft * 0.5, 300));
+  // GLA (sqft) adjustment: 1/3 of median price-per-sqft × difference
+  // Industry standard: adjusting at 1/3 rate prevents over-adjustment
+  let sqftAdj = 0;
+  if (subjectSqft != null && subjectSqft > 0 && compSqft > 0) {
+    sqftAdj = Math.round((subjectSqft - compSqft) * ctx.medianPricePerSqft / 3);
+  }
 
-  // Age: ~$5,000 per year newer
-  const subjectYear = subject.yearBuilt ?? 2000;
-  const compYear = 2000; // comps don't always have yearBuilt in the CMA response
-  const ageAdj = (subjectYear - compYear) * 5000;
+  // Age adjustment: 0.3% of comp price per year difference
+  // Only apply when both subject and comp have yearBuilt data
+  let ageAdj = 0;
+  const subjectYear = subject.yearBuilt;
+  const compYear = comp.yearBuilt;
+  if (subjectYear != null && compYear != null && subjectYear !== compYear) {
+    ageAdj = Math.round((subjectYear - compYear) * compPrice * 0.003);
+  }
 
-  // Condition: from photo analysis (-$30k to +$50k)
+  // Condition adjustment: from photo analysis (-$30k to +$50k)
   const conditionScore = subject.conditionScore ?? 5;
   const conditionAdj = Math.round((conditionScore - 5) * 10000);
 
@@ -235,6 +376,49 @@ function calculateCompAdjustments(
   };
 }
 
+// ─── Comp Deduplication & Merging ─────────────────────────────
+
+function deduplicateComps(
+  bboComps: CmaComparable[],
+  rentCastComps: CmaComparable[],
+): CmaComparable[] {
+  const seen = new Map<string, CmaComparable>();
+
+  // BBO comps take priority (they have vector similarity scores)
+  for (const comp of bboComps) {
+    const key = normalizeAddress(comp.address ?? "");
+    if (key && !seen.has(key)) {
+      seen.set(key, { ...comp, source: comp.source ?? "bbo_vector" });
+    }
+  }
+
+  // RentCast comps fill in the gaps
+  for (const comp of rentCastComps) {
+    const key = normalizeAddress(comp.address ?? "");
+    if (key && !seen.has(key)) {
+      seen.set(key, comp);
+    } else if (key && seen.has(key)) {
+      // Merge yearBuilt/soldDate from RentCast if BBO comp lacks them
+      const existing = seen.get(key)!;
+      if (!existing.yearBuilt && comp.yearBuilt) {
+        existing.yearBuilt = comp.yearBuilt;
+      }
+      if (!existing.soldDate && comp.soldDate) {
+        existing.soldDate = comp.soldDate;
+      }
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function normalizeAddress(addr: string): string {
+  return addr
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+}
+
 // ─── Stage 5: Final LLM Synthesis ─────────────────────────────
 
 function buildSynthesisPrompt(params: {
@@ -243,9 +427,10 @@ function buildSynthesisPrompt(params: {
   marketIntel: MarketIntelligence;
   neighborhood: NeighborhoodSummary | null;
   photoAnalysis: PhotoAnalysisResult | null;
+  rentCastAvm: RentCastAvmResponse | null;
   locale: "en" | "zh";
 }): string {
-  const { subject, comps, marketIntel, neighborhood, photoAnalysis } = params;
+  const { subject, comps, marketIntel, neighborhood, photoAnalysis, rentCastAvm } = params;
 
   const subjectBlock = `SUBJECT PROPERTY:
   Address   : ${subject.address}
@@ -261,15 +446,30 @@ function buildSynthesisPrompt(params: {
         const score = c.similarityScore != null
           ? ` (similarity ${c.similarityScore.toFixed(3)})`
           : "";
-        return `Comp ${i + 1}${score}:
+        const src = c.source ? ` [${c.source}]` : "";
+        return `Comp ${i + 1}${score}${src}:
   Address      : ${c.address}
   Sold Price   : ${c.soldPrice}
   Sold Date    : ${c.soldDate ?? "unknown"}
   Beds/Baths   : ${c.beds ?? "?"} bd / ${c.baths ?? "?"} ba
   Sqft         : ${c.sqft ?? "unknown"}
-  Adjusted Price: ${c.adjustedPrice} (adj: ${c.adjustmentBreakdown.total >= 0 ? "+" : ""}$${c.adjustmentBreakdown.total.toLocaleString()})`;
+  Year Built   : ${c.yearBuilt ?? "unknown"}
+  Status       : ${c.status ?? "Closed"}
+  Adjusted Price: ${c.adjustedPrice} (adj: ${c.adjustmentBreakdown.total >= 0 ? "+" : ""}$${c.adjustmentBreakdown.total.toLocaleString()})
+    Bedroom adj: ${c.adjustmentBreakdown.bedroomAdj >= 0 ? "+" : ""}$${c.adjustmentBreakdown.bedroomAdj.toLocaleString()}
+    Sqft adj   : ${c.adjustmentBreakdown.sqftAdj >= 0 ? "+" : ""}$${c.adjustmentBreakdown.sqftAdj.toLocaleString()}
+    Age adj    : ${c.adjustmentBreakdown.ageAdj >= 0 ? "+" : ""}$${c.adjustmentBreakdown.ageAdj.toLocaleString()}
+    Condition  : ${c.adjustmentBreakdown.conditionAdj >= 0 ? "+" : ""}$${c.adjustmentBreakdown.conditionAdj.toLocaleString()}`;
       }).join("\n\n")
     : "No comparable sales data available.";
+
+  const rentCastBlock = rentCastAvm
+    ? `RENTCAST AVM (independent valuation):
+  Estimated Price    : $${rentCastAvm.price?.toLocaleString() ?? "N/A"}
+  Price Range Low    : $${rentCastAvm.priceRangeLow?.toLocaleString() ?? "N/A"}
+  Price Range High   : $${rentCastAvm.priceRangeHigh?.toLocaleString() ?? "N/A"}
+  Price Per Sqft     : $${rentCastAvm.pricePerSquareFoot?.toLocaleString() ?? "N/A"}`
+    : "RENTCAST AVM: Not available";
 
   const marketBlock = `MARKET INTELLIGENCE (from web search):
   Market Type     : ${marketIntel.marketType}
@@ -309,12 +509,20 @@ function buildSynthesisPrompt(params: {
 
   return `You are a licensed real estate appraiser creating a CMA (Comparative Market Analysis) report.
 Analyze ALL provided data sources and produce a comprehensive CMA recommendation.
+Weight the data sources as follows:
+1. Comparable closed sales (adjusted) — primary basis
+2. RentCast AVM — independent valuation anchor for calibration
+3. Market intelligence — trend context
+4. Photo analysis — condition premium/discount
+5. Neighborhood data — location context
 
 ${subjectBlock}
 
-COMPARABLE CLOSED SALES (${comps.length} comps, matched via vector similarity):
+COMPARABLE SALES (${comps.length} comps from multiple sources):
 ${compsBlock}
 ${guidanceBlock}
+
+${rentCastBlock}
 
 ${marketBlock}
 
@@ -344,6 +552,7 @@ async function synthesizeReport(params: {
   marketIntel: MarketIntelligence;
   neighborhood: NeighborhoodSummary | null;
   photoAnalysis: PhotoAnalysisResult | null;
+  rentCastAvm: RentCastAvmResponse | null;
   locale: "en" | "zh";
 }): Promise<{
   priceRecommendation: CMAReportResult["priceRecommendation"];
@@ -401,6 +610,11 @@ async function synthesizeReport(params: {
       .map((c) => parseInt(c.adjustedPrice.replace(/[$,]/g, ""), 10))
       .filter((n) => Number.isFinite(n) && n > 0);
 
+    // Also consider RentCast AVM as a fallback anchor
+    if (params.rentCastAvm?.price) {
+      adjustedPrices.push(params.rentCastAvm.price);
+    }
+
     if (adjustedPrices.length > 0) {
       const avg = Math.round(
         adjustedPrices.reduce((a, b) => a + b, 0) / adjustedPrices.length,
@@ -455,34 +669,42 @@ export async function runCMAPipeline(
   const dataSources: string[] = [];
 
   // ── Stage 1: Subject Resolution (~300ms) ──────────────────
-  const { listing, listingKey } = await resolveSubject(input);
+  const { listing, listingKey, rentCastProperty } = await resolveSubject(input);
   if (listing) dataSources.push("bbo_listing");
+  if (rentCastProperty) dataSources.push("rentcast_property");
 
-  // Build subject info from listing or manual input
+  // Build subject info from listing or manual input, enriched by RentCast
   const manual = input.manualInput;
   const subject: CMAReportResult["subject"] = {
     address: listing?.unparsedAddress ?? manual?.address ?? "Unknown",
     city: listing?.city ?? manual?.city ?? "Unknown",
     state: listing?.stateOrProvince ?? manual?.state ?? "",
     zipCode: listing?.postalCode ?? manual?.zipCode ?? "",
-    listPrice: listing?.listPrice ?? manual?.price,
-    beds: listing?.bedroomsTotal ?? manual?.beds,
-    baths: listing?.bathroomsTotalInteger ?? manual?.baths,
-    sqft: listing?.livingArea ?? (manual?.sqft ? String(manual.sqft) : undefined),
-    yearBuilt: listing?.yearBuilt ?? manual?.yearBuilt,
-    propertyType: listing?.propertyType ?? manual?.propertyType,
+    listPrice: listing?.listPrice,
+    beds: listing?.bedroomsTotal ?? manual?.beds ?? rentCastProperty?.beds,
+    baths: listing?.bathroomsTotalInteger ?? manual?.baths ?? rentCastProperty?.baths,
+    sqft: listing?.livingArea ?? (manual?.sqft ? String(manual.sqft) : undefined) ?? (rentCastProperty?.sqft ? String(rentCastProperty.sqft) : undefined),
+    yearBuilt: listing?.yearBuilt ?? manual?.yearBuilt ?? rentCastProperty?.yearBuilt,
+    propertyType: listing?.propertyType ?? manual?.propertyType ?? rentCastProperty?.propertyType,
   };
 
-  // ── Stages 2a + 2b + 3 + 4: Parallel (~1.5-2s) ───────────
+  // Build full address string for RentCast
+  const fullAddress = [subject.address, subject.city, `${subject.state} ${subject.zipCode}`]
+    .filter(Boolean)
+    .join(", ");
+
+  // ── Stages 2a + 2b + 2c + 3 + 4: Parallel (~1.5-2s) ─────
   const compLimit = input.compLimit ?? 8;
   const photoUrls = input.photoUrls ?? [];
   const enablePhotos = input.enablePhotoAnalysis !== false && photoUrls.length > 0;
   const enableWeb = input.enableWebSearch !== false;
+  const enableRentCast = input.enableRentCast !== false;
   const enableBboNeighborhood = !!subject.zipCode;
 
   const [
     photoResult,
     compResult,
+    rentCastResult,
     webResult,
     neighborhoodResult,
   ] = await Promise.allSettled([
@@ -497,6 +719,11 @@ export async function runCMAPipeline(
 
     // Stage 2b: BBO vector comp match
     fetchVectorComps(listingKey, compLimit),
+
+    // Stage 2c: RentCast AVM + comps
+    enableRentCast
+      ? fetchRentCastData(fullAddress, compLimit)
+      : Promise.resolve({ avm: null, comps: [] }),
 
     // Stage 3: Tavily web search
     enableWeb
@@ -528,9 +755,15 @@ export async function runCMAPipeline(
     subject.imageUrls = photoUrls;
   }
 
-  const rawComps: CmaComparable[] =
+  const rawBboComps: CmaComparable[] =
     compResult.status === "fulfilled" ? compResult.value.comps : [];
-  if (rawComps.length > 0) dataSources.push("bbo_vector");
+  if (rawBboComps.length > 0) dataSources.push("bbo_vector");
+
+  const rentCastData = rentCastResult.status === "fulfilled"
+    ? rentCastResult.value
+    : { avm: null, comps: [] };
+  if (rentCastData.avm) dataSources.push("rentcast_avm");
+  if (rentCastData.comps.length > 0) dataSources.push("rentcast_comps");
 
   const marketIntel: MarketIntelligence =
     webResult.status === "fulfilled"
@@ -544,7 +777,10 @@ export async function runCMAPipeline(
       : null;
   if (neighborhood) dataSources.push("bbo_neighborhood");
 
-  // ── Build Comparables with adjustments ────────────────────
+  // ── Merge & Deduplicate Comps ────────────────────────────
+  const allComps = deduplicateComps(rawBboComps, rentCastData.comps);
+
+  // ── Build Comparables with market-calibrated adjustments ──
   const conditionScore = photoAnalysis?.conditionScore;
   const subjectSpecs = {
     beds: subject.beds,
@@ -553,8 +789,11 @@ export async function runCMAPipeline(
     conditionScore,
   };
 
-  const comparables: CMAComparableEntry[] = rawComps.map((comp) => {
-    const adjustments = calculateCompAdjustments(subjectSpecs, comp);
+  // Build adjustment context from the full comp pool
+  const adjContext = buildAdjustmentContext(allComps);
+
+  const comparables: CMAComparableEntry[] = allComps.map((comp) => {
+    const adjustments = calculateCompAdjustments(subjectSpecs, comp, adjContext);
     const compPrice = parseInt(comp.price ?? "0", 10) || 0;
     const adjustedPrice = Math.max(0, compPrice + adjustments.total);
 
@@ -562,14 +801,28 @@ export async function runCMAPipeline(
       address: comp.address ?? "Unknown",
       city: comp.city ?? undefined,
       soldPrice: comp.price ? `$${parseInt(comp.price, 10).toLocaleString()}` : "N/A",
+      soldDate: comp.soldDate ?? undefined,
       beds: comp.bedrooms ?? undefined,
       baths: comp.bathrooms ?? undefined,
       sqft: comp.livingArea ?? undefined,
+      yearBuilt: comp.yearBuilt ?? undefined,
       similarityScore: comp.score ?? undefined,
       adjustedPrice: `$${adjustedPrice.toLocaleString()}`,
       adjustmentBreakdown: adjustments,
+      status: comp.status ?? undefined,
+      source: comp.source ?? undefined,
     };
   });
+
+  // ── Build RentCast valuation summary ─────────────────────
+  const rentCastValuation: RentCastValuation | undefined = rentCastData.avm
+    ? {
+        estimatedPrice: rentCastData.avm.price ?? null,
+        priceLow: rentCastData.avm.priceRangeLow ?? null,
+        priceHigh: rentCastData.avm.priceRangeHigh ?? null,
+        pricePerSqft: rentCastData.avm.pricePerSquareFoot ?? null,
+      }
+    : undefined;
 
   // ── Stage 5: Final LLM Synthesis (~2s) ────────────────────
   const { priceRecommendation, executiveSummary } = await synthesizeReport({
@@ -578,6 +831,7 @@ export async function runCMAPipeline(
     marketIntel,
     neighborhood,
     photoAnalysis,
+    rentCastAvm: rentCastData.avm,
     locale,
   });
 
@@ -597,6 +851,7 @@ export async function runCMAPipeline(
           profileText: neighborhood.profileText ?? undefined,
         }
       : undefined,
+    rentCastValuation,
     priceRecommendation,
     executiveSummary,
     dataSources,

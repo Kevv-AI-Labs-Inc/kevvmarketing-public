@@ -1,4 +1,5 @@
 // CMA Studio — Next-Gen 5-Stage Pipeline UI
+// Unified search (MLS + address), auto-fill, editable adjustments, comp categories
 import { useT } from "@/i18n";
 import { localeTag } from "@/i18n/copy";
 import { getDashboardPageCopy } from "@/i18n/dashboard-pages";
@@ -21,21 +22,23 @@ import {
   Building2,
   Camera,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock3,
+  Edit3,
   ExternalLink,
   Globe,
   Loader2,
   MapPin,
   Search,
-  Share2,
   Sparkles,
   TrendingUp,
+  Trash2,
   Upload,
   X,
   Zap,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────
@@ -76,28 +79,31 @@ export default function CMAStudio() {
   const { locale } = useT();
   const isChinese = locale.startsWith("zh");
   const copy = getDashboardPageCopy(locale).cmaStudio;
-  const router = useRouter();
   const prefill = useMemo(() => parseCmaPrefillFromUrl(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Input state
+  // Input state — unified search replaces MLS/manual tabs
   const [inputTab, setInputTab] = useState<InputTab>("mls");
   const [search, setSearch] = useState("");
   const [selectedSubjectKey, setSelectedSubjectKey] = useState<string>(
     prefill.subjectKey,
   );
+  const trimmedSearch = search.trim();
+  const shouldSearchProperties =
+    inputTab === "mls" && trimmedSearch.length >= 2;
 
-  // Manual input state
+  // Manual input state — simplified (no price field)
   const [manualAddress, setManualAddress] = useState("");
   const [manualCity, setManualCity] = useState("");
   const [manualState, setManualState] = useState("");
   const [manualZip, setManualZip] = useState("");
-  const [manualPrice, setManualPrice] = useState("");
   const [manualBeds, setManualBeds] = useState("");
   const [manualBaths, setManualBaths] = useState("");
   const [manualSqft, setManualSqft] = useState("");
   const [manualYearBuilt, setManualYearBuilt] = useState("");
   const [manualType, setManualType] = useState("Residential");
+  const [autoFilling, setAutoFilling] = useState(false);
+  const [autoFilled, setAutoFilled] = useState(false);
 
   // Photos
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
@@ -109,6 +115,7 @@ export default function CMAStudio() {
   );
   const [enableWebSearch, setEnableWebSearch] = useState(true);
   const [enablePhotoAnalysis, setEnablePhotoAnalysis] = useState(true);
+  const [enableRentCast, setEnableRentCast] = useState(true);
   const [agentName, setAgentName] = useState("");
   const [agentEmail, setAgentEmail] = useState("");
   const [agentPhone, setAgentPhone] = useState("");
@@ -119,18 +126,81 @@ export default function CMAStudio() {
   const [result, setResult] = useState<any>(null);
   const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
 
+  // Editable adjustments state
+  const [editingCompIdx, setEditingCompIdx] = useState<number | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editedComps, setEditedComps] = useState<Map<number, any>>(new Map());
+  const [removedCompIndices, setRemovedCompIndices] = useState<Set<number>>(
+    new Set(),
+  );
+  const [expandedCompIdx, setExpandedCompIdx] = useState<number | null>(null);
+
   // ─── Queries ──────────────────────────────────────────────
 
-  const propertiesQuery = trpc.mls.getProperties.useQuery({
-    search: search || undefined,
-    limit: 20,
-    offset: 0,
-    status: "Active",
-  });
+  const propertiesQuery = trpc.mls.getProperties.useQuery(
+    {
+      search: trimmedSearch || undefined,
+      limit: 20,
+      offset: 0,
+    },
+    {
+      enabled: shouldSearchProperties,
+    },
+  );
 
   const historyQuery = trpc.cma.list.useQuery(undefined, {
     refetchOnWindowFocus: false,
   });
+
+  // ─── RentCast Auto-Fill ───────────────────────────────────
+
+  const lookupQuery = trpc.cma.lookupProperty.useQuery(
+    {
+      address: manualAddress,
+      city: manualCity || undefined,
+      state: manualState || undefined,
+      zipCode: manualZip || undefined,
+    },
+    {
+      enabled: false, // manually triggered
+    },
+  );
+
+  const handleAutoFill = useCallback(async () => {
+    if (!manualAddress.trim()) {
+      toast.error(isChinese ? "请先输入地址" : "Enter an address first");
+      return;
+    }
+    setAutoFilling(true);
+    try {
+      const data = await lookupQuery.refetch();
+      const prop = data.data;
+      if (prop) {
+        if (prop.beds != null && !manualBeds) setManualBeds(String(prop.beds));
+        if (prop.baths != null && !manualBaths) setManualBaths(String(prop.baths));
+        if (prop.sqft != null && !manualSqft) setManualSqft(String(prop.sqft));
+        if (prop.yearBuilt != null && !manualYearBuilt)
+          setManualYearBuilt(String(prop.yearBuilt));
+        if (prop.propertyType) setManualType(prop.propertyType);
+        setAutoFilled(true);
+        toast.success(
+          isChinese ? "房产信息已自动填充" : "Property details auto-filled",
+        );
+      } else {
+        toast.info(
+          isChinese
+            ? "未找到该地址的房产信息，请手动填写"
+            : "No property data found. Please fill in manually.",
+        );
+      }
+    } catch {
+      toast.error(
+        isChinese ? "自动填充失败" : "Auto-fill failed",
+      );
+    } finally {
+      setAutoFilling(false);
+    }
+  }, [manualAddress, manualCity, manualState, manualZip, manualBeds, manualBaths, manualSqft, manualYearBuilt, isChinese, lookupQuery]);
 
   // ─── Photo Upload ─────────────────────────────────────────
 
@@ -146,8 +216,8 @@ export default function CMAStudio() {
       const reader = new FileReader();
       const base64 = await new Promise<string>((resolve) => {
         reader.onload = () => {
-          const result = reader.result as string;
-          resolve(result.split(",")[1]); // strip data:image/...;base64,
+          const r = reader.result as string;
+          resolve(r.split(",")[1]); // strip data:image/...;base64,
         };
         reader.readAsDataURL(file);
       });
@@ -158,13 +228,9 @@ export default function CMAStudio() {
         contentType: file.type || "image/jpeg",
       });
       setPhotoUrls((prev) => [...prev, res.url]);
-      toast.success(
-        isChinese ? "照片已上传" : "Photo uploaded",
-      );
+      toast.success(isChinese ? "照片已上传" : "Photo uploaded");
     } catch {
-      toast.error(
-        isChinese ? "照片上传失败" : "Photo upload failed",
-      );
+      toast.error(isChinese ? "照片上传失败" : "Photo upload failed");
     } finally {
       setUploadingPhoto(false);
     }
@@ -181,14 +247,16 @@ export default function CMAStudio() {
       return;
     }
     if (inputTab === "manual" && !manualAddress.trim()) {
-      toast.error(
-        isChinese ? "请输入地址" : "Please enter an address",
-      );
+      toast.error(isChinese ? "请输入地址" : "Please enter an address");
       return;
     }
 
     setGenerating(true);
     setResult(null);
+    setEditedComps(new Map());
+    setRemovedCompIndices(new Set());
+    setEditingCompIdx(null);
+    setExpandedCompIdx(null);
 
     // Set up pipeline stages for visual tracking
     const stages: PipelineStage[] = [
@@ -214,6 +282,16 @@ export default function CMAStudio() {
         icon: <BarChart3 className="w-4 h-4" />,
         status: "idle",
       },
+      ...(enableRentCast
+        ? [
+            {
+              key: "rentcast",
+              label: isChinese ? "RentCast 估价" : "RentCast AVM",
+              icon: <TrendingUp className="w-4 h-4" />,
+              status: "idle" as const,
+            },
+          ]
+        : []),
       ...(enableWebSearch
         ? [
             {
@@ -262,7 +340,6 @@ export default function CMAStudio() {
                 city: manualCity,
                 state: manualState,
                 zipCode: manualZip,
-                price: manualPrice || undefined,
                 beds: manualBeds ? parseInt(manualBeds, 10) : undefined,
                 baths: manualBaths ? parseInt(manualBaths, 10) : undefined,
                 sqft: manualSqft ? parseInt(manualSqft, 10) : undefined,
@@ -276,6 +353,7 @@ export default function CMAStudio() {
         compLimit: limit,
         enableWebSearch,
         enablePhotoAnalysis,
+        enableRentCast,
         locale: locale as "en" | "zh",
         branding: {
           name: agentName || "Agent",
@@ -318,6 +396,64 @@ export default function CMAStudio() {
     }
   }
 
+  // ─── Comp Editing Helpers ─────────────────────────────────
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getDisplayComps = useCallback((): any[] => {
+    if (!result?.comparables) return [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return result.comparables.filter((_: any, i: number) => !removedCompIndices.has(i)).map((comp: any, i: number) => {
+      const edited = editedComps.get(i);
+      return edited ? { ...comp, ...edited } : comp;
+    });
+  }, [result, editedComps, removedCompIndices]);
+
+  const handleRemoveComp = useCallback(
+    (idx: number) => {
+      setRemovedCompIndices((prev) => new Set([...prev, idx]));
+      toast.info(
+        isChinese ? "已移除该可比房源" : "Comparable removed",
+      );
+    },
+    [isChinese],
+  );
+
+  const handleEditAdjustment = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (idx: number, field: string, value: any) => {
+      setEditedComps((prev) => {
+        const next = new Map(prev);
+        const existing = next.get(idx) || {};
+        const existingBreakdown =
+          existing.adjustmentBreakdown ||
+          result?.comparables?.[idx]?.adjustmentBreakdown ||
+          {};
+
+        const newBreakdown = { ...existingBreakdown, [field]: value };
+        newBreakdown.total =
+          (newBreakdown.bedroomAdj ?? 0) +
+          (newBreakdown.sqftAdj ?? 0) +
+          (newBreakdown.ageAdj ?? 0) +
+          (newBreakdown.conditionAdj ?? 0);
+
+        // Recalculate adjusted price
+        const origPrice = parseInt(
+          (result?.comparables?.[idx]?.soldPrice ?? "$0").replace(/[$,]/g, ""),
+          10,
+        ) || 0;
+        const adjustedPrice = Math.max(0, origPrice + newBreakdown.total);
+
+        next.set(idx, {
+          ...existing,
+          adjustmentBreakdown: newBreakdown,
+          adjustedPrice: `$${adjustedPrice.toLocaleString()}`,
+        });
+        return next;
+      });
+    },
+    [result],
+  );
+
   // ─── Helpers ──────────────────────────────────────────────
 
   const formatPrice = (price: string | null | undefined) => {
@@ -338,25 +474,56 @@ export default function CMAStudio() {
   ) => {
     const map = {
       high: {
-        color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        color:
+          "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
         label: isChinese ? "高置信" : "High",
       },
       medium: {
-        color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+        color:
+          "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
         label: isChinese ? "中置信" : "Medium",
       },
       low: {
-        color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+        color:
+          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
         label: isChinese ? "低置信" : "Low",
       },
     };
     const { color, label } = map[confidence] || map.medium;
     return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>
+      <span
+        className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`}
+      >
         {label}
       </span>
     );
   };
+
+  const sourceBadge = (source: string | undefined) => {
+    if (!source) return null;
+    const colors: Record<string, string> = {
+      bbo_vector:
+        "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+      bbo_search:
+        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      rentcast:
+        "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+    };
+    const labels: Record<string, string> = {
+      bbo_vector: "BBO",
+      bbo_search: "Search",
+      rentcast: "RentCast",
+    };
+    return (
+      <span
+        className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${colors[source] ?? "bg-muted text-muted-foreground"}`}
+      >
+        {labels[source] ?? source}
+      </span>
+    );
+  };
+
+  const displayComps = getDisplayComps();
 
   // ─── Render ───────────────────────────────────────────────
 
@@ -371,7 +538,9 @@ export default function CMAStudio() {
           <h1 className="text-2xl font-bold tracking-tight">
             {copy.heroTitle}
           </h1>
-          <p className="text-sm text-muted-foreground">{copy.heroDescription}</p>
+          <p className="text-sm text-muted-foreground">
+            {copy.heroDescription}
+          </p>
         </div>
       </div>
 
@@ -379,7 +548,10 @@ export default function CMAStudio() {
       {pipelineStages.length > 0 && (
         <div className="flex items-center gap-2 p-4 rounded-xl bg-muted/50 border overflow-x-auto">
           {pipelineStages.map((stage, i) => (
-            <div key={stage.key} className="flex items-center gap-2 shrink-0">
+            <div
+              key={stage.key}
+              className="flex items-center gap-2 shrink-0"
+            >
               <div
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   stage.status === "done"
@@ -429,7 +601,7 @@ export default function CMAStudio() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {isChinese ? "MLS 搜索" : "MLS Search"}
+                  {isChinese ? "MLS / 地址搜索" : "MLS / Address Search"}
                 </button>
                 <button
                   onClick={() => setInputTab("manual")}
@@ -449,162 +621,224 @@ export default function CMAStudio() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      placeholder={copy.subjectCard.searchPlaceholder}
+                      placeholder={
+                        isChinese
+                          ? "输入地址或 MLS 编号搜索..."
+                          : "Search by address or MLS number..."
+                      }
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       className="pl-9"
                     />
                   </div>
-                  <ScrollArea className="max-h-[260px]">
+                  <ScrollArea className="h-[260px]">
                     <div className="flex flex-col gap-1.5">
-                      {propertiesQuery.isLoading && (
+                      {!shouldSearchProperties ? (
+                        <p className="text-xs text-muted-foreground py-4 text-center">
+                          {copy.subjectCard.startSearch}
+                        </p>
+                      ) : propertiesQuery.isLoading ? (
                         <p className="text-xs text-muted-foreground py-4 text-center">
                           <Loader2 className="w-4 h-4 animate-spin inline mr-1" />
                           {copy.subjectCard.loadingProperties}
                         </p>
-                      )}
-                      {propertiesQuery.data?.map(
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (p: any) => (
-                          <button
-                            key={p.listingKey}
-                            onClick={() => setSelectedSubjectKey(p.listingKey)}
-                            className={`w-full text-left p-2.5 rounded-lg border text-sm transition-colors ${
-                              selectedSubjectKey === p.listingKey
-                                ? "border-violet-500 bg-violet-50 dark:bg-violet-950/20"
-                                : "border-transparent hover:bg-muted"
-                            }`}
-                          >
-                            <div className="font-medium truncate">
-                              {p.unparsedAddress || p.listingKey}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              {p.city} · {formatPrice(p.listPrice)} ·{" "}
-                              {p.bedroomsTotal ?? "?"}bd/{p.bathroomsTotalInteger ?? "?"}ba ·{" "}
-                              {p.livingArea ?? "?"}sqft
-                            </div>
-                          </button>
-                        ),
-                      )}
-                      {propertiesQuery.data?.length === 0 && (
-                        <p className="text-xs text-muted-foreground py-4 text-center">
-                          {copy.subjectCard.noProperties}
-                        </p>
-                      )}
+                      ) : null}
+                      {shouldSearchProperties &&
+                        propertiesQuery.data?.map(
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          (p: any) => (
+                            <button
+                              key={p.listingKey}
+                              onClick={() =>
+                                setSelectedSubjectKey(p.listingKey)
+                              }
+                              className={`w-full text-left p-2.5 rounded-lg border text-sm transition-colors ${
+                                selectedSubjectKey === p.listingKey
+                                  ? "border-violet-500 bg-violet-50 dark:bg-violet-950/20"
+                                  : "border-transparent hover:bg-muted"
+                              }`}
+                            >
+                              <div className="font-medium truncate">
+                                {p.unparsedAddress || p.listingKey}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                                <span>{p.city}</span>
+                                <span>·</span>
+                                <span>{formatPrice(p.listPrice)}</span>
+                                <span>·</span>
+                                <span>
+                                  {p.bedroomsTotal ?? "?"}bd/
+                                  {p.bathroomsTotalInteger ?? "?"}ba
+                                </span>
+                                <span>·</span>
+                                <span>{p.livingArea ?? "?"}sqft</span>
+                                {p.standardStatus && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] px-1 py-0 ml-1"
+                                  >
+                                    {p.standardStatus}
+                                  </Badge>
+                                )}
+                              </div>
+                            </button>
+                          ),
+                        )}
+                      {shouldSearchProperties &&
+                        propertiesQuery.data?.length === 0 && (
+                          <p className="text-xs text-muted-foreground py-4 text-center">
+                            {copy.subjectCard.noProperties}
+                          </p>
+                        )}
                     </div>
                   </ScrollArea>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="col-span-2">
+                <div className="flex flex-col gap-3">
+                  {/* Address with auto-fill button */}
+                  <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
                       {isChinese ? "地址 *" : "Address *"}
                     </label>
-                    <AddressAutocomplete
-                      value={manualAddress}
-                      onChange={setManualAddress}
-                      onSelect={(formatted) => {
-                        // Parse "123 Main St, City, ST 12345, USA"
-                        const parts = formatted.split(",").map((s) => s.trim());
-                        if (parts.length >= 3) {
-                          setManualAddress(parts[0] ?? formatted);
-                          if (parts.length >= 4) setManualCity(parts[1] ?? "");
-                          const stateZip = parts[parts.length - 2] ?? "";
-                          const m = stateZip.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
-                          if (m) {
-                            setManualState(m[1] ?? "");
-                            setManualZip(m[2] ?? "");
-                          }
-                        } else {
-                          setManualAddress(formatted);
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <AddressAutocomplete
+                          value={manualAddress}
+                          onChange={(v) => {
+                            setManualAddress(v);
+                            setAutoFilled(false);
+                          }}
+                          onSelect={(formatted) => {
+                            const parts = formatted
+                              .split(",")
+                              .map((s) => s.trim());
+                            if (parts.length >= 3) {
+                              setManualAddress(parts[0] ?? formatted);
+                              if (parts.length >= 4)
+                                setManualCity(parts[1] ?? "");
+                              const stateZip = parts[parts.length - 2] ?? "";
+                              const m = stateZip.match(
+                                /^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/,
+                              );
+                              if (m) {
+                                setManualState(m[1] ?? "");
+                                setManualZip(m[2] ?? "");
+                              }
+                            } else {
+                              setManualAddress(formatted);
+                            }
+                            setAutoFilled(false);
+                          }}
+                          placeholder="123 Main St"
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAutoFill}
+                        disabled={autoFilling || !manualAddress.trim()}
+                        className="shrink-0 h-10 px-3"
+                        title={
+                          isChinese
+                            ? "从 RentCast 自动填充房产信息"
+                            : "Auto-fill from RentCast"
                         }
-                      }}
-                      placeholder="123 Main St"
-                    />
+                      >
+                        {autoFilling ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Zap className="w-3.5 h-3.5 mr-1" />
+                            {isChinese ? "自动填充" : "Auto-fill"}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    {autoFilled && (
+                      <p className="text-[10px] text-emerald-600 mt-1">
+                        {isChinese
+                          ? "✓ 已从 RentCast 自动填充"
+                          : "✓ Auto-filled from RentCast"}
+                      </p>
+                    )}
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      {isChinese ? "城市" : "City"}
-                    </label>
-                    <Input
-                      value={manualCity}
-                      onChange={(e) => setManualCity(e.target.value)}
-                      placeholder="Irvine"
-                    />
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        {isChinese ? "城市" : "City"}
+                      </label>
+                      <Input
+                        value={manualCity}
+                        onChange={(e) => setManualCity(e.target.value)}
+                        placeholder="Irvine"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        {isChinese ? "州" : "State"}
+                      </label>
+                      <Input
+                        value={manualState}
+                        onChange={(e) => setManualState(e.target.value)}
+                        placeholder="CA"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        {isChinese ? "邮编" : "ZIP"}
+                      </label>
+                      <Input
+                        value={manualZip}
+                        onChange={(e) => setManualZip(e.target.value)}
+                        placeholder="92618"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      {isChinese ? "州" : "State"}
-                    </label>
-                    <Input
-                      value={manualState}
-                      onChange={(e) => setManualState(e.target.value)}
-                      placeholder="CA"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      {isChinese ? "邮编" : "ZIP"}
-                    </label>
-                    <Input
-                      value={manualZip}
-                      onChange={(e) => setManualZip(e.target.value)}
-                      placeholder="92618"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      {isChinese ? "价格" : "Price"}
-                    </label>
-                    <Input
-                      value={manualPrice}
-                      onChange={(e) => setManualPrice(e.target.value)}
-                      placeholder="$1,200,000"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      {isChinese ? "卧室" : "Beds"}
-                    </label>
-                    <Input
-                      type="number"
-                      value={manualBeds}
-                      onChange={(e) => setManualBeds(e.target.value)}
-                      placeholder="4"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      {isChinese ? "卫浴" : "Baths"}
-                    </label>
-                    <Input
-                      type="number"
-                      value={manualBaths}
-                      onChange={(e) => setManualBaths(e.target.value)}
-                      placeholder="3"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      {isChinese ? "面积(sqft)" : "Sqft"}
-                    </label>
-                    <Input
-                      type="number"
-                      value={manualSqft}
-                      onChange={(e) => setManualSqft(e.target.value)}
-                      placeholder="2400"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      {isChinese ? "建造年份" : "Year Built"}
-                    </label>
-                    <Input
-                      type="number"
-                      value={manualYearBuilt}
-                      onChange={(e) => setManualYearBuilt(e.target.value)}
-                      placeholder="2005"
-                    />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        {isChinese ? "卧室" : "Beds"}
+                      </label>
+                      <Input
+                        type="number"
+                        value={manualBeds}
+                        onChange={(e) => setManualBeds(e.target.value)}
+                        placeholder="4"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        {isChinese ? "卫浴" : "Baths"}
+                      </label>
+                      <Input
+                        type="number"
+                        value={manualBaths}
+                        onChange={(e) => setManualBaths(e.target.value)}
+                        placeholder="3"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        {isChinese ? "面积(sqft)" : "Sqft"}
+                      </label>
+                      <Input
+                        type="number"
+                        value={manualSqft}
+                        onChange={(e) => setManualSqft(e.target.value)}
+                        placeholder="2400"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        {isChinese ? "建造年份" : "Year Built"}
+                      </label>
+                      <Input
+                        type="number"
+                        value={manualYearBuilt}
+                        onChange={(e) => setManualYearBuilt(e.target.value)}
+                        placeholder="2005"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -627,7 +861,10 @@ export default function CMAStudio() {
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {photoUrls.map((url, i) => (
-                  <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border group">
+                  <div
+                    key={i}
+                    className="relative w-20 h-20 rounded-lg overflow-hidden border group"
+                  >
                     <img
                       src={url}
                       alt={`Photo ${i + 1}`}
@@ -635,7 +872,9 @@ export default function CMAStudio() {
                     />
                     <button
                       onClick={() =>
-                        setPhotoUrls((prev) => prev.filter((_, idx) => idx !== i))
+                        setPhotoUrls((prev) =>
+                          prev.filter((_, idx) => idx !== i),
+                        )
                       }
                       className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
@@ -687,7 +926,9 @@ export default function CMAStudio() {
               <div className="flex items-center justify-between">
                 <label className="text-sm">
                   <Globe className="w-3.5 h-3.5 inline mr-1.5" />
-                  {isChinese ? "网络市场搜索 (Tavily)" : "Web Market Search (Tavily)"}
+                  {isChinese
+                    ? "网络市场搜索 (Tavily)"
+                    : "Web Market Search (Tavily)"}
                 </label>
                 <button
                   onClick={() => setEnableWebSearch(!enableWebSearch)}
@@ -697,7 +938,9 @@ export default function CMAStudio() {
                 >
                   <div
                     className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                      enableWebSearch ? "translate-x-4.5" : "translate-x-0.5"
+                      enableWebSearch
+                        ? "translate-x-4.5"
+                        : "translate-x-0.5"
                     }`}
                   />
                 </button>
@@ -724,9 +967,32 @@ export default function CMAStudio() {
                   />
                 </button>
               </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm">
+                  <TrendingUp className="w-3.5 h-3.5 inline mr-1.5" />
+                  {isChinese
+                    ? "RentCast 估价 + 可比房源"
+                    : "RentCast AVM + Comps"}
+                </label>
+                <button
+                  onClick={() => setEnableRentCast(!enableRentCast)}
+                  className={`w-9 h-5 rounded-full transition-colors ${
+                    enableRentCast ? "bg-violet-500" : "bg-muted"
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                      enableRentCast
+                        ? "translate-x-4.5"
+                        : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
               <div>
                 <label className="text-sm mb-1 block">
-                  {isChinese ? "可比房源数量" : "Comparable Count"} ({compLimit})
+                  {isChinese ? "可比房源数量" : "Comparable Count"} (
+                  {compLimit})
                 </label>
                 <input
                   type="range"
@@ -804,7 +1070,11 @@ export default function CMAStudio() {
                   </p>
                   <div className="flex flex-wrap gap-1.5 mt-3">
                     {result.dataSources?.map((src: string) => (
-                      <Badge key={src} variant="secondary" className="text-[10px]">
+                      <Badge
+                        key={src}
+                        variant="secondary"
+                        className="text-[10px]"
+                      >
                         {src}
                       </Badge>
                     ))}
@@ -819,7 +1089,9 @@ export default function CMAStudio() {
                     <TrendingUp className="w-4 h-4 text-emerald-500" />
                     {isChinese ? "价格建议" : "Price Recommendation"}
                     {result.priceRecommendation?.confidence &&
-                      confidenceBadge(result.priceRecommendation.confidence)}
+                      confidenceBadge(
+                        result.priceRecommendation.confidence,
+                      )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -849,56 +1121,272 @@ export default function CMAStudio() {
                       </p>
                     </div>
                   </div>
+                  {/* RentCast AVM comparison */}
+                  {result.rentCastValuation?.estimatedPrice && (
+                    <div className="mt-3 p-2.5 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/30">
+                      <p className="text-xs font-medium text-orange-700 dark:text-orange-400 mb-1">
+                        {isChinese
+                          ? "RentCast 独立估价参考"
+                          : "RentCast Independent AVM"}
+                      </p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="font-bold text-orange-600 dark:text-orange-400">
+                          $
+                          {result.rentCastValuation.estimatedPrice.toLocaleString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ($
+                          {result.rentCastValuation.priceLow?.toLocaleString() ??
+                            "?"}{" "}
+                          - $
+                          {result.rentCastValuation.priceHigh?.toLocaleString() ??
+                            "?"}
+                          )
+                        </span>
+                        {result.rentCastValuation.pricePerSqft && (
+                          <span className="text-xs text-muted-foreground">
+                            $
+                            {result.rentCastValuation.pricePerSqft.toLocaleString()}
+                            /sqft
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground mt-3">
                     {result.priceRecommendation?.methodology}
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Comparables Table */}
-              {result.comparables?.length > 0 && (
+              {/* Comparables Table — with editable adjustments */}
+              {displayComps.length > 0 && (
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base">
-                      {isChinese ? "可比房源" : "Comparable Sales"} ({result.comparables.length})
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">
+                        {isChinese ? "可比房源" : "Comparable Sales"} (
+                        {displayComps.length})
+                      </CardTitle>
+                      <p className="text-[10px] text-muted-foreground">
+                        {isChinese
+                          ? "点击展开查看/编辑调整项"
+                          : "Click to expand & edit adjustments"}
+                      </p>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b text-muted-foreground">
-                            <th className="text-left py-2 pr-3">{isChinese ? "地址" : "Address"}</th>
-                            <th className="text-right py-2 px-2">{isChinese ? "售价" : "Sold"}</th>
-                            <th className="text-right py-2 px-2">{isChinese ? "调整价" : "Adjusted"}</th>
-                            <th className="text-right py-2 px-2">{isChinese ? "相似度" : "Score"}</th>
-                            <th className="text-right py-2 pl-2">{isChinese ? "详情" : "Details"}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {result.comparables.map((comp: any, i: number) => (
-                            <tr key={i} className="border-b last:border-0 hover:bg-muted/50">
-                              <td className="py-2 pr-3">
-                                <div className="font-medium">{comp.address}</div>
-                                <div className="text-muted-foreground">{comp.city}</div>
-                              </td>
-                              <td className="text-right py-2 px-2 font-medium">{comp.soldPrice}</td>
-                              <td className="text-right py-2 px-2 font-medium text-emerald-600 dark:text-emerald-400">
-                                {comp.adjustedPrice}
-                              </td>
-                              <td className="text-right py-2 px-2">
-                                {comp.similarityScore != null
-                                  ? `${(comp.similarityScore * 100).toFixed(0)}%`
-                                  : "—"}
-                              </td>
-                              <td className="text-right py-2 pl-2 text-muted-foreground">
-                                {comp.beds ?? "?"}bd/{comp.baths ?? "?"}ba · {comp.sqft ?? "?"}sqft
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="flex flex-col gap-2">
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {displayComps.map((comp: any, i: number) => {
+                        const isExpanded = expandedCompIdx === i;
+                        const isEditing = editingCompIdx === i;
+                        const breakdown = comp.adjustmentBreakdown ?? {};
+
+                        return (
+                          <div
+                            key={i}
+                            className="rounded-lg border hover:border-violet-300 dark:hover:border-violet-800 transition-colors"
+                          >
+                            {/* Comp Summary Row */}
+                            <button
+                              onClick={() =>
+                                setExpandedCompIdx(
+                                  isExpanded ? null : i,
+                                )
+                              }
+                              className="w-full text-left p-3 flex items-center gap-3"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium truncate">
+                                    {comp.address}
+                                  </span>
+                                  {sourceBadge(comp.source)}
+                                  {comp.status &&
+                                    comp.status !== "Closed" && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[9px] px-1 py-0"
+                                      >
+                                        {comp.status}
+                                      </Badge>
+                                    )}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+                                  <span>
+                                    {comp.beds ?? "?"}bd/
+                                    {comp.baths ?? "?"}ba
+                                  </span>
+                                  <span>·</span>
+                                  <span>{comp.sqft ?? "?"}sqft</span>
+                                  {comp.yearBuilt && (
+                                    <>
+                                      <span>·</span>
+                                      <span>
+                                        {isChinese ? "建于" : "Built"}{" "}
+                                        {comp.yearBuilt}
+                                      </span>
+                                    </>
+                                  )}
+                                  {comp.soldDate && (
+                                    <>
+                                      <span>·</span>
+                                      <span>
+                                        {isChinese ? "售于" : "Sold"}{" "}
+                                        {comp.soldDate.slice(0, 10)}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-sm font-medium">
+                                  {comp.soldPrice}
+                                </p>
+                                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                  → {comp.adjustedPrice}
+                                </p>
+                              </div>
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                              )}
+                            </button>
+
+                            {/* Expanded Adjustment Details */}
+                            {isExpanded && (
+                              <div className="px-3 pb-3 border-t">
+                                <div className="grid grid-cols-4 gap-2 mt-3">
+                                  {[
+                                    {
+                                      key: "bedroomAdj",
+                                      label: isChinese
+                                        ? "卧室调整"
+                                        : "Bedroom",
+                                    },
+                                    {
+                                      key: "sqftAdj",
+                                      label: isChinese
+                                        ? "面积调整"
+                                        : "Sqft",
+                                    },
+                                    {
+                                      key: "ageAdj",
+                                      label: isChinese
+                                        ? "房龄调整"
+                                        : "Age",
+                                    },
+                                    {
+                                      key: "conditionAdj",
+                                      label: isChinese
+                                        ? "状况调整"
+                                        : "Condition",
+                                    },
+                                  ].map(({ key, label }) => (
+                                    <div key={key}>
+                                      <label className="text-[10px] text-muted-foreground block mb-0.5">
+                                        {label}
+                                      </label>
+                                      {isEditing ? (
+                                        <Input
+                                          type="number"
+                                          className="h-7 text-xs"
+                                          value={breakdown[key] ?? 0}
+                                          onChange={(e) =>
+                                            handleEditAdjustment(
+                                              i,
+                                              key,
+                                              parseInt(
+                                                e.target.value,
+                                                10,
+                                              ) || 0,
+                                            )
+                                          }
+                                        />
+                                      ) : (
+                                        <p
+                                          className={`text-xs font-medium ${
+                                            (breakdown[key] ?? 0) > 0
+                                              ? "text-emerald-600"
+                                              : (breakdown[key] ?? 0) <
+                                                  0
+                                                ? "text-red-600"
+                                                : "text-muted-foreground"
+                                          }`}
+                                        >
+                                          {(breakdown[key] ?? 0) >= 0
+                                            ? "+"
+                                            : ""}
+                                          $
+                                          {Math.abs(
+                                            breakdown[key] ?? 0,
+                                          ).toLocaleString()}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="flex items-center justify-between mt-3 pt-2 border-t">
+                                  <div className="text-xs">
+                                    <span className="text-muted-foreground">
+                                      {isChinese
+                                        ? "总调整："
+                                        : "Total adj: "}
+                                    </span>
+                                    <span
+                                      className={`font-bold ${
+                                        (breakdown.total ?? 0) >= 0
+                                          ? "text-emerald-600"
+                                          : "text-red-600"
+                                      }`}
+                                    >
+                                      {(breakdown.total ?? 0) >= 0
+                                        ? "+"
+                                        : ""}
+                                      $
+                                      {Math.abs(
+                                        breakdown.total ?? 0,
+                                      ).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2 text-xs"
+                                      onClick={() =>
+                                        setEditingCompIdx(
+                                          isEditing ? null : i,
+                                        )
+                                      }
+                                    >
+                                      <Edit3 className="w-3 h-3 mr-1" />
+                                      {isEditing
+                                        ? isChinese
+                                          ? "完成"
+                                          : "Done"
+                                        : isChinese
+                                          ? "编辑"
+                                          : "Edit"}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2 text-xs text-red-500 hover:text-red-700"
+                                      onClick={() => handleRemoveComp(i)}
+                                    >
+                                      <Trash2 className="w-3 h-3 mr-1" />
+                                      {isChinese ? "移除" : "Remove"}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
@@ -911,7 +1399,10 @@ export default function CMAStudio() {
                     <CardTitle className="text-base flex items-center gap-2">
                       <Globe className="w-4 h-4 text-blue-500" />
                       {isChinese ? "市场情报" : "Market Intelligence"}
-                      <Badge variant="secondary" className="text-[10px]">
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px]"
+                      >
                         Tavily
                       </Badge>
                     </CardTitle>
@@ -938,7 +1429,8 @@ export default function CMAStudio() {
                           </p>
                         </div>
                       )}
-                      {result.marketIntelligence.avgDaysOnMarket != null && (
+                      {result.marketIntelligence.avgDaysOnMarket !=
+                        null && (
                         <div className="p-2.5 rounded-lg bg-muted/50 text-center">
                           <p className="text-xs text-muted-foreground">
                             {isChinese ? "平均 DOM" : "Avg DOM"}
@@ -960,18 +1452,22 @@ export default function CMAStudio() {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {result.marketIntelligence.citations.map((c: any, i: number) => (
-                        <a
-                          key={i}
-                          href={c.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                        >
-                          <ExternalLink className="w-2.5 h-2.5" />
-                          {c.title?.slice(0, 40) || new URL(c.url).hostname}
-                        </a>
-                      ))}
+                      {result.marketIntelligence.citations.map(
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        (c: any, i: number) => (
+                          <a
+                            key={i}
+                            href={c.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          >
+                            <ExternalLink className="w-2.5 h-2.5" />
+                            {c.title?.slice(0, 40) ||
+                              new URL(c.url).hostname}
+                          </a>
+                        ),
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -993,7 +1489,11 @@ export default function CMAStudio() {
                           {isChinese ? "状况评分" : "Condition"}
                         </p>
                         <p className="font-bold text-lg">
-                          {result.subject.photoAnalysis.conditionScore}/10
+                          {
+                            result.subject.photoAnalysis
+                              .conditionScore
+                          }
+                          /10
                         </p>
                       </div>
                       <div className="p-2.5 rounded-lg bg-muted/50 text-center">
@@ -1001,7 +1501,10 @@ export default function CMAStudio() {
                           {isChinese ? "装修等级" : "Upgrade Level"}
                         </p>
                         <p className="font-bold text-sm capitalize">
-                          {result.subject.photoAnalysis.upgradeLevel?.replace(/_/g, " ")}
+                          {result.subject.photoAnalysis.upgradeLevel?.replace(
+                            /_/g,
+                            " ",
+                          )}
                         </p>
                       </div>
                       <div className="p-2.5 rounded-lg bg-muted/50 text-center">
@@ -1009,7 +1512,10 @@ export default function CMAStudio() {
                           {isChinese ? "价值影响" : "Value Impact"}
                         </p>
                         <p className="font-bold text-sm capitalize">
-                          {result.subject.photoAnalysis.valueImpact?.replace(/_/g, " ")}
+                          {result.subject.photoAnalysis.valueImpact?.replace(
+                            /_/g,
+                            " ",
+                          )}
                         </p>
                       </div>
                       <div className="p-2.5 rounded-lg bg-muted/50">
@@ -1017,20 +1523,26 @@ export default function CMAStudio() {
                           {isChinese ? "检测特征" : "Features"}
                         </p>
                         <div className="flex flex-wrap gap-1">
-                          {result.subject.photoAnalysis.detectedFeatures?.slice(0, 4).map(
-                            (f: string) => (
-                              <Badge key={f} variant="outline" className="text-[9px] px-1.5 py-0">
+                          {result.subject.photoAnalysis.detectedFeatures
+                            ?.slice(0, 4)
+                            .map((f: string) => (
+                              <Badge
+                                key={f}
+                                variant="outline"
+                                className="text-[9px] px-1.5 py-0"
+                              >
                                 {f.replace(/_/g, " ")}
                               </Badge>
-                            ),
-                          )}
+                            ))}
                         </div>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {isChinese
-                        ? result.subject.photoAnalysis.narrative?.chinese
-                        : result.subject.photoAnalysis.narrative?.english}
+                        ? result.subject.photoAnalysis.narrative
+                            ?.chinese
+                        : result.subject.photoAnalysis.narrative
+                            ?.english}
                     </p>
                   </CardContent>
                 </Card>
@@ -1045,13 +1557,13 @@ export default function CMAStudio() {
                 </div>
                 <h3 className="font-semibold mb-1">
                   {isChinese
-                    ? "选择房源或手动输入，开始生成 CMA"
-                    : "Select a listing or enter details to generate CMA"}
+                    ? "搜索房源或手动输入地址，开始生成 CMA"
+                    : "Search a listing or enter an address to generate CMA"}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-sm">
                   {isChinese
-                    ? "系统将整合向量匹配、Tavily 网络搜索、照片分析，生成专业的市场分析报告"
-                    : "The system will combine vector matching, Tavily web search, and photo analysis to create a comprehensive market analysis"}
+                    ? "系统将整合 BBO 向量匹配、RentCast 估价、Tavily 网络搜索、照片分析，生成专业的市场分析报告"
+                    : "Combines BBO vector matching, RentCast AVM, Tavily web search, and photo analysis for comprehensive market analysis"}
                 </p>
               </CardContent>
             </Card>
@@ -1063,7 +1575,9 @@ export default function CMAStudio() {
               <CardTitle className="text-base">
                 {copy.historyCard.title}
               </CardTitle>
-              <CardDescription>{copy.historyCard.description}</CardDescription>
+              <CardDescription>
+                {copy.historyCard.description}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {historyQuery.isLoading && (
@@ -1091,14 +1605,18 @@ export default function CMAStudio() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatDateTime(report.createdAt)} ·{" "}
-                        {report.suggestedPriceLow && report.suggestedPriceHigh
+                        {report.suggestedPriceLow &&
+                        report.suggestedPriceHigh
                           ? `${report.suggestedPriceLow} – ${report.suggestedPriceHigh}`
                           : "—"}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {report.dataSources?.length > 0 && (
-                        <Badge variant="secondary" className="text-[9px]">
+                        <Badge
+                          variant="secondary"
+                          className="text-[9px]"
+                        >
                           {report.dataSources.length} sources
                         </Badge>
                       )}
@@ -1109,6 +1627,10 @@ export default function CMAStudio() {
                         onClick={() => {
                           if (report.reportResult) {
                             setResult(report.reportResult);
+                            setEditedComps(new Map());
+                            setRemovedCompIndices(new Set());
+                            setEditingCompIdx(null);
+                            setExpandedCompIdx(null);
                           }
                         }}
                       >

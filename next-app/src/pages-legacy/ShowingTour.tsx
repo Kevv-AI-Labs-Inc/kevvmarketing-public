@@ -1,6 +1,6 @@
 // legacy page — incrementally migrated
 import type { inferRouterOutputs } from "@trpc/server";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Copy, ExternalLink, GripVertical, Loader2, MapPin, Navigation, Search, Trash2, Route } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ type MlsListing = {
   city: string | null;
   stateOrProvince: string | null;
   postalCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
   listPrice: string | null;
   propertyType: string | null;
   bedroomsTotal: number | null;
@@ -72,6 +74,15 @@ function displayAddress(item: {
   return fb || fallback;
 }
 
+function normalizeCoordinate(value: unknown) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 function normalizeSearchListing(listing: Record<string, unknown>): MlsListing | null {
   const listingKey =
     typeof listing.listingKey === "string" ? listing.listingKey.trim() : "";
@@ -87,6 +98,8 @@ function normalizeSearchListing(listing: Record<string, unknown>): MlsListing | 
       typeof listing.stateOrProvince === "string" ? listing.stateOrProvince : null,
     postalCode:
       typeof listing.postalCode === "string" ? listing.postalCode : null,
+    latitude: normalizeCoordinate(listing.latitude),
+    longitude: normalizeCoordinate(listing.longitude),
     listPrice:
       typeof listing.listPrice === "string"
         ? listing.listPrice
@@ -145,6 +158,35 @@ function extractRoutePreview(data: PreviewRouteResponse | CreateTourResponse): R
   };
 }
 
+function buildFallbackPreview(
+  listings: MlsListing[],
+  routeMode: "optimized" | "manual",
+  message: string,
+): RoutePreview {
+  return {
+    orderedListingKeys: listings.map((listing) => listing.listingKey),
+    routeMode,
+    routeStatus: "fallback",
+    totalDistance: null,
+    totalDuration: null,
+    googleMapsUrl: null,
+    message,
+    stops: listings.map((listing, index) => ({
+      order: index + 1,
+      listingKey: listing.listingKey,
+      address: displayAddress(listing, listing.listingKey),
+      latitude: listing.latitude,
+      longitude: listing.longitude,
+      driveFromPreviousText: null,
+      distanceFromPreviousText: null,
+    })),
+  };
+}
+
+function buildPreviewSignature(listings: MlsListing[], routeMode: "optimized" | "manual") {
+  return `${routeMode}:${listings.map((listing) => listing.listingKey).join("|")}`;
+}
+
 export default function ShowingTour() {
   const { t } = useT();
   const [searchQuery, setSearchQuery] = useState("");
@@ -158,27 +200,16 @@ export default function ShowingTour() {
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [draggingListingKey, setDraggingListingKey] = useState<string | null>(null);
   const [dragOverListingKey, setDragOverListingKey] = useState<string | null>(null);
+  const previewRequestIdRef = useRef(0);
+  const autoPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewSignatureRef = useRef<string | null>(null);
 
   const searchResults = trpc.mls.getProperties.useQuery(
     { search: searchQuery || undefined, limit: 10, offset: 0, status: "Active" },
     { enabled: searchQuery.trim().length >= 2 }
   );
 
-  const previewRoute = trpc.showingTour.previewRoute.useMutation({
-    onSuccess: (data: PreviewRouteResponse) => {
-      setSelectedListings((current) => reorderListings(current, data.orderedListingKeys));
-      setRoutePreview(extractRoutePreview(data));
-      toast.success(t("showingTour.routeReady"), {
-        description: t("showingTour.routeReadyDescription", {
-          distance: data.totalDistance ?? "N/A",
-          duration: data.totalDuration ?? "N/A",
-        }),
-      });
-    },
-    onError: (error) => {
-      toast.error(t("showingTour.routeFailed"), { description: error.message });
-    },
-  });
+  const previewRoute = trpc.showingTour.previewRoute.useMutation();
 
   const createTour = trpc.showingTour.createTour.useMutation({
     onSuccess: (data: CreateTourResponse) => {
@@ -202,18 +233,84 @@ export default function ShowingTour() {
     setGeneratedUrl(null);
   }, []);
 
-  const recalculateManualPreview = useCallback((nextListings: MlsListing[]) => {
-    if (routeMode !== "manual" || !routePreview || nextListings.length < 2) {
+  const runRoutePreview = useCallback(
+    async (options?: { silent?: boolean; listings?: MlsListing[] }) => {
+      const silent = options?.silent ?? false;
+      const listings = options?.listings ?? selectedListings;
+
+      if (listings.length < 2) {
+        previewRequestIdRef.current += 1;
+        resetDerivedState();
+        return;
+      }
+
+      const requestId = ++previewRequestIdRef.current;
+      setGeneratedUrl(null);
+
+      try {
+        const data = await previewRoute.mutateAsync({
+          propertyIds: listings.map((listing) => listing.listingKey),
+          routeMode,
+        });
+
+        if (requestId !== previewRequestIdRef.current) return;
+
+        const reorderedListings = reorderListings(listings, data.orderedListingKeys);
+        previewSignatureRef.current = buildPreviewSignature(reorderedListings, routeMode);
+        setSelectedListings((current) => reorderListings(current, data.orderedListingKeys));
+        setRoutePreview(extractRoutePreview(data));
+
+        if (!silent) {
+          toast.success(t("showingTour.routeReady"), {
+            description: t("showingTour.routeReadyDescription", {
+              distance: data.totalDistance ?? "N/A",
+              duration: data.totalDuration ?? "N/A",
+            }),
+          });
+        }
+      } catch (error) {
+        if (requestId !== previewRequestIdRef.current) return;
+        const message =
+          error instanceof Error ? error.message : t("showingTour.routeFailed");
+        previewSignatureRef.current = buildPreviewSignature(listings, routeMode);
+        setRoutePreview(buildFallbackPreview(listings, routeMode, message));
+        if (!silent) {
+          toast.error(t("showingTour.routeFailed"), { description: message });
+        }
+      }
+    },
+    [previewRoute, resetDerivedState, routeMode, selectedListings, t],
+  );
+
+  useEffect(() => {
+    if (autoPreviewTimerRef.current) {
+      clearTimeout(autoPreviewTimerRef.current);
+      autoPreviewTimerRef.current = null;
+    }
+
+    if (selectedListings.length < 2) {
+      previewRequestIdRef.current += 1;
+      previewSignatureRef.current = null;
       resetDerivedState();
       return;
     }
 
-    setGeneratedUrl(null);
-    previewRoute.mutate({
-      propertyIds: nextListings.map((listing) => listing.listingKey),
-      routeMode: "manual",
-    });
-  }, [previewRoute, resetDerivedState, routeMode, routePreview]);
+    const currentSignature = buildPreviewSignature(selectedListings, routeMode);
+    if (previewSignatureRef.current === currentSignature) {
+      return;
+    }
+
+    autoPreviewTimerRef.current = setTimeout(() => {
+      void runRoutePreview({ silent: true });
+    }, 450);
+
+    return () => {
+      if (autoPreviewTimerRef.current) {
+        clearTimeout(autoPreviewTimerRef.current);
+        autoPreviewTimerRef.current = null;
+      }
+    };
+  }, [resetDerivedState, routeMode, runRoutePreview, selectedListings]);
 
   const addListing = useCallback((listing: MlsListing) => {
     if (selectedListings.some((item) => item.listingKey === listing.listingKey)) {
@@ -224,16 +321,18 @@ export default function ShowingTour() {
       toast.warning(t("showingTour.maxListings"));
       return;
     }
-    resetDerivedState();
+    setGeneratedUrl(null);
+    previewSignatureRef.current = null;
     setSelectedListings((current) => [...current, listing]);
     setSearchQuery("");
-  }, [resetDerivedState, selectedListings, t]);
+  }, [selectedListings, t]);
 
   const removeListing = useCallback((listingKey: string) => {
     const nextListings = selectedListings.filter((listing) => listing.listingKey !== listingKey);
+    setGeneratedUrl(null);
+    previewSignatureRef.current = null;
     setSelectedListings(nextListings);
-    recalculateManualPreview(nextListings);
-  }, [recalculateManualPreview, selectedListings]);
+  }, [selectedListings]);
 
   const moveListing = useCallback((index: number, direction: -1 | 1) => {
     const nextIndex = index + direction;
@@ -241,9 +340,10 @@ export default function ShowingTour() {
     const nextListings = [...selectedListings];
     const [item] = nextListings.splice(index, 1);
     nextListings.splice(nextIndex, 0, item);
+    setGeneratedUrl(null);
+    previewSignatureRef.current = null;
     setSelectedListings(nextListings);
-    recalculateManualPreview(nextListings);
-  }, [recalculateManualPreview, selectedListings]);
+  }, [selectedListings]);
 
   const moveListingByDrag = useCallback((draggedKey: string, targetKey: string) => {
     if (draggedKey === targetKey) return;
@@ -254,20 +354,22 @@ export default function ShowingTour() {
     const nextListings = [...selectedListings];
     const [dragged] = nextListings.splice(draggedIndex, 1);
     nextListings.splice(targetIndex, 0, dragged);
+    setGeneratedUrl(null);
+    previewSignatureRef.current = null;
     setSelectedListings(nextListings);
-    recalculateManualPreview(nextListings);
-  }, [recalculateManualPreview, selectedListings]);
+  }, [selectedListings]);
 
   const handlePreviewRoute = useCallback(() => {
     if (selectedListings.length < 2) {
       toast.error(t("showingTour.minListings"));
       return;
     }
-    previewRoute.mutate({
-      propertyIds: selectedListings.map((listing) => listing.listingKey),
-      routeMode,
-    });
-  }, [previewRoute, routeMode, selectedListings, t]);
+    if (autoPreviewTimerRef.current) {
+      clearTimeout(autoPreviewTimerRef.current);
+      autoPreviewTimerRef.current = null;
+    }
+    void runRoutePreview({ silent: false });
+  }, [runRoutePreview, selectedListings.length, t]);
 
   const handleGenerateShare = useCallback(() => {
     if (selectedListings.length < 2) {
@@ -390,7 +492,8 @@ export default function ShowingTour() {
                     value={routeMode}
                     onValueChange={(value) => {
                       setRouteMode(value as "optimized" | "manual");
-                      resetDerivedState();
+                      setGeneratedUrl(null);
+                      previewSignatureRef.current = null;
                     }}
                   >
                     <TabsList className="grid w-[220px] grid-cols-2">
