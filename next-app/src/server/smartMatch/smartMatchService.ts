@@ -26,6 +26,7 @@ import type {
   SearchFilters,
   VectorSearchResult,
 } from "@/server/clients/types";
+import { parseSearchQuery, buildSemanticText } from "./queryParser";
 
 export type SmartMatchLocale = "zh" | "en";
 
@@ -47,6 +48,17 @@ export type SmartMatchGenerateInput = {
   maxPrice?: number;
   minBedrooms?: number;
   maxBedrooms?: number;
+  topK?: number;
+};
+
+/**
+ * Natural language search input — no contact required.
+ * LLM parses the query into structured filters + semantic residual.
+ */
+export type SmartMatchNLSearchInput = {
+  agentId: number;
+  query: string;
+  contactId?: number;
   topK?: number;
 };
 
@@ -157,7 +169,7 @@ function formatBudgetSummary(minPrice?: number | null, maxPrice?: number | null)
 
 function featurePhrase(
   locale: SmartMatchLocale,
-  key: "budget" | "city" | "postalCode" | "propertyType" | "bedrooms" | "feature" | "semantic",
+  key: "budget" | "city" | "postalCode" | "propertyType" | "bedrooms" | "feature" | "semantic" | "lifestyle",
   detail: string
 ) {
   const zh: Record<typeof key, string> = {
@@ -168,6 +180,7 @@ function featurePhrase(
     bedrooms: `卧室数量匹配：${detail}`,
     feature: `偏好特征命中：${detail}`,
     semantic: `整体画像相关度高：${detail}`,
+    lifestyle: `生活方式匹配：${detail}`,
   };
 
   const en: Record<typeof key, string> = {
@@ -178,6 +191,7 @@ function featurePhrase(
     bedrooms: `Bedroom fit: ${detail}`,
     feature: `Preference matched: ${detail}`,
     semantic: `Strong overall fit: ${detail}`,
+    lifestyle: `Lifestyle match: ${detail}`,
   };
 
   const phrasesByLocale = { zh, en };
@@ -396,11 +410,24 @@ function buildListingText(listing: ListingData) {
     .join(" ");
 }
 
+// ─── Two-Phase Scoring ────────────────────────────────────────
+//
+// Phase 1 (Structural Retrieve): Use hard filters → DB/API query → candidate set
+// Phase 2 (Semantic Re-rank): Score candidates using embedding similarity + feature matching + behavior
+//
+// New weight distribution:
+//   Final = Semantic × 0.40 + Rule × 0.40 + Behavior × 0.20
+//
+// The key change: rule score is now a "quality of match" metric post-retrieval,
+// not a survival filter. Structural filters already ensured price/location/beds match.
+
 function scoreListing(args: {
   listing: ListingData;
   hardFilters: SmartMatchHardFilters;
   softPreferences: string[];
   negativePreferences: string[];
+  features: string[];
+  lifestyle: string[];
   queryText: string;
   locale: SmartMatchLocale;
   vectorSimilarity?: number | null;
@@ -409,6 +436,7 @@ function scoreListing(args: {
   const listingTokens = new Set(tokenize(listingText));
   const queryTokens = tokenize(args.queryText);
 
+  // ── Semantic Score (40%) ─────────────────────────────────
   const mockQueryEmbedding = generateMockEmbedding(args.queryText);
   const mockListingEmbedding = generateMockEmbedding(listingText);
   const localSemantic = cosineSimilarity(mockQueryEmbedding, mockListingEmbedding);
@@ -416,6 +444,7 @@ function scoreListing(args: {
     args.vectorSimilarity != null ? args.vectorSimilarity * 0.75 + localSemantic * 0.25 : localSemantic
   );
 
+  // ── Rule Score (40%) — how well this listing matches hard filters ──
   let ruleScore = 0;
   const reasons: string[] = [];
   const listingPrice = parseCurrency(args.listing.listPrice);
@@ -462,12 +491,22 @@ function scoreListing(args: {
     );
   }
 
+  // ── Behavior Score (20%) — soft preferences + features + lifestyle ──
+  const allSoftPrefs = uniqueStrings([...args.softPreferences, ...args.features]);
+
   const matchedSoft = uniqueStrings(
-    args.softPreferences.filter((item) => {
+    allSoftPrefs.filter((item) => {
       const tokens = tokenize(item);
       return tokens.some((token) => listingTokens.has(token));
     })
   ).slice(0, 3);
+
+  const matchedLifestyle = uniqueStrings(
+    args.lifestyle.filter((item) => {
+      const tokens = tokenize(item);
+      return tokens.some((token) => listingTokens.has(token));
+    })
+  ).slice(0, 2);
 
   const matchedNegative = uniqueStrings(
     args.negativePreferences.filter((item) => {
@@ -483,11 +522,20 @@ function scoreListing(args: {
         Math.max(queryTokens.length, 1);
 
   const behaviorScore = clampScore(
-    Math.max(0, matchedSoft.length * 0.22 + tokenOverlap * 0.35 - matchedNegative.length * 0.3)
+    Math.max(
+      0,
+      matchedSoft.length * 0.20 +
+      matchedLifestyle.length * 0.15 +
+      tokenOverlap * 0.30 -
+      matchedNegative.length * 0.35
+    )
   );
 
   if (matchedSoft.length > 0) {
     reasons.push(featurePhrase(args.locale, "feature", matchedSoft.join(", ")));
+  }
+  if (matchedLifestyle.length > 0) {
+    reasons.push(featurePhrase(args.locale, "lifestyle", matchedLifestyle.join(", ")));
   }
   if (semanticScore >= 0.72) {
     const semanticDetailsByLocale = {
@@ -503,8 +551,9 @@ function scoreListing(args: {
     );
   }
 
+  // ── Final Composite ──────────────────────────────────────
   const finalScore = clampScore(
-    semanticScore * 0.55 + clampScore(ruleScore) * 0.35 + behaviorScore * 0.1
+    semanticScore * 0.40 + clampScore(ruleScore) * 0.40 + behaviorScore * 0.20
   );
 
   return {
@@ -514,7 +563,7 @@ function scoreListing(args: {
     ruleScore: clampScore(ruleScore),
     behaviorScore,
     finalScore,
-    matchReasons: uniqueStrings(reasons).slice(0, 4),
+    matchReasons: uniqueStrings(reasons).slice(0, 5),
   };
 }
 
@@ -539,7 +588,103 @@ async function enrichImages(candidates: MatchCandidate[]) {
   }
 }
 
-async function retrieveCandidates(args: {
+// ─── Phase 1: Structural Retrieve ─────────────────────────────
+//
+// Retrieve candidates using HARD filters (price, city, beds, type).
+// These are exact-match filters — users expect precise results.
+// Returns a broad candidate set (3-6x topK) for Phase 2 re-ranking.
+
+async function structuralRetrieve(args: {
+  hardFilters: SmartMatchHardFilters;
+  candidateMultiplier?: number;
+  topK: number;
+}): Promise<{ listings: ListingData[]; source: "search" }> {
+  const filters = toSearchFilters(args.hardFilters);
+  const fetchCount = Math.min(
+    Math.max(args.topK * (args.candidateMultiplier ?? 5), 24),
+    100,
+  );
+
+  const response = await searchListings({
+    ...filters,
+    perPage: fetchCount,
+    page: 1,
+  });
+
+  return {
+    listings: response.data,
+    source: "search",
+  };
+}
+
+// ─── Phase 2: Semantic Re-rank ────────────────────────────────
+//
+// Take the structurally-retrieved candidates and re-rank them using:
+// 1. Embedding cosine similarity (query embedding vs listing)
+// 2. Feature/lifestyle token matching
+// 3. Soft preference matching
+// 4. Negative preference penalty
+
+async function semanticRerank(args: {
+  candidates: ListingData[];
+  queryEmbedding: number[];
+  queryText: string;
+  hardFilters: SmartMatchHardFilters;
+  softPreferences: string[];
+  negativePreferences: string[];
+  features: string[];
+  lifestyle: string[];
+  topK: number;
+  locale: SmartMatchLocale;
+}): Promise<MatchCandidate[]> {
+  // Try to get vector similarities for the candidates (batch)
+  let vectorScores = new Map<string, number>();
+
+  try {
+    const vectorResponse = await vectorSearch({
+      embedding: args.queryEmbedding,
+      topK: Math.min(args.candidates.length, 50),
+      filters: toSearchFilters(args.hardFilters),
+    });
+
+    if (vectorResponse.data?.length > 0) {
+      vectorScores = new Map(
+        vectorResponse.data.map((item: VectorSearchResult) => [
+          item.listing.listingKey,
+          item.score,
+        ]),
+      );
+    }
+  } catch {
+    // Vector search unavailable — proceed with local scoring only
+  }
+
+  const scored = args.candidates.map((listing) => {
+    const candidate = scoreListing({
+      listing,
+      hardFilters: args.hardFilters,
+      softPreferences: args.softPreferences,
+      negativePreferences: args.negativePreferences,
+      features: args.features,
+      lifestyle: args.lifestyle,
+      queryText: args.queryText,
+      locale: args.locale,
+      vectorSimilarity: vectorScores.get(listing.listingKey) ?? null,
+    });
+    return candidate;
+  });
+
+  // Sort by final score, take top K
+  scored.sort((a, b) => b.finalScore - a.finalScore);
+  const topResults = scored.slice(0, args.topK);
+
+  return enrichImages(topResults);
+}
+
+// ─── Legacy Retrieve (vector-first, fallback to search) ──────
+// Kept for backward compatibility with contact-based matching
+
+async function retrieveCandidatesLegacy(args: {
   queryEmbedding: number[];
   queryText: string;
   hardFilters: SmartMatchHardFilters;
@@ -565,6 +710,8 @@ async function retrieveCandidates(args: {
             hardFilters: args.hardFilters,
             softPreferences: args.softPreferences,
             negativePreferences: args.negativePreferences,
+            features: [],
+            lifestyle: [],
             queryText: args.queryText,
             locale: args.locale,
             vectorSimilarity: item.score,
@@ -588,32 +735,33 @@ async function retrieveCandidates(args: {
     // Fall back to structured search.
   }
 
-  const response = await searchListings({
-    ...filters,
-    perPage: Math.min(Math.max(args.topK * 6, 24), 80),
-    page: 1,
+  // Fallback: use two-phase retrieve → re-rank
+  const { listings } = await structuralRetrieve({
+    hardFilters: args.hardFilters,
+    topK: args.topK,
   });
 
-  const ranked = response.data
-    .map((item) =>
-      scoreListing({
-        listing: item,
-        hardFilters: args.hardFilters,
-        softPreferences: args.softPreferences,
-        negativePreferences: args.negativePreferences,
-        queryText: args.queryText,
-        locale: args.locale,
-      })
-    )
-    .sort((a, b) => b.finalScore - a.finalScore)
-    .slice(0, args.topK);
+  const reranked = await semanticRerank({
+    candidates: listings,
+    queryEmbedding: args.queryEmbedding,
+    queryText: args.queryText,
+    hardFilters: args.hardFilters,
+    softPreferences: args.softPreferences,
+    negativePreferences: args.negativePreferences,
+    features: [],
+    lifestyle: [],
+    topK: args.topK,
+    locale: args.locale,
+  });
 
   return {
     retrievalSource: "search" as const,
-    candidateCount: response.meta?.total ?? response.data.length,
-    items: await enrichImages(ranked),
+    candidateCount: listings.length,
+    items: reranked,
   };
 }
+
+// ─── Public API ───────────────────────────────────────────────
 
 export async function getSmartMatchWorkspace(
   input: SmartMatchWorkspaceInput,
@@ -671,6 +819,10 @@ export async function getSmartMatchWorkspace(
   };
 }
 
+/**
+ * Contact-based Smart Match — the original flow.
+ * Agent selects a contact → system builds profile → match.
+ */
 export async function generateSmartMatch(
   input: SmartMatchGenerateInput,
   db: Db
@@ -747,7 +899,7 @@ export async function generateSmartMatch(
         })
         .returning();
 
-  const retrieval = await retrieveCandidates({
+  const retrieval = await retrieveCandidatesLegacy({
     queryEmbedding,
     queryText,
     hardFilters,
@@ -824,6 +976,167 @@ export async function generateSmartMatch(
       negative: preferenceSummary.negativePreferences,
     },
     recommendations: retrieval.items.map((item) => ({
+      property: {
+        listingKey: item.listing.listingKey,
+        listingId: item.listing.listingId,
+        unparsedAddress: item.listing.unparsedAddress,
+        city: item.listing.city,
+        stateOrProvince: item.listing.stateOrProvince,
+        postalCode: item.listing.postalCode,
+        listPrice: item.listing.listPrice,
+        propertyType: item.listing.propertyType,
+        bedroomsTotal: item.listing.bedroomsTotal,
+        bathroomsTotalInteger: item.listing.bathroomsTotalInteger,
+        livingArea: item.listing.livingArea,
+        publicRemarks: item.listing.publicRemarks,
+        standardStatus: item.listing.standardStatus,
+      },
+      matchReasons: item.matchReasons,
+      images: item.images,
+      scoreBreakdown: {
+        semanticScore: Number(item.semanticScore.toFixed(3)),
+        ruleScore: Number(item.ruleScore.toFixed(3)),
+        behaviorScore: Number(item.behaviorScore.toFixed(3)),
+        finalScore: Number(item.finalScore.toFixed(3)),
+      } satisfies ScoreBreakdown,
+    })),
+  };
+}
+
+/**
+ * Natural Language Smart Match — the new flow.
+ * Agent types a free-text query → LLM parses → structured retrieve → semantic re-rank.
+ * No contact required (optional for behavioral context).
+ *
+ * Pipeline:
+ *   1. LLM parses NL query → structured filters + features + lifestyle + residual
+ *   2. Structural retrieve using hard filters (price, city, beds, type)
+ *   3. Generate embedding from semantic text (features + lifestyle + residual)
+ *   4. Semantic re-rank using embedding similarity + feature matching
+ *   5. Return ranked results with match reasons
+ */
+export async function generateNLSearch(
+  input: SmartMatchNLSearchInput,
+  db: Db,
+) {
+  const startedAt = Date.now();
+
+  // ── Step 1: LLM Query Parsing (~300-500ms) ──────────────
+  const parsed = await parseSearchQuery(input.query);
+  const locale = parsed.locale;
+  const topK = input.topK ?? 8;
+
+  // Build hard filters from parsed structured data
+  const hardFilters: SmartMatchHardFilters = {
+    city: parsed.filters.city ?? null,
+    postalCode: parsed.filters.postalCode ?? null,
+    propertyType: parsed.filters.propertyType ?? null,
+    minPrice: parsed.filters.minPrice ?? null,
+    maxPrice: parsed.filters.maxPrice ?? null,
+    minBedrooms: parsed.filters.minBedrooms ?? null,
+    maxBedrooms: parsed.filters.maxBedrooms ?? null,
+    status: "Active",
+  };
+
+  // Load contact context if provided (for behavioral enrichment)
+  let softPreferences: string[] = [];
+  let negativePreferences: string[] = [];
+
+  if (input.contactId) {
+    try {
+      const [contact] = await db
+        .select()
+        .from(contacts)
+        .where(and(eq(contacts.id, input.contactId), eq(contacts.agentId, input.agentId)))
+        .limit(1);
+
+      if (contact) {
+        const legacyClient = await findLegacyClientForContact(db, input.agentId, contact);
+        if (legacyClient) {
+          softPreferences = parseArrayText(legacyClient.mustHaveFeatures);
+          negativePreferences = parseArrayText(legacyClient.dealBreakers);
+        }
+      }
+    } catch {
+      // Contact enrichment is optional — proceed without
+    }
+  }
+
+  // ── Step 2: Structural Retrieve (~200-400ms) ────────────
+  const { listings } = await structuralRetrieve({
+    hardFilters,
+    topK,
+    candidateMultiplier: 5,
+  });
+
+  // ── Step 3: Generate Embedding (~200-300ms) ─────────────
+  const semanticText = buildSemanticText(parsed);
+  const queryEmbedding = await generateEmbedding(semanticText);
+
+  // ── Step 4: Semantic Re-rank (~50-100ms) ────────────────
+  const reranked = await semanticRerank({
+    candidates: listings,
+    queryEmbedding,
+    queryText: input.query,
+    hardFilters,
+    softPreferences,
+    negativePreferences,
+    features: parsed.features,
+    lifestyle: parsed.lifestyle,
+    topK,
+    locale,
+  });
+
+  const processingMs = Date.now() - startedAt;
+
+  // ── Step 5: Persist run for analytics ───────────────────
+  const [run] = await db
+    .insert(smartMatchRuns)
+    .values({
+      agentId: input.agentId,
+      contactId: input.contactId ?? 0,
+      buyerProfileId: null,
+      status: "completed",
+      queryText: input.query,
+      hardFilters,
+      topK,
+      retrievalSource: "nl_search",
+      candidateCount: listings.length,
+      returnedCount: reranked.length,
+      processingMs,
+    })
+    .returning();
+
+  if (reranked.length > 0) {
+    await db.insert(smartMatchResults).values(
+      reranked.map((item) => ({
+        runId: run.id,
+        listingKey: item.listing.listingKey,
+        listingId: item.listing.listingId,
+        listingSnapshot: item.listing as unknown as Record<string, unknown>,
+        semanticScore: Math.round(item.semanticScore * 1000),
+        ruleScore: Math.round(item.ruleScore * 1000),
+        behaviorScore: Math.round(item.behaviorScore * 1000),
+        finalScore: Math.round(item.finalScore * 1000),
+        matchReasons: item.matchReasons,
+        images: item.images,
+      })),
+    );
+  }
+
+  return {
+    runId: run.id,
+    retrievalSource: "nl_search" as const,
+    candidateCount: listings.length,
+    processingTime: processingMs,
+    parsedQuery: {
+      filters: parsed.filters,
+      features: parsed.features,
+      lifestyle: parsed.lifestyle,
+      residualText: parsed.residualText,
+      locale: parsed.locale,
+    },
+    recommendations: reranked.map((item) => ({
       property: {
         listingKey: item.listing.listingKey,
         listingId: item.listing.listingId,

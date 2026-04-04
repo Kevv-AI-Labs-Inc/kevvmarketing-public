@@ -7,9 +7,13 @@ import {
   Building2,
   CheckCircle2,
   Home,
+  Loader2,
   MapPin,
+  MessageSquare,
+  Search,
   Sparkles,
   UserRoundSearch,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -98,9 +102,28 @@ function formatPrice(price: string | null | undefined) {
   }).format(parsed);
 }
 
+type SearchMode = "contact" | "nl";
+
+type NLParsedQuery = {
+  filters: Record<string, unknown>;
+  features: string[];
+  lifestyle: string[];
+  residualText: string;
+  locale: string;
+};
+
 export function SmartMatchDashboard() {
   const { t, locale } = useT();
   const router = trpc.useUtils();
+
+  // Mode toggle
+  const [searchMode, setSearchMode] = useState<SearchMode>("nl");
+
+  // NL search state
+  const [nlQuery, setNlQuery] = useState("");
+  const [nlParsedQuery, setNlParsedQuery] = useState<NLParsedQuery | null>(null);
+
+  // Contact-based state
   const [contactQuery, setContactQuery] = useState("");
   const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
   const [searchBrief, setSearchBrief] = useState("");
@@ -128,6 +151,23 @@ export function SmartMatchDashboard() {
     },
     onError: (error) => {
       toast.error(t("smartMatchWorkspace.runFailed"), {
+        description: error.message,
+      });
+    },
+  });
+
+  const nlSearchMutation = trpc.smartMatch.nlSearch.useMutation({
+    onSuccess: (data) => {
+      setLatestResult(data as unknown as MatchResult);
+      setSelectedListingKeys(
+        data.recommendations.slice(0, 3).map((item) => item.property.listingKey),
+      );
+      if (data.parsedQuery) {
+        setNlParsedQuery(data.parsedQuery as NLParsedQuery);
+      }
+    },
+    onError: (error) => {
+      toast.error(t("smartMatchWorkspace.nlSearchFailed"), {
         description: error.message,
       });
     },
@@ -206,6 +246,20 @@ export function SmartMatchDashboard() {
       }).toString()}`
     : null;
 
+  const handleNLSearch = async () => {
+    const trimmed = nlQuery.trim();
+    if (!trimmed) {
+      toast.error(t("smartMatchWorkspace.nlSearchEmpty"));
+      return;
+    }
+    setNlParsedQuery(null);
+    await nlSearchMutation.mutateAsync({
+      query: trimmed,
+      contactId: selectedContactId ?? undefined,
+      topK: 8,
+    });
+  };
+
   const contactDefaultBrief =
     typeof selectedContact?.buyerProfile?.searchMetadata?.searchBrief === "string"
       ? selectedContact.buyerProfile.searchMetadata.searchBrief
@@ -242,6 +296,276 @@ export function SmartMatchDashboard() {
         </Badge>
       </div>
 
+      {/* Mode Toggle */}
+      <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+        <button
+          onClick={() => { setSearchMode("nl"); setLatestResult(null); setSelectedListingKeys([]); setNlParsedQuery(null); }}
+          className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            searchMode === "nl"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          {t("smartMatchWorkspace.nlSearchTab")}
+        </button>
+        <button
+          onClick={() => { setSearchMode("contact"); setLatestResult(null); setSelectedListingKeys([]); setNlParsedQuery(null); }}
+          className={`flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            searchMode === "contact"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <UserRoundSearch className="h-3.5 w-3.5" />
+          {t("smartMatchWorkspace.contactMatchTab")}
+        </button>
+      </div>
+
+      {/* NL Search Mode */}
+      {searchMode === "nl" && (
+        <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  {t("smartMatchWorkspace.nlSearchTitle")}
+                </CardTitle>
+                <CardDescription>
+                  {t("smartMatchWorkspace.nlSearchDescription")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  rows={4}
+                  value={nlQuery}
+                  onChange={(e) => setNlQuery(e.target.value)}
+                  placeholder={t("smartMatchWorkspace.nlSearchPlaceholder")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      handleNLSearch();
+                    }
+                  }}
+                />
+                <div className="flex items-center gap-3">
+                  <Button
+                    className="flex-1 gap-2"
+                    onClick={handleNLSearch}
+                    disabled={nlSearchMutation.isPending || !nlQuery.trim()}
+                  >
+                    {nlSearchMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {t("smartMatchWorkspace.nlSearchParsing")}
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-4 w-4" />
+                        {t("smartMatchWorkspace.nlSearchButton")}
+                      </>
+                    )}
+                  </Button>
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    ⌘+Enter
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Parsed Query Display */}
+            {nlParsedQuery && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {t("smartMatchWorkspace.nlParsedTitle")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Extracted Filters */}
+                  {Object.entries(nlParsedQuery.filters).filter(([, v]) => v != null).length > 0 && (
+                    <div>
+                      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
+                        {t("smartMatchWorkspace.nlFiltersLabel")}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(nlParsedQuery.filters)
+                          .filter(([, v]) => v != null)
+                          .map(([key, value]) => (
+                            <Badge key={key} variant="secondary" className="text-xs">
+                              {key}: {typeof value === "number" ? `$${value.toLocaleString()}` : String(value)}
+                            </Badge>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Features */}
+                  {nlParsedQuery.features.length > 0 && (
+                    <div>
+                      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
+                        {t("smartMatchWorkspace.nlFeaturesLabel")}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {nlParsedQuery.features.map((f) => (
+                          <Badge key={f} variant="outline" className="text-xs">
+                            {f}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Lifestyle */}
+                  {nlParsedQuery.lifestyle.length > 0 && (
+                    <div>
+                      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
+                        {t("smartMatchWorkspace.nlLifestyleLabel")}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {nlParsedQuery.lifestyle.map((l) => (
+                          <Badge key={l} variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950/20">
+                            {l}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Residual */}
+                  {nlParsedQuery.residualText && (
+                    <div>
+                      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
+                        {t("smartMatchWorkspace.nlSemanticLabel")}
+                      </div>
+                      <p className="text-xs text-muted-foreground italic">
+                        &ldquo;{nlParsedQuery.residualText}&rdquo;
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* NL Search Results — reuse the same results panel */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <CardTitle>{t("smartMatchWorkspace.resultsTitle")}</CardTitle>
+                    <CardDescription>{t("smartMatchWorkspace.nlResultsDescription")}</CardDescription>
+                  </div>
+                  {latestResult ? (
+                    <Badge variant="secondary">
+                      {latestResult.candidateCount} {t("smartMatchWorkspace.nlCandidates")} → {latestResult.recommendations.length} {t("smartMatchWorkspace.nlResults")}
+                    </Badge>
+                  ) : null}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {latestResult ? (
+                  <>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Badge variant="outline">
+                        {t("smartMatchWorkspace.selectedCount", {
+                          count: selectedListingKeys.length,
+                        })}
+                      </Badge>
+                      {shareHref ? (
+                        <Button asChild size="sm">
+                          <Link href={shareHref}>
+                            {t("smartMatchWorkspace.openShare")}
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      ) : null}
+                      <Badge variant="secondary" className="text-xs">
+                        {Math.max(1, Math.round(latestResult.processingTime / 10) / 100)}s
+                      </Badge>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-4">
+                      {latestResult.recommendations.length === 0 ? (
+                        <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
+                          {t("smartMatchWorkspace.nlNoResults")}
+                        </div>
+                      ) : (
+                        latestResult.recommendations.map((item) => (
+                          <div key={item.property.listingKey} className="rounded-2xl border p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <label className="flex items-start gap-3">
+                                <input
+                                  type="checkbox"
+                                  className="mt-1 accent-primary"
+                                  checked={selectedListingKeys.includes(item.property.listingKey)}
+                                  onChange={() => toggleListing(item.property.listingKey)}
+                                />
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <div className="text-base font-semibold">
+                                      {item.property.unparsedAddress || t("smartMatchWorkspace.addressFallback")}
+                                    </div>
+                                    <Badge variant="secondary">
+                                      {item.property.standardStatus || "Active"}
+                                    </Badge>
+                                  </div>
+                                  <div className="mt-2 flex flex-wrap gap-3 text-sm text-muted-foreground">
+                                    <span className="inline-flex items-center gap-1">
+                                      <MapPin className="h-3.5 w-3.5" />
+                                      {item.property.city}, {item.property.stateOrProvince}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1">
+                                      <Home className="h-3.5 w-3.5" />
+                                      {item.property.propertyType || "—"}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1">
+                                      <Building2 className="h-3.5 w-3.5" />
+                                      {item.property.bedroomsTotal ?? "—"} bd / {item.property.bathroomsTotalInteger ?? "—"} ba
+                                    </span>
+                                  </div>
+                                </div>
+                              </label>
+                              <div className="text-right">
+                                <div className="text-lg font-semibold">{formatPrice(item.property.listPrice)}</div>
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                  {Math.round(item.scoreBreakdown.finalScore * 100)}%
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {item.matchReasons.map((reason) => (
+                                <Badge key={reason} variant="outline" className="gap-1 text-xs">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  {reason}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-2xl border border-dashed p-8 text-sm text-muted-foreground">
+                    <div className="font-medium">
+                      {t("smartMatchWorkspace.nlEmptyTitle")}
+                    </div>
+                    <div className="mt-2">
+                      {t("smartMatchWorkspace.nlEmptyDescription")}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Match Mode (original) */}
+      {searchMode === "contact" && (
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr_1.2fr]">
         <Card className="min-h-[640px]">
           <CardHeader>
@@ -679,6 +1003,7 @@ export function SmartMatchDashboard() {
           </Card>
         </div>
       </div>
+      )}
     </div>
   );
 }

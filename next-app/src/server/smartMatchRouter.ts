@@ -16,6 +16,7 @@ import { randomBytes } from "crypto";
 import { invokeLLM } from "./_core/llm";
 import {
     generateSmartMatch,
+    generateNLSearch,
     getSmartMatchWorkspace,
 } from "./smartMatch/smartMatchService";
 
@@ -293,6 +294,36 @@ export const smartMatchRouter = router({
                     topK: input.topK,
                 },
                 db
+            );
+        }),
+
+    /**
+     * Natural language property search — no contact required.
+     * LLM parses the query into structured filters + semantic residual,
+     * then runs a two-phase retrieve → re-rank pipeline.
+     *
+     * Example queries:
+     *   "Irvine 好学区 150万以内 4房 带院子"
+     *   "3 bed homes near good schools in Arcadia under 1.2M with garage"
+     */
+    nlSearch: protectedProcedure
+        .input(
+            z.object({
+                query: z.string().trim().min(1).max(2000),
+                contactId: z.number().int().optional(),
+                topK: z.number().int().min(1).max(20).default(8),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const db = await getDb();
+            return generateNLSearch(
+                {
+                    agentId: ctx.user.id,
+                    query: input.query,
+                    contactId: input.contactId,
+                    topK: input.topK,
+                },
+                db,
             );
         }),
 
