@@ -377,6 +377,54 @@ function normalizeBranding(
   };
 }
 
+async function getAgentProfileDefaults(
+  userId: number,
+  fallbackName: string,
+  fallbackEmail?: string | null,
+): Promise<{ name: string; title: string; email?: string | null; phone?: string; avatarUrl?: string; brokerageName?: string; companyLogoUrl?: string }> {
+  const db = getDb();
+  const [profile] = await db
+    .select({
+      name: agentProfiles.name,
+      email: agentProfiles.email,
+      phone: agentProfiles.phone,
+      title: agentProfiles.title,
+      brokerage: agentProfiles.brokerage,
+      photoUrl: agentProfiles.photoUrl,
+      logoUrl: agentProfiles.logoUrl,
+    })
+    .from(agentProfiles)
+    .where(eq(agentProfiles.userId, userId))
+    .limit(1);
+
+  return {
+    name: profile?.name || fallbackName,
+    title: profile?.title || "Real Estate Advisor",
+    email: profile?.email || fallbackEmail,
+    phone: profile?.phone || undefined,
+    avatarUrl: profile?.photoUrl || undefined,
+    brokerageName: profile?.brokerage || undefined,
+    companyLogoUrl: profile?.logoUrl || undefined,
+  };
+}
+
+function normalizeBrandingWithProfile(
+  branding: z.infer<typeof agentBrandingSchema>,
+  profileDefaults: Awaited<ReturnType<typeof getAgentProfileDefaults>>,
+) {
+  return {
+    agentName: branding.agentName?.trim() || profileDefaults.name,
+    agentTitle: branding.agentTitle?.trim() || profileDefaults.title,
+    brokerageName: branding.brokerageName?.trim() || profileDefaults.brokerageName || "",
+    phone: branding.phone?.trim() || profileDefaults.phone || "",
+    email: branding.email?.trim() || profileDefaults.email || "",
+    wechatId: branding.wechatId?.trim() || "",
+    avatarUrl: branding.avatarUrl?.trim() || profileDefaults.avatarUrl || "",
+    companyLogoUrl: branding.companyLogoUrl?.trim() || profileDefaults.companyLogoUrl || "",
+    accentColor: normalizeAccentColor(branding.accentColor),
+  };
+}
+
 function buildApiOwnerId(apiKey: ApiKeyContext, actorId?: string): string {
   const company = apiKey.companyId !== null ? String(apiKey.companyId) : "global";
   const actor = actorId?.trim() || "system";
@@ -1387,11 +1435,8 @@ export const shareRouter = router({
           ? new Date(now.getTime() + input.expiresInDays * 24 * 60 * 60 * 1000)
           : null;
 
-      const normalizedBranding = normalizeBranding(input.agentBranding, {
-        name: ctx.user.name || "Agent",
-        title: "Real Estate Advisor",
-        email: ctx.user.email,
-      });
+      const profileDefaults = await getAgentProfileDefaults(ctx.user.id, ctx.user.name || "Agent", ctx.user.email);
+      const normalizedBranding = normalizeBrandingWithProfile(input.agentBranding, profileDefaults);
 
       await db.insert(shareSessions).values({
         token,
@@ -1464,11 +1509,8 @@ export const shareRouter = router({
           ? new Date(now.getTime() + input.expiresInDays * 24 * 60 * 60 * 1000)
           : null;
 
-      const normalizedBranding = normalizeBranding(input.agentBranding, {
-        name: ctx.user.name || "Agent",
-        title: "Local Market Advisor",
-        email: ctx.user.email,
-      });
+      const profileDefaults = await getAgentProfileDefaults(ctx.user.id, ctx.user.name || "Agent", ctx.user.email);
+      const normalizedBranding = normalizeBrandingWithProfile(input.agentBranding, { ...profileDefaults, title: profileDefaults.title === "Real Estate Advisor" ? "Local Market Advisor" : profileDefaults.title });
 
       await db.insert(shareSessions).values({
         token,
@@ -2627,11 +2669,8 @@ export const shareRouter = router({
       const validListingKeys = listings.map((l) => l.listingKey);
       const token = await generateUniqueToken(db);
       const now = new Date();
-      const normalizedBranding = normalizeBranding(input.agentBranding, {
-        name: ctx.user.name || "Agent",
-        title: "Real Estate Advisor",
-        email: ctx.user.email,
-      });
+      const profileDefaults = await getAgentProfileDefaults(ctx.user.id, ctx.user.name || "Agent", ctx.user.email);
+      const normalizedBranding = normalizeBrandingWithProfile(input.agentBranding, profileDefaults);
 
       await db.insert(shareSessions).values({
         token,
@@ -2681,11 +2720,8 @@ export const shareRouter = router({
       const validListingKeys = listings.map((l) => l.listingKey);
       const token = await generateUniqueToken(db);
       const now = new Date();
-      const normalizedBranding = normalizeBranding(input.agentBranding, {
-        name: ctx.user.name || "Agent",
-        title: "Real Estate Advisor",
-        email: ctx.user.email,
-      });
+      const profileDefaults = await getAgentProfileDefaults(ctx.user.id, ctx.user.name || "Agent", ctx.user.email);
+      const normalizedBranding = normalizeBrandingWithProfile(input.agentBranding, profileDefaults);
 
       await db.insert(shareSessions).values({
         token,
@@ -2740,11 +2776,8 @@ export const shareRouter = router({
       const validListingKeys = listings.map((l) => l.listingKey);
       const token = await generateUniqueToken(db);
       const now = new Date();
-      const normalizedBranding = normalizeBranding(input.agentBranding, {
-        name: ctx.user.name || "Agent",
-        title: "Real Estate Advisor",
-        email: ctx.user.email,
-      });
+      const profileDefaults = await getAgentProfileDefaults(ctx.user.id, ctx.user.name || "Agent", ctx.user.email);
+      const normalizedBranding = normalizeBrandingWithProfile(input.agentBranding, profileDefaults);
 
       await db.insert(shareSessions).values({
         token,

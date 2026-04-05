@@ -33,8 +33,8 @@ export function LocaleToggleButton({
         router.refresh();
       }}
     >
-      <Globe className="h-4 w-4" />
-      <span>{t("localeToggle.targetLanguage")}</span>
+      <Globe className="h-4 w-4 shrink-0" />
+      <span className="group-data-[collapsible=icon]:hidden">{t("localeToggle.targetLanguage")}</span>
     </Button>
   );
 }
