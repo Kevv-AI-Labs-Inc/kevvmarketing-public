@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/i18n";
+import { getSharePageCopy } from "@/i18n/share-pages";
 
 /* ────────────────────────────────────────────────────────────── */
 /*  Types                                                        */
@@ -139,6 +141,9 @@ export default function OfferWorksheetView({
   listings,
   trackEvent,
 }: OfferWorksheetViewProps) {
+  const { locale } = useT();
+  const copy = getSharePageCopy(locale);
+
   const [remarksExpanded, setRemarksExpanded] = useState(false);
 
   /* ── Agent branding ── */
@@ -188,7 +193,7 @@ export default function OfferWorksheetView({
     if (!email) return;
     trackEvent("contact_click", { channel: "email", source: "offer_worksheet_bar" });
     const subject = encodeURIComponent(
-      session.title || "Offer Worksheet",
+      session.title || copy.offerWorksheet.defaultTitle,
     );
     window.location.href = "mailto:" + email + "?subject=" + subject;
   };
@@ -219,7 +224,7 @@ export default function OfferWorksheetView({
               className="rounded-full h-9 px-4"
             >
               <Phone className="h-3.5 w-3.5 mr-1.5" />
-              Call
+              {copy.offerWorksheet.call}
             </Button>
           )}
           {email && (
@@ -230,7 +235,7 @@ export default function OfferWorksheetView({
               className="rounded-full h-9 px-4"
             >
               <Mail className="h-3.5 w-3.5 mr-1.5" />
-              Email
+              {copy.offerWorksheet.email}
             </Button>
           )}
         </div>
@@ -275,7 +280,7 @@ export default function OfferWorksheetView({
                   className="rounded-full"
                 >
                   <Mail className="h-3.5 w-3.5 mr-1.5" />
-                  Email
+                  {copy.offerWorksheet.email}
                 </Button>
               )}
             </div>
@@ -283,12 +288,12 @@ export default function OfferWorksheetView({
 
           {session.clientName && (
             <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">
-              Prepared for {session.clientName}
+              {copy.offerWorksheet.preparedFor(session.clientName || "")}
             </p>
           )}
 
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Offer Analysis
+            {copy.offerWorksheet.defaultTitle}
           </h1>
           {targetAddress && (
             <p className="mt-1 text-base text-stone-500">{targetAddress}</p>
@@ -346,7 +351,7 @@ export default function OfferWorksheetView({
                         {targetPrice}
                       </p>
                     )}
-                    <p className="text-xs text-stone-500">List Price</p>
+                    <p className="text-xs text-stone-500">{copy.offerWorksheet.listPrice}</p>
                   </div>
                 </div>
 
@@ -355,31 +360,31 @@ export default function OfferWorksheetView({
                   {targetListing.bedroomsTotal != null && (
                     <span className="inline-flex items-center gap-1.5">
                       <BedDouble className="h-4 w-4 text-stone-400" />
-                      {targetListing.bedroomsTotal} Beds
+                      {targetListing.bedroomsTotal} {copy.offerWorksheet.beds}
                     </span>
                   )}
                   {targetListing.bathroomsTotalInteger != null && (
                     <span className="inline-flex items-center gap-1.5">
                       <Bath className="h-4 w-4 text-stone-400" />
-                      {targetListing.bathroomsTotalInteger} Baths
+                      {targetListing.bathroomsTotalInteger} {copy.offerWorksheet.baths}
                     </span>
                   )}
                   {targetListing.livingArea && (
                     <span className="inline-flex items-center gap-1.5">
                       <Ruler className="h-4 w-4 text-stone-400" />
-                      {Number(targetListing.livingArea).toLocaleString()} sqft
+                      {Number(targetListing.livingArea).toLocaleString()} {copy.offerWorksheet.sqft}
                     </span>
                   )}
                   {targetListing.lotSizeArea && (
                     <span className="inline-flex items-center gap-1.5">
                       <Home className="h-4 w-4 text-stone-400" />
-                      {Number(targetListing.lotSizeArea).toLocaleString()} sqft
-                      lot
+                      {Number(targetListing.lotSizeArea).toLocaleString()} {copy.offerWorksheet.sqft}{" "}
+                      {copy.offerWorksheet.lot}
                     </span>
                   )}
                   {targetListing.yearBuilt && (
                     <span className="text-stone-400">
-                      Built {targetListing.yearBuilt}
+                      {copy.offerWorksheet.built(targetListing.yearBuilt)}
                     </span>
                   )}
                 </div>
@@ -411,12 +416,12 @@ export default function OfferWorksheetView({
                       {remarksExpanded ? (
                         <>
                           <ChevronUp className="h-3.5 w-3.5 mr-1" />
-                          Show less
+                          {copy.offerWorksheet.showLess}
                         </>
                       ) : (
                         <>
                           <ChevronDown className="h-3.5 w-3.5 mr-1" />
-                          Read more
+                          {copy.offerWorksheet.readMore}
                         </>
                       )}
                     </Button>
@@ -454,16 +459,16 @@ export default function OfferWorksheetView({
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp className="h-5 w-5 text-emerald-600" />
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-700">
-                  Agent&apos;s Recommendation
+                  {copy.offerWorksheet.agentRecommendation}
                 </h3>
               </div>
 
               {(suggestedOfferLow || suggestedOfferHigh) && (
                 <p className="text-2xl sm:text-3xl font-bold text-emerald-800 mb-3">
-                  Suggested Offer Range:{" "}
-                  {formatPrice(suggestedOfferLow) ?? "N/A"}
-                  {" \u2013 "}
-                  {formatPrice(suggestedOfferHigh) ?? "N/A"}
+                  {copy.offerWorksheet.suggestedOfferRange(
+                    formatPrice(suggestedOfferLow) ?? "N/A",
+                    formatPrice(suggestedOfferHigh) ?? "N/A"
+                  )}
                 </p>
               )}
 
@@ -480,7 +485,7 @@ export default function OfferWorksheetView({
         {compListings.length > 0 && (
           <section className="mb-8">
             <h3 className="text-lg font-semibold text-stone-900 mb-4">
-              Market Comparables
+              {copy.offerWorksheet.marketComparables}
             </h3>
 
             {/* Mobile: cards */}
@@ -522,7 +527,7 @@ export default function OfferWorksheetView({
                             )}
                             {soldPrice && (
                               <p className="text-xs text-emerald-600 font-medium">
-                                Sold
+                                {copy.offerWorksheet.sold}
                               </p>
                             )}
                           </div>
@@ -531,13 +536,13 @@ export default function OfferWorksheetView({
                         {soldDate && (
                           <p className="mt-1 flex items-center gap-1 text-xs text-stone-500">
                             <Calendar className="h-3 w-3" />
-                            Sold {soldDate}
+                            {copy.offerWorksheet.soldDate(soldDate)}
                           </p>
                         )}
 
                         <div className="mt-3 rounded-lg bg-stone-50 border border-stone-100 p-3">
                           <p className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-1">
-                            Why Comparable
+                            {copy.offerWorksheet.whyComparable}
                           </p>
                           <p className="text-sm text-stone-700 leading-relaxed">
                             {whyComparable}
@@ -547,7 +552,7 @@ export default function OfferWorksheetView({
                         {adjustmentNotes && (
                           <div className="mt-2 rounded-lg bg-amber-50 border border-amber-100 p-3">
                             <p className="text-xs font-medium text-amber-600 uppercase tracking-wider mb-1">
-                              Adjustment Notes
+                              {copy.offerWorksheet.adjustmentNotes}
                             </p>
                             <p className="text-sm text-amber-800 leading-relaxed">
                               {adjustmentNotes}
@@ -567,19 +572,19 @@ export default function OfferWorksheetView({
                 <thead>
                   <tr className="bg-stone-50 border-b border-stone-200">
                     <th className="text-left px-4 py-3 font-semibold text-stone-600">
-                      Address
+                      {copy.offerWorksheet.tableAddress}
                     </th>
                     <th className="text-right px-4 py-3 font-semibold text-stone-600">
-                      List Price
+                      {copy.offerWorksheet.tableListPrice}
                     </th>
                     <th className="text-right px-4 py-3 font-semibold text-stone-600">
-                      Sold Price
+                      {copy.offerWorksheet.tableSoldPrice}
                     </th>
                     <th className="text-right px-4 py-3 font-semibold text-stone-600">
-                      $/sqft
+                      {copy.offerWorksheet.tablePricePerSqft}
                     </th>
                     <th className="text-left px-4 py-3 font-semibold text-stone-600">
-                      Notes
+                      {copy.offerWorksheet.tableNotes}
                     </th>
                   </tr>
                 </thead>
@@ -615,7 +620,7 @@ export default function OfferWorksheetView({
                             </p>
                             {soldDate && (
                               <p className="text-xs text-stone-400 mt-0.5">
-                                Sold {soldDate}
+                                {copy.offerWorksheet.soldDate(soldDate)}
                               </p>
                             )}
                           </td>
@@ -653,7 +658,7 @@ export default function OfferWorksheetView({
         {/* ─── Footer ──────────────────────────────── */}
         <footer className="mt-10 text-center">
           <p className="text-xs text-stone-400">
-            Shared by {agentName}
+            {copy.offerWorksheet.sharedBy(agentName)}
             {brokerageName ? ` \u00b7 ${brokerageName}` : ""}
           </p>
         </footer>

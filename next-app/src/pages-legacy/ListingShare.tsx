@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useMemo, useState } from "react";
 import type { inferRouterOutputs } from "@trpc/server";
 import {
@@ -27,6 +28,7 @@ import { useT } from "@/i18n";
 import { localeTag } from "@/i18n/copy";
 import { getSharePageCopy } from "@/i18n/share-pages";
 import AreaMagnetShare from "@/components/share/area-magnet-share";
+import { ShareLoadingSkeleton } from "@/components/share/share-loading-skeleton";
 import BuyerBoardView from "@/components/share/buyer-board-view";
 import ClassicShareView from "@/components/share/classic-share-view";
 import OfferWorksheetView from "@/components/share/offer-worksheet-view";
@@ -190,6 +192,23 @@ function buildListingAddress(listing: MlsListing) {
   );
 }
 
+/** Wrapper that wires server-synced reactions into BuyerBoardView */
+function BuyerBoardWithSync(props: React.ComponentProps<typeof BuyerBoardView>) {
+  const submitReaction = trpc.share.submitReaction.useMutation();
+  return (
+    <BuyerBoardView
+      {...props}
+      onReaction={(listingKey, reaction) => {
+        submitReaction.mutate({
+          token: props.token,
+          listingKey,
+          reaction: reaction ?? null,
+        });
+      }}
+    />
+  );
+}
+
 export default function ListingShare({ token }: ListingShareProps) {
   const { locale } = useT();
   const copy = getSharePageCopy(locale).listingShare;
@@ -347,14 +366,7 @@ export default function ListingShare({ token }: ListingShareProps) {
   /* ── Early returns ──────────────────────────────────── */
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[#101412] px-6 text-stone-100">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-emerald-300" />
-          <p className="text-sm text-stone-300">{pick(copy.loading)}</p>
-        </div>
-      </div>
-    );
+    return <ShareLoadingSkeleton />;
   }
 
   if (error || !data) {
@@ -379,7 +391,7 @@ export default function ListingShare({ token }: ListingShareProps) {
   if (data.session.sessionType === "buyer_board") {
     const shareConfigRaw = (data.shareConfig ?? {}) as Record<string, unknown>;
     return (
-      <BuyerBoardView
+      <BuyerBoardWithSync
         token={token}
         session={data.session}
         agentBranding={(data.agentBranding ?? {}) as Record<string, unknown>}

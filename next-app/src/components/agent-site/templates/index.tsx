@@ -21,6 +21,10 @@ const UrbanTemplate = dynamic(
   () => import("./urban-template").then((m) => ({ default: m.UrbanTemplate })),
   { ssr: false }
 );
+const LuxuryTemplate = dynamic(
+  () => import("./luxury-template").then((m) => ({ default: m.LuxuryTemplate })),
+  { ssr: false }
+);
 
 const templateMap: Record<string, React.ComponentType<TemplateProps>> = {
   bold: BoldTemplate,
@@ -29,7 +33,7 @@ const templateMap: Record<string, React.ComponentType<TemplateProps>> = {
   classic: ClassicTemplate,
   minimal: MinimalTemplate,
   urban: UrbanTemplate,
-  luxury: ClassicTemplate, // luxury falls back to classic
+  luxury: LuxuryTemplate,
 };
 
 /**

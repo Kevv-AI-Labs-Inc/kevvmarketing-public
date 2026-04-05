@@ -51,6 +51,7 @@ type BuyerBoardViewProps = {
   shareConfig: Record<string, unknown>;
   listings: MlsListing[];
   trackEvent: (eventType: string, eventData?: Record<string, unknown>) => void;
+  onReaction?: (listingKey: string, reaction: Reaction | null) => void;
 };
 
 type Reaction = "favorite" | "interested" | "pass";
@@ -166,10 +167,12 @@ export default function BuyerBoardView({
   shareConfig,
   listings,
   trackEvent,
+  onReaction,
 }: BuyerBoardViewProps) {
   const { locale } = useT();
-  const isChinese = locale.startsWith("zh");
-  const copy = getSharePageCopy(locale).listingShare;
+  const shareCopy = getSharePageCopy(locale);
+  const copy = shareCopy.listingShare;
+  const boardCopy = shareCopy.buyerBoard;
 
   const agentName = getString(agentBranding.agentName) || "Agent";
   const agentTitle = getString(agentBranding.agentTitle);
@@ -197,19 +200,23 @@ export default function BuyerBoardView({
 
   const toggleReaction = useCallback(
     (listingKey: string, reaction: Reaction) => {
+      let newReaction: Reaction | null = null;
       setReactions((prev) => {
         const next = { ...prev };
         if (next[listingKey] === reaction) {
           delete next[listingKey];
+          newReaction = null;
         } else {
           next[listingKey] = reaction;
+          newReaction = reaction;
         }
         saveReactions(token, next);
         return next;
       });
       trackEvent("listing_reaction", { listingKey, reaction });
+      onReaction?.(listingKey, newReaction);
     },
-    [token, trackEvent],
+    [token, trackEvent, onReaction],
   );
 
   /* ── Expanded details ── */
@@ -257,13 +264,13 @@ export default function BuyerBoardView({
           {phone && (
             <Button size="sm" onClick={handleCall} className="rounded-full h-9 px-4">
               <Phone className="h-3.5 w-3.5 mr-1.5" />
-              Call
+              {boardCopy.call}
             </Button>
           )}
           {email && (
             <Button size="sm" variant="outline" onClick={handleEmail} className="rounded-full h-9 px-4">
               <Mail className="h-3.5 w-3.5 mr-1.5" />
-              Email
+              {boardCopy.email}
             </Button>
           )}
         </div>
@@ -298,13 +305,13 @@ export default function BuyerBoardView({
               {email && (
                 <Button size="sm" variant="outline" onClick={handleEmail} className="rounded-full">
                   <Mail className="h-3.5 w-3.5 mr-1.5" />
-                  Email
+                  {boardCopy.email}
                 </Button>
               )}
               {wechatId && (
                 <Button size="sm" variant="outline" onClick={handleCopyWechat} className="rounded-full">
                   <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
-                  WeChat
+                  {boardCopy.wechat}
                 </Button>
               )}
             </div>
@@ -312,12 +319,12 @@ export default function BuyerBoardView({
 
           {session.clientName && (
             <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">
-              {isChinese ? `为 ${session.clientName} 准备` : `Prepared for ${session.clientName}`}
+              {boardCopy.preparedFor(session.clientName || "")}
             </p>
           )}
 
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {session.title || (isChinese ? "买家看房板" : "Buyer Board")}
+            {session.title || boardCopy.defaultTitle}
           </h1>
 
           {boardDescription && (
@@ -336,7 +343,7 @@ export default function BuyerBoardView({
           )}
 
           <p className="mt-3 text-sm text-stone-500">
-            {listings.length} {listings.length === 1 ? "listing" : "listings"}
+            {listings.length} {listings.length === 1 ? boardCopy.listing : boardCopy.listings}
           </p>
         </header>
 
@@ -390,19 +397,19 @@ export default function BuyerBoardView({
                     {listing.bedroomsTotal != null && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs text-stone-600">
                         <BedDouble className="h-3 w-3" />
-                        {listing.bedroomsTotal} Beds
+                        {listing.bedroomsTotal} {boardCopy.beds}
                       </span>
                     )}
                     {listing.bathroomsTotalInteger != null && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs text-stone-600">
                         <Bath className="h-3 w-3" />
-                        {listing.bathroomsTotalInteger} Baths
+                        {listing.bathroomsTotalInteger} {boardCopy.baths}
                       </span>
                     )}
                     {listing.livingArea && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs text-stone-600">
                         <Ruler className="h-3 w-3" />
-                        {Number(listing.livingArea).toLocaleString()} sqft
+                        {Number(listing.livingArea).toLocaleString()} {boardCopy.sqft}
                       </span>
                     )}
                   </div>
@@ -431,7 +438,7 @@ export default function BuyerBoardView({
                         >
                           <span>{r.emoji}</span>
                           <span className="hidden min-[400px]:inline">
-                            {isChinese ? r.labelZh : r.label}
+                            {boardCopy[r.key]}
                           </span>
                         </button>
                       );
@@ -496,7 +503,7 @@ export default function BuyerBoardView({
         {/* ─── Footer ──────────────────────────────── */}
         <footer className="mt-10 text-center">
           <p className="text-xs text-stone-400">
-            {isChinese ? "由" : "Shared by"} {agentName}
+            {boardCopy.sharedBy(agentName)}
             {brokerageName ? ` · ${brokerageName}` : ""}
           </p>
         </footer>
