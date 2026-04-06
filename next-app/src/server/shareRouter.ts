@@ -2654,6 +2654,93 @@ export const shareRouter = router({
       return { success: true };
     }),
 
+  // ─── Buyer Board reactions (public) ──────────────────────────
+  submitReaction: publicProcedure
+    .input(
+      z.object({
+        token: z.string().trim().min(8).max(128),
+        listingKey: z.string().trim().min(1).max(64),
+        reaction: z.enum(["favorite", "interested", "pass"]).nullable(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      }
+      await ensureShareTables(db);
+
+      const rows = await db
+        .select({ id: shareSessions.id, status: shareSessions.status })
+        .from(shareSessions)
+        .where(eq(shareSessions.token, input.token))
+        .limit(1);
+
+      const session = rows[0];
+      if (!session || session.status !== "active") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Share link not found." });
+      }
+
+      await db.insert(shareSessionEvents).values({
+        shareSessionId: session.id,
+        eventType: "listing_reaction",
+        eventData: { listingKey: input.listingKey, reaction: input.reaction },
+      });
+
+      return { success: true };
+    }),
+
+  getReactions: publicProcedure
+    .input(z.object({ token: z.string().trim().min(8).max(128) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      }
+      await ensureShareTables(db);
+
+      const rows = await db
+        .select({ id: shareSessions.id, status: shareSessions.status })
+        .from(shareSessions)
+        .where(eq(shareSessions.token, input.token))
+        .limit(1);
+
+      const session = rows[0];
+      if (!session || session.status !== "active") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Share link not found." });
+      }
+
+      const events = await db
+        .select({
+          eventData: shareSessionEvents.eventData,
+          createdAt: shareSessionEvents.createdAt,
+        })
+        .from(shareSessionEvents)
+        .where(
+          and(
+            eq(shareSessionEvents.shareSessionId, session.id),
+            eq(shareSessionEvents.eventType, "listing_reaction")
+          )
+        )
+        .orderBy(desc(shareSessionEvents.createdAt));
+
+      // Group by listingKey, take the latest reaction for each
+      const reactionMap: Record<string, string> = {};
+      for (const event of events) {
+        const data = event.eventData as { listingKey?: string; reaction?: string | null } | null;
+        if (!data?.listingKey) continue;
+        // First occurrence is the latest (ordered by createdAt DESC)
+        if (!(data.listingKey in reactionMap)) {
+          if (data.reaction) {
+            reactionMap[data.listingKey] = data.reaction;
+          }
+          // If reaction is null, the user cleared it — leave it absent
+        }
+      }
+
+      return reactionMap;
+    }),
+
   // ─── Buyer Board ─────────────────────────────────────────────
   createBuyerBoard: protectedProcedure
     .input(createBuyerBoardInputSchema)

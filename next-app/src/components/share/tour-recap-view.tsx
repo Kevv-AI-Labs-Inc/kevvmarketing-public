@@ -1,11 +1,14 @@
 "use client";
 
+import type React from "react";
 import { useMemo } from "react";
 import {
   Bath,
   BedDouble,
   Calendar,
   CheckSquare,
+  Home,
+  ImageOff,
   Mail,
   MapPin,
   MessageCircle,
@@ -15,6 +18,8 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/i18n";
+import { getSharePageCopy } from "@/i18n/share-pages";
 
 /* ────────────────────────────────────────────────────────────── */
 /*  Types                                                        */
@@ -114,6 +119,9 @@ export default function TourRecapView({
   listings,
   trackEvent,
 }: TourRecapViewProps) {
+  const { locale } = useT();
+  const copy = getSharePageCopy(locale);
+
   const agentName = getString(agentBranding.agentName) || "Agent";
   const agentTitle = getString(agentBranding.agentTitle);
   const brokerageName = getString(agentBranding.brokerageName);
@@ -145,6 +153,14 @@ export default function TourRecapView({
     });
   }, [listings, listingFeedback]);
 
+  /** Replace broken image with placeholder */
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    img.style.display = "none";
+    const fallback = img.parentElement?.querySelector("[data-img-fallback]");
+    if (fallback instanceof HTMLElement) fallback.style.display = "flex";
+  };
+
   const handleCall = () => {
     if (!phone) return;
     trackEvent("contact_click", { channel: "phone", source: "tour_recap_bar" });
@@ -154,7 +170,7 @@ export default function TourRecapView({
   const handleEmail = () => {
     if (!email) return;
     trackEvent("contact_click", { channel: "email", source: "tour_recap_bar" });
-    const subject = encodeURIComponent(session.title || "Tour Recap");
+    const subject = encodeURIComponent(session.title || copy.tourRecap.defaultTitle);
     window.location.href = "mailto:" + email + "?subject=" + subject;
   };
 
@@ -175,13 +191,13 @@ export default function TourRecapView({
           {phone && (
             <Button size="sm" onClick={handleCall} className="rounded-full h-9 px-4">
               <Phone className="h-3.5 w-3.5 mr-1.5" />
-              Call
+              {copy.tourRecap.call}
             </Button>
           )}
           {email && (
             <Button size="sm" variant="outline" onClick={handleEmail} className="rounded-full h-9 px-4">
               <Mail className="h-3.5 w-3.5 mr-1.5" />
-              Email
+              {copy.tourRecap.email}
             </Button>
           )}
         </div>
@@ -216,7 +232,7 @@ export default function TourRecapView({
               {email && (
                 <Button size="sm" variant="outline" onClick={handleEmail} className="rounded-full">
                   <Mail className="h-3.5 w-3.5 mr-1.5" />
-                  Email
+                  {copy.tourRecap.email}
                 </Button>
               )}
             </div>
@@ -224,12 +240,12 @@ export default function TourRecapView({
 
           {session.clientName && (
             <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">
-              Prepared for {session.clientName}
+              {copy.tourRecap.preparedFor(session.clientName || "")}
             </p>
           )}
 
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Tour Recap
+            {copy.tourRecap.defaultTitle}
           </h1>
 
           {tourDate && (
@@ -250,9 +266,28 @@ export default function TourRecapView({
 
           <p className="mt-3 text-sm text-stone-500">
             {sortedListings.length}{" "}
-            {sortedListings.length === 1 ? "property visited" : "properties visited"}
+            {sortedListings.length === 1 ? copy.tourRecap.propertyVisited : copy.tourRecap.propertiesVisited}
           </p>
         </header>
+
+        {/* ─── Empty State ─────────────────────────── */}
+        {sortedListings.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-stone-100">
+              <Home className="h-8 w-8 text-stone-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-stone-900">{copy.tourRecap.emptyStateTitle}</h2>
+            <p className="mt-2 max-w-sm text-sm text-stone-500">{copy.tourRecap.emptyStateDescription}</p>
+            {(phone || email) && (
+              <Button
+                className="mt-6 rounded-full px-6"
+                onClick={() => phone ? handleCall() : handleEmail()}
+              >
+                {copy.tourRecap.scheduleFollowUp}
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* ─── Timeline ────────────────────────────── */}
         <div className="relative">
@@ -281,14 +316,24 @@ export default function TourRecapView({
                 <div className={`flex-1 min-w-0 ${isLast ? "pb-0" : "pb-8"}`}>
                   <article className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
                     {/* Hero image */}
-                    {mainImage && (
-                      <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden">
+                    {mainImage ? (
+                      <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden relative">
                         <img
                           src={mainImage}
                           alt={address}
                           className="h-full w-full object-cover"
                           loading={index < 3 ? "eager" : "lazy"}
+                          onError={handleImageError}
                         />
+                        <div data-img-fallback className="hidden absolute inset-0 items-center justify-center bg-stone-100 flex-col gap-2">
+                          <ImageOff className="h-8 w-8 text-stone-300" />
+                          <p className="text-xs text-stone-400">{copy.tourRecap.imageLoadFailed}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-[16/9] w-full bg-stone-100 flex items-center justify-center flex-col gap-2">
+                        <MapPin className="h-8 w-8 text-stone-300" />
+                        <p className="text-xs text-stone-400">{address}</p>
                       </div>
                     )}
 
@@ -322,19 +367,19 @@ export default function TourRecapView({
                         {listing.bedroomsTotal != null && (
                           <span className="inline-flex items-center gap-1.5">
                             <BedDouble className="h-4 w-4 text-stone-400" />
-                            {listing.bedroomsTotal} Beds
+                            {listing.bedroomsTotal} {copy.tourRecap.beds}
                           </span>
                         )}
                         {listing.bathroomsTotalInteger != null && (
                           <span className="inline-flex items-center gap-1.5">
                             <Bath className="h-4 w-4 text-stone-400" />
-                            {listing.bathroomsTotalInteger} Baths
+                            {listing.bathroomsTotalInteger} {copy.tourRecap.baths}
                           </span>
                         )}
                         {listing.livingArea && (
                           <span className="inline-flex items-center gap-1.5">
                             <Ruler className="h-4 w-4 text-stone-400" />
-                            {Number(listing.livingArea).toLocaleString()} sqft
+                            {Number(listing.livingArea).toLocaleString()} {copy.tourRecap.sqft}
                           </span>
                         )}
                       </div>
@@ -345,7 +390,7 @@ export default function TourRecapView({
                           {feedback.highlights && (
                             <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2.5">
                               <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">
-                                Highlights
+                                {copy.tourRecap.highlights}
                               </p>
                               <p className="text-sm text-emerald-800 leading-relaxed">
                                 {feedback.highlights}
@@ -356,7 +401,7 @@ export default function TourRecapView({
                           {feedback.concerns && (
                             <div className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2.5">
                               <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-1">
-                                Concerns
+                                {copy.tourRecap.concerns}
                               </p>
                               <p className="text-sm text-amber-800 leading-relaxed">
                                 {feedback.concerns}
@@ -385,7 +430,7 @@ export default function TourRecapView({
             {overallSummary && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-stone-900 mb-2">
-                  Summary
+                  {copy.tourRecap.summary}
                 </h3>
                 <p className="text-sm text-stone-600 leading-relaxed">
                   {overallSummary}
@@ -396,7 +441,7 @@ export default function TourRecapView({
             {nextSteps.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-stone-900 mb-3">
-                  Next Steps
+                  {copy.tourRecap.nextSteps}
                 </h3>
                 <ul className="space-y-2">
                   {nextSteps.map((step, i) => (
@@ -411,10 +456,26 @@ export default function TourRecapView({
           </section>
         )}
 
+        {/* ─── Follow-up CTA ───────────────────────── */}
+        {sortedListings.length > 0 && (phone || email) && (
+          <section className="mt-8 rounded-2xl border border-stone-200 bg-stone-50 p-5 text-center">
+            <p className="text-sm text-stone-600 mb-3">
+              {copy.tourRecap.summary ? copy.tourRecap.summary : "Ready to take the next step?"}
+            </p>
+            <Button
+              className="rounded-full px-6"
+              onClick={() => phone ? handleCall() : handleEmail()}
+            >
+              <Phone className="h-4 w-4 mr-2" />
+              {copy.tourRecap.scheduleFollowUp}
+            </Button>
+          </section>
+        )}
+
         {/* ─── Footer ──────────────────────────────── */}
         <footer className="mt-10 text-center">
           <p className="text-xs text-stone-400">
-            Shared by {agentName}
+            {copy.tourRecap.sharedBy(agentName)}
             {brokerageName ? ` · ${brokerageName}` : ""}
           </p>
         </footer>
