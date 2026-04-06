@@ -1,11 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type React from "react";
 import {
   Bath,
   BedDouble,
   ChevronDown,
   ChevronUp,
+  Home,
+  ImageOff,
   Mail,
   MapPin,
   MessageCircle,
@@ -219,6 +222,14 @@ export default function BuyerBoardView({
     [token, trackEvent, onReaction],
   );
 
+  /* ── Image fallback ── */
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    img.style.display = "none";
+    const fallback = img.parentElement?.querySelector("[data-img-fallback]");
+    if (fallback instanceof HTMLElement) fallback.style.display = "flex";
+  };
+
   /* ── Expanded details ── */
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -347,6 +358,25 @@ export default function BuyerBoardView({
           </p>
         </header>
 
+        {/* ─── Empty State ─────────────────────────── */}
+        {listings.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-stone-100">
+              <Home className="h-8 w-8 text-stone-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-stone-900">{boardCopy.emptyStateTitle}</h2>
+            <p className="mt-2 max-w-sm text-sm text-stone-500">{boardCopy.emptyStateDescription}</p>
+            {(phone || email) && (
+              <Button
+                className="mt-6 rounded-full px-6"
+                onClick={() => phone ? handleCall() : handleEmail()}
+              >
+                {boardCopy.call}
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* ─── Listing grid ─────────────────────────── */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((listing, index) => {
@@ -369,17 +399,23 @@ export default function BuyerBoardView({
               >
                 {/* Hero image */}
                 {mainImage ? (
-                  <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden">
+                  <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden relative">
                     <img
                       src={mainImage}
                       alt={address}
                       className="h-full w-full object-cover"
                       loading={index < 3 ? "eager" : "lazy"}
+                      onError={handleImageError}
                     />
+                    <div data-img-fallback className="hidden absolute inset-0 items-center justify-center bg-stone-100 flex-col gap-2">
+                      <ImageOff className="h-8 w-8 text-stone-300" />
+                      <p className="text-xs text-stone-400">{boardCopy.imageLoadFailed}</p>
+                    </div>
                   </div>
                 ) : (
-                  <div className="aspect-[16/9] w-full bg-stone-100 flex items-center justify-center">
+                  <div className="aspect-[16/9] w-full bg-stone-100 flex items-center justify-center flex-col gap-2">
                     <MapPin className="h-8 w-8 text-stone-300" />
+                    <p className="text-xs text-stone-400">{address}</p>
                   </div>
                 )}
 

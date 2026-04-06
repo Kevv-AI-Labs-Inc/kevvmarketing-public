@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useMemo, useState } from "react";
 import {
   Bath,
@@ -8,8 +9,10 @@ import {
   ChevronDown,
   ChevronUp,
   Home,
+  ImageOff,
   Mail,
   MapPin,
+  MessageSquare,
   Phone,
   Ruler,
   TrendingUp,
@@ -198,6 +201,14 @@ export default function OfferWorksheetView({
     window.location.href = "mailto:" + email + "?subject=" + subject;
   };
 
+  /** Replace broken image with placeholder */
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    img.style.display = "none";
+    const fallback = img.parentElement?.querySelector("[data-img-fallback]");
+    if (fallback instanceof HTMLElement) fallback.style.display = "flex";
+  };
+
   const targetAddress = targetListing ? buildAddress(targetListing) : "";
   const targetPrice = targetListing
     ? formatPrice(targetListing.listPrice)
@@ -309,19 +320,48 @@ export default function OfferWorksheetView({
           )}
         </header>
 
+        {/* ─── Empty State ─────────────────────────── */}
+        {!targetListing && compListings.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-stone-100">
+              <Home className="h-8 w-8 text-stone-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-stone-900">{copy.offerWorksheet.emptyStateTitle}</h2>
+            <p className="mt-2 max-w-sm text-sm text-stone-500">{copy.offerWorksheet.emptyStateDescription}</p>
+            {(phone || email) && (
+              <Button
+                className="mt-6 rounded-full px-6"
+                onClick={() => phone ? handleCall() : handleEmail()}
+              >
+                {copy.offerWorksheet.discussOffer}
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* ─── Target Property (featured card) ──────── */}
         {targetListing && (
           <section className="mb-8">
             <article className="overflow-hidden rounded-2xl border-2 border-stone-300 bg-white shadow-md">
               {/* Hero image */}
-              {targetListing.images?.[0] && (
-                <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden">
+              {targetListing.images?.[0] ? (
+                <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden relative">
                   <img
                     src={targetListing.images[0]}
                     alt={targetAddress}
                     className="h-full w-full object-cover"
                     loading="eager"
+                    onError={handleImageError}
                   />
+                  <div data-img-fallback className="hidden absolute inset-0 items-center justify-center bg-stone-100 flex-col gap-2">
+                    <ImageOff className="h-8 w-8 text-stone-300" />
+                    <p className="text-xs text-stone-400">{copy.offerWorksheet.imageLoadFailed}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="aspect-[16/9] w-full bg-stone-100 flex items-center justify-center flex-col gap-2">
+                  <Home className="h-8 w-8 text-stone-300" />
+                  <p className="text-xs text-stone-400">{targetAddress}</p>
                 </div>
               )}
 
@@ -503,14 +543,24 @@ export default function OfferWorksheetView({
                       key={listing.listingKey}
                       className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm"
                     >
-                      {mainImage && (
-                        <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden">
+                      {mainImage ? (
+                        <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden relative">
                           <img
                             src={mainImage}
                             alt={addr}
                             className="h-full w-full object-cover"
                             loading="lazy"
+                            onError={handleImageError}
                           />
+                          <div data-img-fallback className="hidden absolute inset-0 items-center justify-center bg-stone-100 flex-col gap-1">
+                            <ImageOff className="h-6 w-6 text-stone-300" />
+                            <p className="text-[10px] text-stone-400">{copy.offerWorksheet.imageLoadFailed}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="aspect-[16/9] w-full bg-stone-100 flex items-center justify-center flex-col gap-1">
+                          <MapPin className="h-6 w-6 text-stone-300" />
+                          <p className="text-[10px] text-stone-400">{addr}</p>
                         </div>
                       )}
 
@@ -651,6 +701,40 @@ export default function OfferWorksheetView({
                   )}
                 </tbody>
               </table>
+            </div>
+          </section>
+        )}
+
+        {/* ─── Discuss Offer CTA ────────────────────── */}
+        {targetListing && (phone || email) && (
+          <section className="mt-8 rounded-2xl border-2 border-stone-200 bg-stone-50 p-6 text-center">
+            <MessageSquare className="mx-auto h-8 w-8 text-stone-400 mb-3" />
+            <h3 className="text-base font-semibold text-stone-900 mb-1">
+              {copy.offerWorksheet.discussOffer}
+            </h3>
+            <p className="text-sm text-stone-500 mb-4">
+              {agentName}
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              {phone && (
+                <Button
+                  className="rounded-full px-6"
+                  onClick={handleCall}
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  {copy.offerWorksheet.call}
+                </Button>
+              )}
+              {email && (
+                <Button
+                  variant="outline"
+                  className="rounded-full px-6"
+                  onClick={handleEmail}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  {copy.offerWorksheet.email}
+                </Button>
+              )}
             </div>
           </section>
         )}

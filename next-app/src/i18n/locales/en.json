@@ -1056,7 +1056,13 @@
       "serviceTitle": "Kevv Listing Share",
       "openGoogleMaps": "Open route in Google Maps",
       "stopDriveSummary": "From the previous stop: about {{duration}} · {{distance}}",
-      "stopStartLabel": "This is the first stop in the tour"
+      "stopStartLabel": "This is the first stop in the tour",
+      "emptyStateTitle": "No listings yet",
+      "emptyStateDescription": "No listings have been added to this share yet. Please contact your agent for details.",
+      "imageLoadFailed": "Photo unavailable",
+      "contactAgent": "Contact Agent",
+      "discussOffer": "Discuss This Offer",
+      "scheduleFollowUp": "Schedule Follow-Up"
     },
     "areaMagnetShare": {
       "marketIntelBadge": "Market intelligence",
@@ -1117,7 +1123,10 @@
       "listings": "listings",
       "favorite": "Favorite",
       "interested": "Interested",
-      "pass": "Pass"
+      "pass": "Pass",
+      "emptyStateTitle": "No listings yet",
+      "emptyStateDescription": "Your agent hasn't added any listings to this board yet.",
+      "imageLoadFailed": "Photo unavailable"
     },
     "tourRecap": {
       "preparedFor": "Prepared for {{name}}",
@@ -1134,7 +1143,11 @@
       "highlights": "Highlights",
       "concerns": "Concerns",
       "summary": "Summary",
-      "nextSteps": "Next Steps"
+      "nextSteps": "Next Steps",
+      "emptyStateTitle": "No properties in this recap",
+      "emptyStateDescription": "No properties have been added to this tour recap yet.",
+      "imageLoadFailed": "Photo unavailable",
+      "scheduleFollowUp": "Schedule Follow-Up"
     },
     "offerWorksheet": {
       "preparedFor": "Prepared for {{name}}",
@@ -1162,7 +1175,11 @@
       "tableListPrice": "List Price",
       "tableSoldPrice": "Sold Price",
       "tablePricePerSqft": "$/sqft",
-      "tableNotes": "Notes"
+      "tableNotes": "Notes",
+      "emptyStateTitle": "No offer data yet",
+      "emptyStateDescription": "Your agent is still preparing the offer analysis.",
+      "imageLoadFailed": "Photo unavailable",
+      "discussOffer": "Discuss This Offer"
     }
   },
   "areaMagnetStudio": {
@@ -2113,7 +2130,6 @@
     "savedDrafts": "Saved Flyers",
     "newFlyer": "New Flyer"
   },
-
   "newListings": {
     "eyebrow": "New Listings",
     "heroTitle": "New Listings",
@@ -2366,7 +2382,7 @@
     "language": "Language:",
     "multipleListingsFound": "Multiple Listings Found",
     "selectListing": "Select the correct listing to generate a brief for:",
-    "backToList": "\u2190 Back to list",
+    "backToList": "← Back to list",
     "recentBriefs": "Recent Briefs",
     "noBriefsYet": "No briefs generated yet",
     "noBriefsHint": "Paste an MLS ID or address above to generate your first Prospect Brief.",

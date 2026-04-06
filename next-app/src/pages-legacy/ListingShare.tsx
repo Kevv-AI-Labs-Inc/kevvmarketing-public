@@ -11,6 +11,8 @@ import {
   Copy,
   ExternalLink,
   Eye,
+  Home,
+  ImageOff,
   Loader2,
   Mail,
   Phone,
@@ -332,6 +334,14 @@ export default function ListingShare({ token }: ListingShareProps) {
     });
   };
 
+  /** Replace broken image with placeholder */
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    img.style.display = "none";
+    const fallback = img.parentElement?.querySelector("[data-img-fallback]");
+    if (fallback instanceof HTMLElement) fallback.style.display = "flex";
+  };
+
   /* ── Hooks (must be before any early returns) ─────────── */
   const [lightboxImages, setLightboxImages] = useState<string[] | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -461,11 +471,15 @@ export default function ListingShare({ token }: ListingShareProps) {
          ═══════════════════════════════════════════════════════ */}
       <section className="relative w-full overflow-hidden" style={{ minHeight: heroImage ? 520 : 320 }}>
         {heroImage ? (
-          <img
-            src={heroImage}
-            alt={heroListing?.address ?? ""}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+          <>
+            <img
+              src={heroImage}
+              alt={heroListing?.address ?? ""}
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={handleImageError}
+            />
+            <div data-img-fallback className="hidden absolute inset-0 items-center justify-center bg-gradient-to-br from-white/5 via-transparent to-white/5" />
+          </>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5" />
         )}
@@ -633,6 +647,25 @@ export default function ListingShare({ token }: ListingShareProps) {
                 </Badge>
               </div>
 
+              {displayListings.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
+                    <Home className="h-8 w-8 text-stone-400" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-white">{pick(copy.emptyStateTitle)}</h2>
+                  <p className="mt-2 max-w-sm text-sm text-stone-400">{pick(copy.emptyStateDescription)}</p>
+                  {(phone || email) && (
+                    <Button
+                      className="mt-6 rounded-full px-6"
+                      style={{ backgroundColor: accentColor }}
+                      onClick={() => handleContact(phone ? "phone" : "email")}
+                    >
+                      {pick(copy.contactAgent)}
+                    </Button>
+                  )}
+                </div>
+              )}
+
               <div className="grid gap-6 xl:grid-cols-2">
                 {displayListings.map((listing, idx) => {
                   const expanded = Boolean(expandedById[listing.id]);
@@ -655,29 +688,39 @@ export default function ListingShare({ token }: ListingShareProps) {
                           <div className="grid grid-cols-2 grid-rows-2 gap-0.5">
                             <button
                               type="button"
-                              className="row-span-2 aspect-[3/4] w-full overflow-hidden focus:outline-none"
+                              className="row-span-2 aspect-[3/4] w-full overflow-hidden focus:outline-none relative"
                               onClick={() => { setLightboxImages(allImages); setLightboxIndex(0); }}
                             >
-                              <img src={gridImages[0]} alt={listing.address} className="h-full w-full object-cover transition-transform hover:scale-105" loading={idx < 2 ? "eager" : "lazy"} />
+                              <img src={gridImages[0]} alt={listing.address} className="h-full w-full object-cover transition-transform hover:scale-105" loading={idx < 2 ? "eager" : "lazy"} onError={handleImageError} />
+                              <div data-img-fallback className="hidden absolute inset-0 items-center justify-center bg-white/5 flex-col gap-1">
+                                <ImageOff className="h-6 w-6 text-stone-500" />
+                              </div>
                             </button>
                             {gridImages.slice(1, 4).map((img, i) => (
                               <button
                                 key={img}
                                 type="button"
-                                className="aspect-[4/3] w-full overflow-hidden focus:outline-none"
+                                className="aspect-[4/3] w-full overflow-hidden focus:outline-none relative"
                                 onClick={() => { setLightboxImages(allImages); setLightboxIndex(i + 1); }}
                               >
-                                <img src={img} alt={listing.address} className="h-full w-full object-cover transition-transform hover:scale-105" loading="lazy" />
+                                <img src={img} alt={listing.address} className="h-full w-full object-cover transition-transform hover:scale-105" loading="lazy" onError={handleImageError} />
+                                <div data-img-fallback className="hidden absolute inset-0 items-center justify-center bg-white/5">
+                                  <ImageOff className="h-5 w-5 text-stone-500" />
+                                </div>
                               </button>
                             ))}
                           </div>
                         ) : gridImages.length > 0 ? (
                           <button
                             type="button"
-                            className="aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-white/10 via-transparent to-white/5 focus:outline-none"
+                            className="aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-white/10 via-transparent to-white/5 focus:outline-none relative"
                             onClick={() => { setLightboxImages(allImages); setLightboxIndex(0); }}
                           >
-                            <img src={gridImages[0]} alt={listing.address} className="h-full w-full object-cover transition-transform hover:scale-105" loading={idx < 2 ? "eager" : "lazy"} />
+                            <img src={gridImages[0]} alt={listing.address} className="h-full w-full object-cover transition-transform hover:scale-105" loading={idx < 2 ? "eager" : "lazy"} onError={handleImageError} />
+                            <div data-img-fallback className="hidden absolute inset-0 items-center justify-center bg-gradient-to-br from-white/10 via-transparent to-white/5 flex-col gap-2">
+                              <ImageOff className="h-8 w-8 text-stone-500" />
+                              <p className="text-xs text-stone-500">{pick(copy.imageLoadFailed)}</p>
+                            </div>
                           </button>
                         ) : (
                           <div className="flex aspect-[16/9] w-full items-center justify-center bg-gradient-to-br from-white/10 via-transparent to-white/5 text-sm text-stone-500">

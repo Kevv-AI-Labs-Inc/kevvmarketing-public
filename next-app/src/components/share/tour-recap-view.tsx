@@ -1,11 +1,14 @@
 "use client";
 
+import type React from "react";
 import { useMemo } from "react";
 import {
   Bath,
   BedDouble,
   Calendar,
   CheckSquare,
+  Home,
+  ImageOff,
   Mail,
   MapPin,
   MessageCircle,
@@ -150,6 +153,14 @@ export default function TourRecapView({
     });
   }, [listings, listingFeedback]);
 
+  /** Replace broken image with placeholder */
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    img.style.display = "none";
+    const fallback = img.parentElement?.querySelector("[data-img-fallback]");
+    if (fallback instanceof HTMLElement) fallback.style.display = "flex";
+  };
+
   const handleCall = () => {
     if (!phone) return;
     trackEvent("contact_click", { channel: "phone", source: "tour_recap_bar" });
@@ -259,6 +270,25 @@ export default function TourRecapView({
           </p>
         </header>
 
+        {/* ─── Empty State ─────────────────────────── */}
+        {sortedListings.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-stone-100">
+              <Home className="h-8 w-8 text-stone-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-stone-900">{copy.tourRecap.emptyStateTitle}</h2>
+            <p className="mt-2 max-w-sm text-sm text-stone-500">{copy.tourRecap.emptyStateDescription}</p>
+            {(phone || email) && (
+              <Button
+                className="mt-6 rounded-full px-6"
+                onClick={() => phone ? handleCall() : handleEmail()}
+              >
+                {copy.tourRecap.scheduleFollowUp}
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* ─── Timeline ────────────────────────────── */}
         <div className="relative">
           {sortedListings.map((listing, index) => {
@@ -286,14 +316,24 @@ export default function TourRecapView({
                 <div className={`flex-1 min-w-0 ${isLast ? "pb-0" : "pb-8"}`}>
                   <article className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
                     {/* Hero image */}
-                    {mainImage && (
-                      <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden">
+                    {mainImage ? (
+                      <div className="aspect-[16/9] w-full bg-stone-100 overflow-hidden relative">
                         <img
                           src={mainImage}
                           alt={address}
                           className="h-full w-full object-cover"
                           loading={index < 3 ? "eager" : "lazy"}
+                          onError={handleImageError}
                         />
+                        <div data-img-fallback className="hidden absolute inset-0 items-center justify-center bg-stone-100 flex-col gap-2">
+                          <ImageOff className="h-8 w-8 text-stone-300" />
+                          <p className="text-xs text-stone-400">{copy.tourRecap.imageLoadFailed}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-[16/9] w-full bg-stone-100 flex items-center justify-center flex-col gap-2">
+                        <MapPin className="h-8 w-8 text-stone-300" />
+                        <p className="text-xs text-stone-400">{address}</p>
                       </div>
                     )}
 
@@ -413,6 +453,22 @@ export default function TourRecapView({
                 </ul>
               </div>
             )}
+          </section>
+        )}
+
+        {/* ─── Follow-up CTA ───────────────────────── */}
+        {sortedListings.length > 0 && (phone || email) && (
+          <section className="mt-8 rounded-2xl border border-stone-200 bg-stone-50 p-5 text-center">
+            <p className="text-sm text-stone-600 mb-3">
+              {copy.tourRecap.summary ? copy.tourRecap.summary : "Ready to take the next step?"}
+            </p>
+            <Button
+              className="rounded-full px-6"
+              onClick={() => phone ? handleCall() : handleEmail()}
+            >
+              <Phone className="h-4 w-4 mr-2" />
+              {copy.tourRecap.scheduleFollowUp}
+            </Button>
           </section>
         )}
 

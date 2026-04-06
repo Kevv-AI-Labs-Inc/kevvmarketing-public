@@ -1056,7 +1056,13 @@
       "serviceTitle": "Kevv 房源分享",
       "openGoogleMaps": "在 Google Maps 中打开路线",
       "stopDriveSummary": "从上一站开到这里约 {{duration}} · {{distance}}",
-      "stopStartLabel": "这是本次带看的起点"
+      "stopStartLabel": "这是本次带看的起点",
+      "emptyStateTitle": "暂无房源",
+      "emptyStateDescription": "此分享中暂未添加房源，请联系您的经纪人了解详情。",
+      "imageLoadFailed": "图片不可用",
+      "contactAgent": "联系经纪人",
+      "discussOffer": "讨论报价",
+      "scheduleFollowUp": "安排后续跟进"
     },
     "areaMagnetShare": {
       "marketIntelBadge": "区域洞察",
@@ -1117,7 +1123,10 @@
       "listings": "套房源",
       "favorite": "喜欢",
       "interested": "感兴趣",
-      "pass": "跳过"
+      "pass": "跳过",
+      "emptyStateTitle": "暂无房源",
+      "emptyStateDescription": "您的经纪人尚未在此看板中添加房源。",
+      "imageLoadFailed": "图片不可用"
     },
     "tourRecap": {
       "preparedFor": "为 {{name}} 准备",
@@ -1134,7 +1143,11 @@
       "highlights": "亮点",
       "concerns": "顾虑",
       "summary": "总结",
-      "nextSteps": "下一步"
+      "nextSteps": "下一步",
+      "emptyStateTitle": "暂无看房记录",
+      "emptyStateDescription": "此看房回顾中尚未添加房源。",
+      "imageLoadFailed": "图片不可用",
+      "scheduleFollowUp": "安排后续跟进"
     },
     "offerWorksheet": {
       "preparedFor": "为 {{name}} 准备",
@@ -1162,7 +1175,11 @@
       "tableListPrice": "挂牌价",
       "tableSoldPrice": "成交价",
       "tablePricePerSqft": "每平方英尺单价",
-      "tableNotes": "备注"
+      "tableNotes": "备注",
+      "emptyStateTitle": "暂无报价数据",
+      "emptyStateDescription": "您的经纪人正在准备报价分析。",
+      "imageLoadFailed": "图片不可用",
+      "discussOffer": "讨论报价"
     }
   },
   "areaMagnetStudio": {
@@ -2365,7 +2382,7 @@
     "language": "语言：",
     "multipleListingsFound": "找到多个匹配房源",
     "selectListing": "请选择要生成方案的房源：",
-    "backToList": "\u2190 返回列表",
+    "backToList": "← 返回列表",
     "recentBriefs": "最近方案",
     "noBriefsYet": "暂无方案",
     "noBriefsHint": "在上方输入 MLS ID 或地址，生成您的第一份推销方案。",

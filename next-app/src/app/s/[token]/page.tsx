@@ -18,6 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         sessionType: shareSessions.sessionType,
         clientName: shareSessions.clientName,
         agentBranding: shareSessions.agentBranding,
+        shareConfig: shareSessions.shareConfig,
         status: shareSessions.status,
       })
       .from(shareSessions)
@@ -37,6 +38,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       typeof branding.agentName === "string" ? branding.agentName : "";
     const avatarUrl =
       typeof branding.avatarUrl === "string" ? branding.avatarUrl : "";
+
+    // Try to get first listing image for a better OG preview
+    const config =
+      session.shareConfig && typeof session.shareConfig === "object"
+        ? (session.shareConfig as Record<string, unknown>)
+        : {};
+    const heroImageUrl =
+      typeof config.heroImageUrl === "string" && config.heroImageUrl
+        ? config.heroImageUrl
+        : null;
+
+    // Use listing hero image if available, otherwise fall back to agent avatar
+    const ogImageUrl = heroImageUrl || avatarUrl;
+    const ogImageWidth = heroImageUrl ? 1200 : 400;
+    const ogImageHeight = heroImageUrl ? 630 : 400;
+    const twitterCard = heroImageUrl ? "summary_large_image" : "summary";
 
     const typeLabelMap: Record<string, string> = {
       area_magnet: "Market Report",
@@ -60,15 +77,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description,
         type: "article",
-        ...(avatarUrl
-          ? { images: [{ url: avatarUrl, width: 400, height: 400 }] }
+        ...(ogImageUrl
+          ? { images: [{ url: ogImageUrl, width: ogImageWidth, height: ogImageHeight }] }
           : {}),
       },
       twitter: {
-        card: avatarUrl ? "summary" : "summary",
+        card: twitterCard as "summary" | "summary_large_image",
         title,
         description,
-        ...(avatarUrl ? { images: [avatarUrl] } : {}),
+        ...(ogImageUrl ? { images: [ogImageUrl] } : {}),
       },
     };
   } catch {
