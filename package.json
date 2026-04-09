@@ -22,7 +22,7 @@
     "prettier": "^3.6.2"
   },
   "dependencies": {
-    "dotenv": "^17.2.2",
+    "dotenv": "^17.4.1",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.13.0"
   }
