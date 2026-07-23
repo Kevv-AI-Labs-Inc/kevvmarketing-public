@@ -41,10 +41,6 @@ export const EVENT_TYPES = {
   AD_CLICK: "ad_click",
   AD_LEAD: "ad_lead",
 
-  // Home Value Campaign Links
-  HV_LINK_VIEW: "hv_link_view",
-  HV_LINK_VALUATION: "hv_link_valuation",
-  HV_LINK_LEAD: "hv_link_lead",
 } as const;
 
 export type EventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];
@@ -69,9 +65,6 @@ export const EVENT_SCORE_WEIGHTS: Record<string, number> = {
   [EVENT_TYPES.CONTACT_REQUEST]: 25,
   [EVENT_TYPES.AD_CLICK]: 3,
   [EVENT_TYPES.AD_LEAD]: 20,
-  [EVENT_TYPES.HV_LINK_VIEW]: 1,
-  [EVENT_TYPES.HV_LINK_VALUATION]: 5,
-  [EVENT_TYPES.HV_LINK_LEAD]: 20,
 };
 
 // ─── Record Event ──────────────────────────────────────────

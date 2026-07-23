@@ -425,14 +425,14 @@ export default function FlyerStudio() {
     const selectedScheme = COLOR_SCHEMES.find((s) => s.id === flyer.colorSchemeId) ?? COLOR_SCHEMES[0];
 
     // ── AI Copy generation (real) ──
-    const aiCopyMutation = trpc.smartMatch.analyzeForShare.useMutation({
+    const aiCopyMutation = trpc.content.analyzeListingsForShare.useMutation({
         onSuccess: (data: Record<string, unknown>) => {
             const desc = typeof data.headerDescription === "string" ? data.headerDescription : "";
             const points = Array.isArray(data.strategyPoints) ? (data.strategyPoints as string[]) : [];
             const bodyEn = [desc, ...points].filter(Boolean).join("\n\n");
 
             // We'll set EN copy; ZH will be generated from the bilingual LLM response
-            // Since analyzeForShare already outputs in the user's language, we split accordingly
+            // The content endpoint already outputs in the user's language.
             updateFlyer({
                 bodyText: bodyEn,
                 bodyTextZh: bodyEn, // The LLM outputs in the detected language

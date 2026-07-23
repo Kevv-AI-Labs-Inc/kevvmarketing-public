@@ -494,7 +494,7 @@ export default function MagicShareStudio() {
   );
 
   const analyzeForShareMutation =
-    trpc.smartMatch.analyzeForShare.useMutation({
+    trpc.content.analyzeListingsForShare.useMutation({
       onSuccess: (data: any) => {
         if (data.headerDescription)
           setHeaderDescription(data.headerDescription);

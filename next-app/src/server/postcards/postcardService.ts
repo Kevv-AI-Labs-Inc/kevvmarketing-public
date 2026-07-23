@@ -26,10 +26,10 @@ type AddressInput = {
 
 const systemTemplateSeeds = [
   buildDemoPostcardTemplate({
-    name: "Luxury Seller Valuation",
-    category: "HOME_VALUATION",
+    name: "Luxury Seller Consultation",
+    category: "SELLER_CONSULTATION",
     sizeCode: "6x9",
-    note: "Seller-facing valuation postcard that pushes owners into the Home Value funnel.",
+    note: "Seller-facing postcard that routes owners to a direct consultation.",
   }),
   buildDemoPostcardTemplate({
     id: 2,
@@ -208,7 +208,6 @@ export async function listPostcardContacts(agentId: number, db: Db = getDb()) {
     .from(contacts)
     .where(and(eq(contacts.agentId, agentId), or(
       eq(contacts.source, "postcard_import"),
-      eq(contacts.source, "home_value"),
       eq(contacts.source, "agent_site_form"),
       eq(contacts.source, "agent_site_chat"),
       eq(contacts.source, "zipcode_scan"),
@@ -390,19 +389,19 @@ function buildSuggestedCopy(params: {
   language: "en" | "zh" | "zh_en";
 }) {
   const concisePrompt = params.prompt.trim();
-  const enHeadline = concisePrompt.includes("valuation")
-    ? "Curious what your home could command right now?"
+  const enHeadline = concisePrompt.includes("pricing")
+    ? "Ready for a focused pricing conversation?"
     : "Your neighborhood is moving. Are you positioned for it?";
-  const zhHeadline = concisePrompt.includes("估值")
-    ? "想知道你家现在大概值多少钱吗？"
+  const zhHeadline = concisePrompt.includes("定价")
+    ? "准备好聊聊定价与上市节奏了吗？"
     : "你所在社区正在变化，你准备好了吗？";
 
   return {
     headline: params.language === "zh" ? zhHeadline : enHeadline,
     body:
       params.language === "zh"
-        ? `这张 ${params.templateName} postcard 会把屋主引导回 AI 估值或市场更新漏斗。建议正文围绕“近期成交、窗口期、下一步咨询”展开。`
-        : `This ${params.templateName} postcard should route homeowners into the AI valuation or market-update funnel. Keep the body focused on recent movement, timing pressure, and a clear next consultation step.`,
+        ? `这张 ${params.templateName} postcard 会把屋主引导到直接咨询或市场更新。建议正文围绕“近期成交、窗口期、下一步咨询”展开。`
+        : `This ${params.templateName} postcard should route homeowners into a direct consultation or market update. Keep the body focused on recent movement, timing pressure, and a clear next step.`,
     callout:
       params.language === "zh"
         ? `联系 ${params.agentName}，拿到更贴近你房产情况的策略判断。`

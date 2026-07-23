@@ -431,14 +431,13 @@ export default function ClassicTemplate({
           </h2>
           <div className="w-12 h-0.5 bg-amber-500 mx-auto mt-3 mb-6" />
           <p className="text-stone-600 font-sans text-sm mb-8">
-            Ready to buy, sell, or find out what your home is worth? Get in
-            touch today.
+            Ready to buy or sell? Schedule a direct consultation today.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {/* Home value CTA */}
+            {/* Seller consultation CTA */}
             <Link
-              href={`/agents/${profile.slug}/home-value`}
+              href={profile.bookingUrl || `mailto:${profile.email}`}
               className="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-md text-sm font-sans font-semibold transition-colors"
             >
               {/* Home icon */}
@@ -454,7 +453,7 @@ export default function ClassicTemplate({
                 <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                 <polyline points="9 22 9 12 15 12 15 22" />
               </svg>
-              Get Your Home Value
+              Schedule a Seller Consultation
               {/* Arrow icon */}
               <svg
                 className="h-4 w-4"

@@ -117,10 +117,10 @@ export function BoldTemplate({ profile, preview = false }: TemplateProps) {
               Get in Touch
             </a>
             <Link
-              href={`/agents/${profile.slug}/home-value`}
+              href={profile.bookingUrl || `mailto:${profile.email}`}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 px-6 py-3 rounded-full font-bold text-sm text-white transition-all"
             >
-              Get My Home Value
+              Schedule a Consultation
               <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -352,10 +352,10 @@ export function BoldTemplate({ profile, preview = false }: TemplateProps) {
 
           <div className="flex flex-wrap justify-center gap-4">
             <Link
-              href={`/agents/${profile.slug}/home-value`}
+              href={profile.bookingUrl || `mailto:${profile.email}`}
               className="inline-flex items-center gap-2 bg-white text-black px-8 py-4 rounded-full font-bold text-sm hover:bg-purple-100 transition-all"
             >
-              Get My Home Value
+              Talk About Selling
               <ArrowUpRight className="h-4 w-4" />
             </Link>
             {profile.bookingUrl && (

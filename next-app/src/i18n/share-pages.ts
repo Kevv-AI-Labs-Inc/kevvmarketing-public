@@ -4,67 +4,8 @@ import { createTranslator } from "./messages";
 export function getSharePageCopy(locale: Locale) {
   const t = createTranslator(locale);
   const clientFallback = locale === "zh" ? "你" : "you";
-  const greetingFallback = locale === "zh" ? "朋友" : "there";
 
   return {
-    smartMatchShare: {
-      fetchLoadError: t("sharePages.smartMatchShare.fetchLoadError"),
-      fetchFeedbackError: t("sharePages.smartMatchShare.fetchFeedbackError"),
-      loading: t("sharePages.smartMatchShare.loading"),
-      notFoundTitle: t("sharePages.smartMatchShare.notFoundTitle"),
-      notFoundDescription: t("sharePages.smartMatchShare.notFoundDescription"),
-      kanbanTitle: t("sharePages.smartMatchShare.kanbanTitle"),
-      reportTitle: t("sharePages.smartMatchShare.reportTitle"),
-      comingSoon: t("sharePages.smartMatchShare.comingSoon"),
-    },
-    smartMatchStory: {
-      commentSubmitted: t("sharePages.smartMatchStory.commentSubmitted"),
-      commentFailed: t("sharePages.smartMatchStory.commentFailed"),
-      networkError: t("sharePages.smartMatchStory.networkError"),
-      greeting: (name: string) =>
-        t("sharePages.smartMatchStory.greeting", {
-          name: name || greetingFallback,
-        }),
-      curatedBy: (agentName: string) =>
-        t("sharePages.smartMatchStory.curatedBy", { agentName }),
-      featuredCount: t("sharePages.smartMatchStory.featuredCount"),
-      avgPricePerSqft: t("sharePages.smartMatchStory.avgPricePerSqft"),
-      start: t("sharePages.smartMatchStory.start"),
-      galleryCounter: (current: number, total: number) =>
-        t("sharePages.smartMatchStory.galleryCounter", { current, total }),
-      prevImage: t("sharePages.smartMatchStory.prevImage"),
-      nextImage: t("sharePages.smartMatchStory.nextImage"),
-      priceUnavailable: t("sharePages.smartMatchStory.priceUnavailable"),
-      expertJudgment: (agentName: string) =>
-        t("sharePages.smartMatchStory.expertJudgment", { agentName }),
-      recommendation: t("sharePages.smartMatchStory.recommendation"),
-      risks: t("sharePages.smartMatchStory.risks"),
-      strategy: t("sharePages.smartMatchStory.strategy"),
-      matchAnalysis: t("sharePages.smartMatchStory.matchAnalysis"),
-      closingStrategy: t("sharePages.smartMatchStory.closingStrategy"),
-      viewOriginal: t("sharePages.smartMatchStory.viewOriginal"),
-      tour: t("sharePages.smartMatchStory.tour"),
-      writeComment: t("sharePages.smartMatchStory.writeComment"),
-      commentPlaceholder: t("sharePages.smartMatchStory.commentPlaceholder"),
-      submitting: t("sharePages.smartMatchStory.submitting"),
-      submit: t("sharePages.smartMatchStory.submit"),
-      back: t("sharePages.smartMatchStory.back"),
-      needTwoListings: t("sharePages.smartMatchStory.needTwoListings"),
-      routePlanning: t("sharePages.smartMatchStory.routePlanning"),
-      hideRoute: t("sharePages.smartMatchStory.hideRoute"),
-      showRoute: t("sharePages.smartMatchStory.showRoute"),
-      listingCount: (count: number) =>
-        t("sharePages.smartMatchStory.listingCount", { count }),
-      routeFailed: t("sharePages.smartMatchStory.routeFailed"),
-      routeError: t("sharePages.smartMatchStory.routeError"),
-      stops: t("sharePages.smartMatchStory.stops"),
-      listPriceUnavailable: t("sharePages.smartMatchStory.listPriceUnavailable"),
-      bedsShort: t("sharePages.smartMatchStory.bedsShort"),
-      bathsShort: t("sharePages.smartMatchStory.bathsShort"),
-      sqftShort: t("sharePages.smartMatchStory.sqftShort"),
-      wechatCopied: t("sharePages.smartMatchStory.wechatCopied"),
-      wechatPrefix: t("sharePages.smartMatchStory.wechatPrefix"),
-    },
     listingShare: {
       loading: t("sharePages.listingShare.loading"),
       notFoundTitle: t("sharePages.listingShare.notFoundTitle"),

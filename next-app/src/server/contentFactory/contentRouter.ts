@@ -21,11 +21,105 @@ import {
   socialPosts,
   generatedContent,
 } from "../../drizzle/schema";
+import { invokeLLM } from "../_core/llm";
 import { generateContent, type ContentFormat } from "./aiContentGenerator";
 
 // ─── Router ────────────────────────────────────────────────
 
 export const contentRouter = router({
+  /** Generate reusable copy for listing share pages and flyers. */
+  analyzeListingsForShare: protectedProcedure
+    .input(
+      z.object({
+        listings: z
+          .array(
+            z.object({
+              address: z.string().optional(),
+              price: z.string().optional(),
+              beds: z.string().optional(),
+              baths: z.string().optional(),
+              sqft: z.string().optional(),
+              propertyType: z.string().optional(),
+              city: z.string().optional(),
+              publicRemarks: z.string().optional(),
+            }),
+          )
+          .min(1)
+          .max(30),
+        clientNeeds: z.string().trim().max(5000).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const listingSummaries = input.listings
+        .map((listing, index) => {
+          const summary = [
+            `#${index + 1}`,
+            listing.address,
+            listing.price ? `$${listing.price}` : null,
+            listing.beds ? `${listing.beds}bd` : null,
+            listing.baths ? `${listing.baths}ba` : null,
+            listing.sqft ? `${listing.sqft}sqft` : null,
+            listing.propertyType,
+            listing.city,
+          ]
+            .filter(Boolean)
+            .join(" | ");
+          const remarks = listing.publicRemarks
+            ? `\nRemarks: ${listing.publicRemarks.slice(0, 200)}`
+            : "";
+          return summary + remarks;
+        })
+        .join("\n");
+
+      const response = await invokeLLM({
+        task: "content",
+        messages: [
+          {
+            role: "system",
+            content: `You are a real estate marketing editor preparing a curated property presentation.
+Return only valid JSON with this shape:
+{
+  "headerDescription": "2-3 sentence overview",
+  "strategyPoints": ["point 1", "point 2", "point 3"],
+  "overallAnalysis": "1-2 sentence recommendation"
+}
+Write in the same language as the client needs. Default to Chinese when no client needs are provided. Be specific, professional, and concise.`,
+          },
+          {
+            role: "user",
+            content: `${input.clientNeeds ? `Client Needs: ${input.clientNeeds}\n\n` : ""}Properties:\n${listingSummaries}`,
+          },
+        ],
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (typeof content !== "string" || content.trim().length === 0) {
+        return {
+          headerDescription: "",
+          strategyPoints: [] as string[],
+          overallAnalysis: "",
+        };
+      }
+
+      const cleaned = content
+        .replace(/```json?\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
+      try {
+        return JSON.parse(cleaned) as {
+          headerDescription: string;
+          strategyPoints: string[];
+          overallAnalysis: string;
+        };
+      } catch {
+        return {
+          headerDescription: content.trim(),
+          strategyPoints: [] as string[],
+          overallAnalysis: "",
+        };
+      }
+    }),
+
   /**
    * AI generate content based on format and listing data.
    */

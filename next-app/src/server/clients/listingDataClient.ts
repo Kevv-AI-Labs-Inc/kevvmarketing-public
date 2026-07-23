@@ -8,8 +8,7 @@
  * Auth: Bearer token via LISTING_DATA_SERVICE_API_KEY env var.
  * Base URL: LISTING_DATA_SERVICE_URL env var.
  *
- * Stable endpoints  → /api/v1/...
- * Internal endpoints → /api/internal/...
+ * Contract endpoints live under /api/v1/.
  */
 
 import axios, { AxiosInstance, AxiosError } from "axios";
@@ -21,9 +20,8 @@ import type {
   ListingSearchResponse,
   AddressResolveResponse,
   AddressCandidatesResponse,
+  AddressCandidate,
   AddressLookupInput,
-  // Health
-  SyncStatusResponse,
   SearchFilters,
   ApiErrorResponse,
 } from "./types";
@@ -47,12 +45,18 @@ type RawListingFull = {
 
 type RawListingSearchResponse = {
   items?: RawListingRecord[] | null;
-  nextCursor?: string | null;
+  totalCount?: number;
+  hasMore?: boolean;
+  limit?: number;
+  offset?: number;
 };
 
 type RawBatchListingResponse = {
-  items?: RawListingRecord[] | null;
-  notFound?: string[] | null;
+  results?: Array<RawListingFull & { listingKey?: string; error?: string }> | null;
+};
+
+type RawAddressCandidatesResponse = {
+  candidates?: AddressCandidate[] | null;
 };
 
 type RawListingMediaResponse = {
@@ -151,19 +155,27 @@ function normalizeListingResponse(raw: RawListingFull): ListingResponse {
 }
 
 function normalizeSearchFilters(filters: SearchFilters) {
+  const limit = filters.limit ?? filters.perPage ?? 24;
+  const page = Math.max(filters.page ?? 1, 1);
+  const cursorOffset = Number(filters.cursor);
+  const offset =
+    filters.cursor && Number.isInteger(cursorOffset) && cursorOffset >= 0
+      ? cursorOffset
+      : (page - 1) * limit;
+
   return {
     q: filters.search?.trim() || undefined,
     city: filters.city?.trim() || undefined,
     stateOrProvince: filters.stateOrProvince?.trim() || undefined,
     postalCode: filters.postalCode?.trim() || undefined,
-    minPrice: filters.minPrice,
-    maxPrice: filters.maxPrice,
+    priceMin: filters.minPrice,
+    priceMax: filters.maxPrice,
     bedsMin: filters.minBedrooms,
     bathsMin: filters.minBathrooms,
     status: filters.status?.trim() || undefined,
     propertyType: filters.propertyType?.trim() || undefined,
-    limit: filters.limit ?? filters.perPage ?? 24,
-    cursor: filters.cursor,
+    limit,
+    offset,
   };
 }
 
@@ -174,17 +186,27 @@ function normalizeSearchResponse(
   const items = Array.isArray(raw.items)
     ? raw.items.map((item) => normalizeListingData(item))
     : [];
+  const limit = raw.limit ?? requestedLimit;
+  const offset = raw.offset ?? 0;
+  const total = raw.totalCount ?? items.length;
 
   return {
     data: items,
     meta: {
-      total: items.length,
-      page: 1,
-      perPage: requestedLimit,
-      totalPages: items.length > 0 ? 1 : 0,
+      total,
+      page: Math.floor(offset / Math.max(limit, 1)) + 1,
+      perPage: limit,
+      totalPages: total > 0 ? Math.ceil(total / Math.max(limit, 1)) : 0,
     },
-    nextCursor: raw.nextCursor ?? null,
+    nextCursor: raw.hasMore ? String(offset + limit) : null,
   };
+}
+
+function combinedAddress(input: AddressLookupInput) {
+  return [input.address, input.city, input.stateOrProvince, input.postalCode]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(", ");
 }
 
 // ─── Client Singleton ──────────────────────────────────────────
@@ -259,7 +281,7 @@ export async function getListingByMls(mlsId: string): Promise<ListingResponse> {
 }
 
 /**
- * POST /api/v1/listings/by-address
+ * GET /api/v1/listings/by-address
  * Strict single-listing address resolver.
  *
  * Returns the matched listing on 200.
@@ -270,61 +292,40 @@ export async function getListingByMls(mlsId: string): Promise<ListingResponse> {
 export async function resolveByAddress(
   input: AddressLookupInput,
 ): Promise<AddressResolveResponse> {
-  const res = await getClient().post<AddressResolveResponse>(
+  const res = await getClient().get<AddressResolveResponse>(
     "/api/v1/listings/by-address",
-    input,
+    { params: { address: combinedAddress(input) } },
   );
   return res.data;
 }
 
 /**
- * POST /api/v1/listings/address-candidates
- * Fuzzy address search — returns ranked candidates with confidence scores.
- * Use this to power disambiguation UIs or as a pre-resolve step.
- *
- * limit: 1-15, default 8
+ * GET /api/v1/listings/address-candidates
+ * Return address candidates for disambiguation.
  */
 export async function getAddressCandidates(
   input: AddressLookupInput & { limit?: number },
 ): Promise<AddressCandidatesResponse> {
-  const res = await getClient().post<unknown[]>(
+  const res = await getClient().get<RawAddressCandidatesResponse>(
     "/api/v1/listings/address-candidates",
-    input,
+    { params: { address: combinedAddress(input) } },
   );
   return {
-    data: Array.isArray(res.data) ? (res.data as AddressCandidatesResponse["data"]) : [],
+    data: Array.isArray(res.data.candidates) ? res.data.candidates : [],
   };
 }
 
 /**
- * POST /api/v1/listings/by-location
- * Spatial proximity search — find listings near a lat/lng coordinate.
- * Uses Haversine formula on BBO's stored coordinates.
- */
-export async function getListingsByLocation(input: {
-  latitude: number;
-  longitude: number;
-  radiusKm?: number;
-  limit?: number;
-}): Promise<{ items: Array<{ data: ListingData; imageUrls?: string[]; distanceKm?: number }> }> {
-  const res = await getClient().post(
-    "/api/v1/listings/by-location",
-    input,
-  );
-  return res.data;
-}
-
-/**
- * POST /api/v1/listings/search  (was GET in v0 client — BBO requires POST)
+ * GET /api/v1/listings/search
  * Search listings with structured filters.
  */
 export async function searchListings(
   filters: SearchFilters,
 ): Promise<ListingSearchResponse> {
   const payload = normalizeSearchFilters(filters);
-  const res = await getClient().post<RawListingSearchResponse>(
+  const res = await getClient().get<RawListingSearchResponse>(
     "/api/v1/listings/search",
-    payload,
+    { params: payload },
   );
   return normalizeSearchResponse(res.data, payload.limit ?? 24);
 }
@@ -338,22 +339,15 @@ export async function getListingsBatch(
 ): Promise<Map<string, ListingResponse>> {
   const res = await getClient().post<RawBatchListingResponse>(
     "/api/v1/listings/batch",
-    { listingKeys: keys },
+    { keys },
   );
   const map = new Map<string, ListingResponse>();
-  for (const item of res.data.items ?? []) {
-    const data = normalizeListingData(item);
+  for (const item of res.data.results ?? []) {
+    if (item.error) continue;
+    const normalized = normalizeListingResponse(item);
+    const data = normalized.data;
     if (!data.listingKey) continue;
-    const thumbnailUrl = data.thumbnailUrl ?? null;
-    map.set(data.listingKey, {
-      data,
-      source: "MLSGrid",
-      fallbackUsed: false,
-      freshness: data.modificationTimestamp ?? null,
-      media: [],
-      imageUrls: thumbnailUrl ? [thumbnailUrl] : [],
-      thumbnailUrl,
-    });
+    map.set(data.listingKey, normalized);
   }
   return map;
 }
@@ -386,15 +380,6 @@ export async function getListingMedia(
   };
 }
 
-/**
- * GET /api/v1/sync/status
- * BBO aggregate sync health check.
- */
-export async function getSyncStatus(): Promise<SyncStatusResponse> {
-  const res = await getClient().get<SyncStatusResponse>("/api/v1/sync/status");
-  return res.data;
-}
-
 // ─── Namespace export ──────────────────────────────────────────
 
 export const listingDataClient = {
@@ -403,9 +388,7 @@ export const listingDataClient = {
   getListingByMls,
   resolveByAddress,
   getAddressCandidates,
-  getListingsByLocation,
   searchListings,
   getListingsBatch,
   getListingMedia,
-  getSyncStatus,
 };

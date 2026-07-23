@@ -1,19 +1,15 @@
 import type { Locale } from "@/i18n";
 import type { LucideIcon } from "lucide-react";
 import {
-  BarChart3,
   Bell,
   BookImage,
   Building2,
-  Calendar,
   Clapperboard,
   Compass,
-  Copy,
   Eye,
   FileText,
   Flame,
   Globe2,
-  Home,
   LayoutDashboard,
   Link,
   Mailbox,
@@ -23,7 +19,6 @@ import {
   Plane,
   Search,
   Share2,
-  Sparkles,
   Target,
   Users,
 } from "lucide-react";
@@ -189,26 +184,6 @@ export const marketingCapabilities: MarketingCapability[] = [
     alignment: "matched",
   },
   {
-    id: "summary-copy",
-    order: 5,
-    label: { zh: "复制摘要", en: "Summary Copy" },
-    category: "search-distribution",
-    icon: Copy,
-    description: {
-      zh: "从推荐结果中复制 AI 推荐摘要和跟进话术。",
-      en: "Copy AI summaries and follow-up pitch copy from recommendation results.",
-    },
-    currentModule: { zh: "Smart Match / AIRecommend", en: "Smart Match / AIRecommend" },
-    compareNote: {
-      zh: "复制摘要能力存在，但绑定在 Smart Match 页面里，仍需抽成独立工作流。",
-      en: "The summary-copy action exists inside Smart Match, but it still needs a clearer standalone workflow.",
-    },
-    route: "/summary-copy",
-    routeLabel: { zh: "打开复制摘要", en: "Open Summary Copy" },
-    status: "partial",
-    alignment: "adapted",
-  },
-  {
     id: "flyer-studio",
     order: 6,
     label: { zh: "制作海报", en: "Flyer Creation" },
@@ -290,16 +265,6 @@ export const marketingCapabilities: MarketingCapability[] = [
 
 export const marketingExtensions: MarketingExtensionModule[] = [
   {
-    id: "smart-match",
-    icon: Sparkles,
-    label: { zh: "Smart Match", en: "Smart Match" },
-    description: {
-      zh: "基于客户需求做 AI 推荐、选房和分享衔接。",
-      en: "AI recommendation workflow for client matching, property selection, and downstream sharing.",
-    },
-    path: "/smart-match",
-  },
-  {
     id: "showing-tour",
     icon: Navigation,
     label: { zh: "带看路线", en: "Showing Tour" },
@@ -308,16 +273,6 @@ export const marketingExtensions: MarketingExtensionModule[] = [
       en: "Plan showing routes and route packs before the closing workflow.",
     },
     path: "/showing-tour",
-  },
-  {
-    id: "cma-studio",
-    icon: BarChart3,
-    label: { zh: "CMA Studio", en: "CMA Studio" },
-    description: {
-      zh: "做估价分析和报告，但 PDF 交付链路还需补齐。",
-      en: "Run CMA analysis and reports, with the PDF delivery pipeline still incomplete.",
-    },
-    path: "/cma-studio",
   },
   {
     id: "new-listings",
@@ -371,12 +326,6 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
         icon: Globe2,
         label: { zh: "个人主页", en: "Agent Site" },
         path: "/agent-site",
-      },
-      {
-        id: "home-value",
-        icon: Home,
-        label: { zh: "房价估值", en: "Home Value" },
-        path: "/home-value",
       },
       {
         id: "area-magnet",
@@ -469,22 +418,10 @@ export const dashboardMenuSections: MarketingMenuSection[] = [
         path: "/new-listings",
       },
       {
-        id: "smart-match",
-        icon: Sparkles,
-        label: { zh: "Smart Match", en: "Smart Match" },
-        path: "/smart-match",
-      },
-      {
         id: "showing-tour",
         icon: Navigation,
         label: { zh: "带看路线", en: "Showing Tour" },
         path: "/showing-tour",
-      },
-      {
-        id: "cma-studio",
-        icon: BarChart3,
-        label: { zh: "CMA Studio", en: "CMA Studio" },
-        path: "/cma-studio",
       },
     ],
   },

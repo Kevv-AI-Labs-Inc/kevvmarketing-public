@@ -16,18 +16,18 @@ describe("captureLead", () => {
         {
           agentId: 7,
           agentProfileId: 12,
-          source: "home_value",
-          sourceRef: "sophia-chen",
+          source: "area_magnet",
+          sourceRef: "palo-alto-market",
           name: "Daniel Park",
           email: "daniel@example.com",
           phone: "650-555-0101",
           score: "hot",
           intent: "selling",
           timeline: "30-60 days",
-          tags: ["seller", "valuation"],
-          eventType: "home_value_gate_submit",
+          tags: ["seller", "market-report"],
+          eventType: "area_magnet_lead_submit",
           eventData: {
-            valuationRunId: 88,
+            magnetScope: "94301",
           },
           sourceId: "88",
           sessionToken: "session-88",
@@ -44,17 +44,17 @@ describe("captureLead", () => {
         agentId: 7,
         agentProfileId: 12,
         name: "Daniel Park",
-        source: "home_value",
+        source: "area_magnet",
         score: "hot",
         intent: "selling",
       });
-      expect(contactRows[0].tags).toEqual(["seller", "valuation"]);
+      expect(contactRows[0].tags).toEqual(["seller", "market-report"]);
       expect(eventRows).toHaveLength(1);
       expect(eventRows[0]).toMatchObject({
         agentId: 7,
         contactId: contact.id,
-        eventType: "home_value_gate_submit",
-        sourceType: "home_value",
+        eventType: "area_magnet_lead_submit",
+        sourceType: "area_magnet",
         sourceId: "88",
         sessionToken: "session-88",
       });
@@ -87,14 +87,14 @@ describe("captureLead", () => {
         {
           agentId: 7,
           agentProfileId: 12,
-          source: "home_value",
+          source: "area_magnet",
           name: "Jamie Lee",
           email: "jamie@example.com",
           phone: "650-555-0111",
           score: "hot",
           intent: "selling",
-          tags: ["seller", "valuation"],
-          eventType: "home_value_gate_submit",
+          tags: ["seller", "market-report"],
+          eventType: "area_magnet_lead_submit",
         },
         db,
       );
@@ -104,10 +104,10 @@ describe("captureLead", () => {
 
       expect(second.id).toBe(first.id);
       expect(contactRows).toHaveLength(1);
-      expect(contactRows[0].source).toBe("home_value");
+      expect(contactRows[0].source).toBe("area_magnet");
       expect(contactRows[0].score).toBe("hot");
       expect(contactRows[0].intent).toBe("selling");
-      expect(contactRows[0].tags).toEqual(["seller", "valuation", "buyer"]);
+      expect(contactRows[0].tags).toEqual(["seller", "market-report", "buyer"]);
       expect(eventRows).toHaveLength(2);
     } finally {
       await harness.close();

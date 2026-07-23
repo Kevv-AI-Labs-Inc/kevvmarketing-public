@@ -64,7 +64,7 @@ describe("leadCaptureRouter.dashboard", () => {
       buildDemoContact({
         id: 101,
         agentId: 7,
-        source: "home_value",
+        source: "area_magnet",
         status: "qualified",
       }),
       buildDemoContact({
@@ -80,7 +80,7 @@ describe("leadCaptureRouter.dashboard", () => {
       contactId: 101,
       agentId: 7,
       score: 42,
-      factors: { home_value_gate_submit: 42 },
+      factors: { area_magnet_lead_submit: 42 },
       scoreModel: "v1",
     });
     await testDb.db.insert(schema.agentInsights).values({
@@ -88,16 +88,16 @@ describe("leadCaptureRouter.dashboard", () => {
       contactId: 101,
       insightType: "hot_lead",
       title: "Seller lead is ready for a pricing call",
-      description: "Home Value lead opened the gate and left timeline notes.",
+      description: "Area Magnet lead opened the report and left timeline notes.",
       priority: "high",
       suggestedAction: "contact_now",
-      actionData: { source: "home_value" },
+      actionData: { source: "area_magnet" },
     });
     await testDb.db.insert(schema.dripCampaigns).values({
       agentId: 7,
       name: "Seller Follow-up",
       triggerType: "new_lead",
-      triggerConfig: { source: "home_value" },
+      triggerConfig: { source: "area_magnet" },
       status: "active",
       totalEnrollments: 3,
     });
@@ -107,7 +107,7 @@ describe("leadCaptureRouter.dashboard", () => {
     expect(result.leads.find((lead) => lead.id === 101)?.engagementScore).toBe(42);
     expect(result.sourceBreakdown).toEqual(
       expect.arrayContaining([
-        { source: "home_value", count: 1 },
+        { source: "area_magnet", count: 1 },
         { source: "agent_site_chat", count: 1 },
       ]),
     );
@@ -123,7 +123,7 @@ describe("leadCaptureRouter.dashboard", () => {
     expect(result.postcardTemplates).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          name: "Luxury Seller Valuation",
+          name: "Luxury Seller Consultation",
         }),
       ]),
     );

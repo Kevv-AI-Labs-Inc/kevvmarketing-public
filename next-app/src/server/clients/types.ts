@@ -73,74 +73,34 @@ export interface ListingSearchResponse {
   nextCursor?: string | null;
 }
 
-/**
- * Response from POST /api/v1/listings/by-address
- * (BBO's "ListingFull" shape — property is the raw MLS row)
- */
+/** Response from GET /api/v1/listings/by-address. */
 export interface AddressResolveResponse {
   source: "local" | "mlsgrid";
   fallbackUsed: boolean;
-  lookup: {
-    input: string;
-    matchedBy: "listingId" | "listingKey" | "address";
-  };
-  property: ListingData;           // cast from Record<string,any>; fields match ListingData
+  property: ListingData;
   media: MediaItem[];
   imageUrls: string[];
   imageCount: number;
-  r2ImageCount: number;
+  freshness?: {
+    lastSyncedAt?: string | null;
+    modifiedAt?: string | null;
+    isStale?: boolean;
+  } | null;
 }
 
-/**
- * One candidate from POST /api/v1/listings/address-candidates
- * Returned when the address is ambiguous (or as a ranked list).
- * confidence ∈ [0,1] — higher is better.
- */
+/** One candidate from GET /api/v1/listings/address-candidates. */
 export interface AddressCandidate {
-  listingKey: string | null;
-  listingId: string | null;
-  address: string | null;
-  city: string | null;
-  stateOrProvince: string | null;
-  postalCode: string | null;
-  standardStatus: string | null;
-  confidence: number;
-  source: "local" | "mlsgrid";
+  listingKey: string;
+  listingId: string;
+  unparsedAddress: string;
+  city: string;
+  stateOrProvince: string;
+  postalCode: string;
+  standardStatus: string;
 }
 
 export interface AddressCandidatesResponse {
   data: AddressCandidate[];
-}
-
-/**
- * One comparable sale used by the marketing-app CMA pipeline.
- */
-export interface CmaComparable {
-  listingKey: string;
-  listingId: string | null;
-  address: string | null;
-  city: string | null;
-  postalCode: string | null;
-  price: string | null;          // close price for sold comps
-  propertyType: string | null;
-  bedrooms: number | null;
-  bathrooms: number | null;
-  livingArea: string | null;
-  yearBuilt: number | null;
-  status: string | null;
-  score: number | null;
-  soldDate?: string | null;      // close date for sold comps
-  source?: "rentcast";
-}
-
-// ─── Other Response Types ──────────────────────────────────────
-
-export interface SyncStatusResponse {
-  data: {
-    properties: { lastSync: string; status: string; recordCount: number };
-    media: { lastSync: string; status: string; recordCount: number };
-    members: { lastSync: string; status: string; recordCount: number };
-  };
 }
 
 // ─── Request Types ─────────────────────────────────────────────
@@ -168,13 +128,6 @@ export interface AddressLookupInput {
   city?: string;
   stateOrProvince?: string;
   postalCode?: string;
-}
-
-export interface ProximitySearchInput {
-  latitude: number;
-  longitude: number;
-  radiusKm?: number;
-  limit?: number;
 }
 
 // ─── API Error ─────────────────────────────────────────────────

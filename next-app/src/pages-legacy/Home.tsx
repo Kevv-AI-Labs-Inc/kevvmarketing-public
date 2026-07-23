@@ -131,7 +131,7 @@ export default function Home() {
     {
       id: "deal-tools",
       icon: BarChart3,
-      route: "/smart-match",
+      route: "/showing-tour",
       eyebrow: copy.workspaces.dealTools.eyebrow,
       title: copy.workspaces.dealTools.title,
       description: copy.workspaces.dealTools.description,

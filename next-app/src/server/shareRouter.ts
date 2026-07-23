@@ -4,7 +4,6 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   agentProfiles,
-  homeValueLinks,
   shareLeads,
   shareSessionEvents,
   shareSessions,
@@ -1603,8 +1602,7 @@ export const shareRouter = router({
   /**
    * Unified share center — merges:
    *  1. shareSessions (listing_share, area_magnet)
-   *  2. homeValueLinks
-   *  3. agent public profile (as a permanent "share")
+   *  2. agent public profile (as a permanent "share")
    */
   listUnified: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
@@ -1619,7 +1617,7 @@ export const shareRouter = router({
 
     type UnifiedShareItem = {
       id: string;
-      shareType: "listing_share" | "area_magnet" | "home_value" | "agent_site";
+      shareType: "listing_share" | "area_magnet" | "agent_site";
       title: string;
       description: string;
       sharePath: string;
@@ -1707,48 +1705,7 @@ export const shareRouter = router({
       });
     }
 
-    // ── 2. homeValueLinks ──
-    try {
-      const hvLinks = await db
-        .select()
-        .from(homeValueLinks)
-        .where(eq(homeValueLinks.userId, ctx.user.id))
-        .orderBy(desc(homeValueLinks.createdAt))
-        .limit(50);
-
-      for (const link of hvLinks) {
-        items.push({
-          id: `hv_${link.id}`,
-          shareType: "home_value",
-          title: link.label || link.ogTitle || "Home Value Link",
-          description: link.ogDescription || `Source: ${link.source}`,
-          sharePath: `/hv/${link.token}`,
-          status: link.status,
-          ogImageUrl: link.ogImageUrl ?? null,
-          viewCount: link.viewCount,
-          leadCount: link.leadCount,
-          createdAt: link.createdAt.toISOString(),
-          expiresAt: null,
-          lastActivityAt: link.updatedAt.toISOString(),
-          followUpSignal: link.leadCount > 0 ? "hot" : link.viewCount > 0 ? "warm" : "new",
-          clientName: null,
-          eventCounts: {
-            total: link.viewCount + link.valuationCount + link.leadCount,
-            listingOpen: 0,
-            contactClick: 0,
-            wechatCopy: 0,
-            tourInterest: 0,
-            routeRequest: 0,
-            leadSubmit: link.leadCount,
-          },
-          listingCount: 0,
-        });
-      }
-    } catch {
-      // homeValueLinks table may not exist yet — skip silently
-    }
-
-    // ── 3. agentProfile (permanent share) ──
+    // ── 2. agentProfile (permanent share) ──
     try {
       const [profile] = await db
         .select({

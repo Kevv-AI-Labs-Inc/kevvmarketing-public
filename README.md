@@ -6,7 +6,7 @@ Kevv Marketing is the official open-source codebase for the marketing.kevv.ai pr
 
 - Next.js 16 app-router frontend
 - Auth.js sign-in with Google, Microsoft Entra ID, and magic links
-- Listing search, share pages, subscriptions, CMA scaffolding, and AI-assisted content flows
+- Listing search, share pages, subscriptions, showing tours, and AI-assisted content flows
 - Drizzle ORM schema and deployment scripts for PostgreSQL
 - Railway-oriented deployment defaults, with environment-based branding
 

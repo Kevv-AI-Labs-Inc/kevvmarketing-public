@@ -346,15 +346,15 @@ export default function ModernTemplate({ profile, preview = false }: TemplatePro
             Ready to find your dream home?
           </h2>
           <p className="text-blue-100 text-lg mb-8">
-            Get a free home valuation or connect with {firstName} today.
+            Discuss your real estate goals with {firstName} today.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link
-              href={`/agents/${profile.slug}/home-value`}
+              href={profile.bookingUrl || `mailto:${profile.email}`}
               className="inline-flex items-center gap-2 bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-full text-sm font-semibold transition-colors shadow-sm"
             >
               {/* ChevronRight icon */}
-              <span>Get Home Valuation</span>
+              <span>Schedule a Consultation</span>
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />
               </svg>

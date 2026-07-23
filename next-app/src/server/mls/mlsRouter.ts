@@ -275,7 +275,7 @@ async function resolveSearchFallback(input: {
 export const mlsRouter = router({
   /**
    * getProperties — paginated property search.
-   * Called by: Listings, NewListings, CMAStudio, SmartMatch, Studios, MagicShareStudio
+   * Called by: Listings, New Listings, Studios, and Magic Share.
    */
   getProperties: protectedProcedure
     .input(

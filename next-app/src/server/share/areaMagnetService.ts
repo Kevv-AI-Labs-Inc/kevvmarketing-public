@@ -603,7 +603,7 @@ function buildFallbackNarrative(
         title: `解锁 ${sl} 完整报告`,
         description: "留下邮箱或手机号，我会把完整市场分析和下一步建议发给你。",
         primaryLabel: "获取完整报告",
-        followUpPrompt: `Hi，看到你刚下载了 ${sl} 的市场报告。如果你想进一步看你这套房当前的估值区间，我可以继续帮你拉一版专属数据。`,
+        followUpPrompt: `Hi，看到你刚下载了 ${sl} 的市场报告。如果你正在考虑卖房，我可以结合近期市场数据和你具体聊聊定价与上市节奏。`,
       },
     };
   }

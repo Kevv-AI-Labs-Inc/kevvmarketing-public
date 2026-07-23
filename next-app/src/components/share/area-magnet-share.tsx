@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Copy,
   Download,
-  Home,
   Lock,
   Loader2,
   MapPin,
@@ -114,7 +113,6 @@ function formatDateTime(value: string | null, locale: "zh" | "en") {
   if (!value) return "-";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  const isChinese = locale.startsWith("zh");
   return new Intl.DateTimeFormat(localeTag(locale), {
     month: "short",
     day: "numeric",
@@ -309,12 +307,6 @@ export default function AreaMagnetShare({
       count: getNumber(b.count) ?? 0,
     })
   );
-
-  // P2-1: Home Value CTA link
-  const agentSlug = getString(agentBranding.slug);
-  const homeValueUrl = agentSlug
-    ? `/agents/${agentSlug}/home-value`
-    : null;
 
   const shareKitCards = [
     {
@@ -531,32 +523,6 @@ export default function AreaMagnetShare({
                   </Button>
                 </div>
               )}
-
-              {/* ── P2-1: Home Value CTA ────────────────── */}
-              {homeValueUrl ? (
-                <a
-                  href={homeValueUrl}
-                  className="flex items-center gap-3 rounded-[24px] border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-50 transition-colors hover:bg-emerald-500/20"
-                  onClick={() =>
-                    trackEvent("hv_cta_click", { source: "area_magnet" })
-                  }
-                >
-                  <Home className="h-5 w-5 shrink-0 text-emerald-400" />
-                  <div>
-                    <p className="font-medium">
-                      {isChinese
-                        ? "想知道你的房子值多少？"
-                        : "What's your home worth?"}
-                    </p>
-                    <p className="mt-1 text-xs text-emerald-200/70">
-                      {isChinese
-                        ? "免费获取 AI 房屋估价报告"
-                        : "Get a free AI home value estimate"}
-                    </p>
-                  </div>
-                  <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-emerald-400" />
-                </a>
-              ) : null}
 
               <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.28em] text-stone-400">

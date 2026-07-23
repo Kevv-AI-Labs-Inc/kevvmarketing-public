@@ -21,7 +21,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import {
-    BarChart3,
     Building2,
     Search,
     MapPin,
@@ -319,12 +318,6 @@ export default function Listings() {
     };
 
     const hasActiveFilters = search || city || minPrice || maxPrice || propertyType !== "all" || status !== "all";
-
-    const goToCmaStudio = (listingKey: string) => {
-        const params = new URLSearchParams();
-        params.set("subjectKey", listingKey);
-        router.push(`/cma-studio?${params.toString()}`);
-    };
 
     const goToShareStudio = (listingKey: string, address: string | null) => {
         const params = new URLSearchParams();
@@ -780,13 +773,6 @@ export default function Listings() {
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => goToCmaStudio(propertyDetails.listingKey ?? '')}
-                                >
-                                    <BarChart3 className="mr-2 h-4 w-4" />
-                                    {t("listings.generateCma")}
-                                </Button>
                                 <Button
                                     variant="outline"
                                     onClick={() =>

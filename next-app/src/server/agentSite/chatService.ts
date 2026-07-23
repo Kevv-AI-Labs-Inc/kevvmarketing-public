@@ -72,7 +72,7 @@ function detectLanguage(text: string): "en" | "zh" {
 
 function inferIntent(text: string) {
   const normalized = text.toLowerCase();
-  if (/(sell|selling|list|listing|valuation|home value|seller|卖房|估值|挂牌)/.test(normalized)) {
+  if (/(sell|selling|list|listing|pricing|seller|卖房|定价|挂牌)/.test(normalized)) {
     return "selling";
   }
   if (/(buy|buying|showing|tour|condo|house|school|first[- ]?time|买房|看房|学区)/.test(normalized)) {
@@ -89,7 +89,7 @@ function inferIntent(text: string) {
 
 function inferScore(text: string) {
   const normalized = text.toLowerCase();
-  if (/(this month|next month|asap|urgent|ready|schedule|book|valuation|pre[- ]?listing|尽快|马上|本月|估值)/.test(normalized)) {
+  if (/(this month|next month|asap|urgent|ready|schedule|book|pre[- ]?listing|尽快|马上|本月|定价)/.test(normalized)) {
     return "hot" as const;
   }
   if (/(showing|tour|market|price|school|offer|贷款|市场|价格|学区)/.test(normalized)) {
@@ -185,7 +185,7 @@ function buildEnglishReply(
   if (intent === "selling") {
     return [
       opening,
-      `If you're thinking about selling, the fastest next step is a pricing read plus positioning plan. ${profile.name.split(" ")[0]} can use this page's Home Value funnel to generate an instant estimate and then tighten the strategy for timing, prep scope, and launch narrative.`,
+      `If you're thinking about selling, the fastest next step is a direct pricing and positioning consultation with ${profile.name.split(" ")[0]} covering timing, preparation, and launch strategy.`,
       listings.length > 0
         ? `I also pulled a few nearby listings that can help frame the competition:\n${listings.map((item) => `• ${item.address}, ${item.city} — ${item.price} (${item.status})`).join("\n")}`
         : `If you share your address or target neighborhood, I can narrow the seller strategy further.`,
@@ -246,7 +246,7 @@ function buildChineseReply(
   if (intent === "selling") {
     return [
       opening,
-      `如果你是在考虑卖房，最有效的下一步是先拿到一个估值区间，再决定定价、整备和上市节奏。这个主页会直接连接到 Home Value 漏斗，先拿到结果，再由 ${firstName} 做人工策略收敛。`,
+      `如果你是在考虑卖房，最有效的下一步是直接预约 ${firstName}，一起梳理定价、整备和上市节奏。`,
       listings.length > 0
         ? `我也顺手拉了几套可参考的周边在售房源：\n${listings.map((item) => `• ${item.address}，${item.city} — ${item.price}（${item.status}）`).join("\n")}`
         : `如果你给我地址、社区或者邮编，我可以把卖房建议收得更具体。`,
