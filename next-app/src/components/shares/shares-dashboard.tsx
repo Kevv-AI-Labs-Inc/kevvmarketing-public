@@ -21,7 +21,6 @@ import {
   Eye,
   Filter,
   Globe,
-  Home,
   Loader2,
   MapPin,
   RotateCcw,
@@ -33,19 +32,17 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-type ShareType = "all" | "listing_share" | "area_magnet" | "home_value" | "agent_site";
+type ShareType = "all" | "listing_share" | "area_magnet" | "agent_site";
 
 const SHARE_TYPE_ICON: Record<string, typeof Share2> = {
   listing_share: Share2,
   area_magnet: MapPin,
-  home_value: Home,
   agent_site: User,
 };
 
 const SHARE_TYPE_COLOR: Record<string, string> = {
   listing_share: "bg-blue-500/10 text-blue-600 border-blue-200",
   area_magnet: "bg-violet-500/10 text-violet-600 border-violet-200",
-  home_value: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
   agent_site: "bg-amber-500/10 text-amber-600 border-amber-200",
 };
 
@@ -110,7 +107,6 @@ export function SharesDashboard() {
     switch (shareType) {
       case "listing_share": return t("shares.typeListingShare");
       case "area_magnet": return t("shares.typeAreaMagnet");
-      case "home_value": return t("shares.typeHomeValue");
       case "agent_site": return t("shares.typeAgentSite");
       default: return shareType;
     }
@@ -133,11 +129,10 @@ export function SharesDashboard() {
     all: allShares.length,
     listing_share: allShares.filter((s) => s.shareType === "listing_share").length,
     area_magnet: allShares.filter((s) => s.shareType === "area_magnet").length,
-    home_value: allShares.filter((s) => s.shareType === "home_value").length,
     agent_site: allShares.filter((s) => s.shareType === "agent_site").length,
   };
 
-  const filterTypes: ShareType[] = ["all", "listing_share", "area_magnet", "home_value", "agent_site"];
+  const filterTypes: ShareType[] = ["all", "listing_share", "area_magnet", "agent_site"];
 
   return (
     <div className="space-y-6 pb-8">
@@ -178,8 +173,8 @@ export function SharesDashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {(["listing_share", "area_magnet", "home_value", "agent_site"] as const).map((type) => {
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(["listing_share", "area_magnet", "agent_site"] as const).map((type) => {
           const Icon = SHARE_TYPE_ICON[type] ?? Globe;
           const count = countByType[type];
           return (
@@ -354,14 +349,10 @@ export function SharesDashboard() {
                         <>
                           <div className="rounded-xl border bg-background/70 p-2.5">
                             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                              {share.shareType === "home_value"
-                                ? t("shares.valuations")
-                                : t("magicShare.detailOpens")}
+                              {t("magicShare.detailOpens")}
                             </p>
                             <p className="mt-1.5 text-base font-semibold">
-                              {share.shareType === "home_value"
-                                ? share.eventCounts.total - share.viewCount - share.leadCount
-                                : share.eventCounts.listingOpen}
+                              {share.eventCounts.listingOpen}
                             </p>
                           </div>
                           <div className="rounded-xl border bg-background/70 p-2.5">

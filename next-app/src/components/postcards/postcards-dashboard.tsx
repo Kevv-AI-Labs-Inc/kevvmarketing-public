@@ -85,7 +85,7 @@ export function PostcardsDashboard() {
   const [selectedContactIds, setSelectedContactIds] = useState<number[] | null>(null);
   const [sendStrategy, setSendStrategy] = useState<"send_now" | "scheduled">("send_now");
   const [scheduledAt, setScheduledAt] = useState("");
-  const [copyPrompt, setCopyPrompt] = useState("seller valuation postcard for nearby homeowners");
+  const [copyPrompt, setCopyPrompt] = useState("seller consultation postcard for nearby homeowners");
   const [showImport, setShowImport] = useState(false);
   const [showManual, setShowManual] = useState(false);
 
@@ -249,7 +249,7 @@ export function PostcardsDashboard() {
           Direct Mail Command Center
         </h1>
         <p className="mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">
-          Send postcards & letters via Lob API. Target homeowners by zipcode from MLS data, automate lifecycle drips for closed deals, and send personalized CMA letters.
+          Send postcards & letters via Lob API. Target homeowners by zipcode from MLS data, automate lifecycle drips for closed deals, and send personalized market updates.
         </p>
       </div>
 
@@ -466,7 +466,7 @@ export function PostcardsDashboard() {
                     <Sparkles className="h-4 w-4" />AI Postcard Copy
                   </div>
                   <Input
-                    placeholder="e.g. seller valuation postcard for nearby homeowners"
+                    placeholder="e.g. seller consultation postcard for nearby homeowners"
                     value={copyPrompt}
                     onChange={(e) => setCopyPrompt(e.target.value)}
                   />
@@ -761,7 +761,7 @@ export function PostcardsDashboard() {
                     {
                       id: "closed_deal_milestone" as const,
                       title: "Closed Deal Milestones",
-                      desc: "Auto-send at intervals after close: 7d Thank You → 30d Tips → 90d Update → 365d Anniversary CMA",
+                      desc: "Auto-send at intervals after close: 7d Thank You → 30d Tips → 90d Update → 365d Market Review",
                       icon: <Calendar className="h-5 w-5 text-emerald-600" />,
                     },
                     {
@@ -806,8 +806,8 @@ export function PostcardsDashboard() {
                     { days: 30, label: "Home Maintenance Tips", channel: "postcard" },
                     { days: 90, label: "Neighborhood Update", channel: "postcard" },
                     { days: 180, label: "6-Month Market Report", channel: "letter" },
-                    { days: 365, label: "Happy Anniversary + CMA", channel: "letter" },
-                    { days: 730, label: "2-Year Market Update + CMA", channel: "letter" },
+                    { days: 365, label: "Happy Anniversary + Market Review", channel: "letter" },
+                    { days: 730, label: "2-Year Market Review", channel: "letter" },
                   ].map((m) => (
                     <div key={m.days} className="flex items-center gap-3 text-sm">
                       <span className="w-16 text-xs text-muted-foreground font-mono shrink-0">Day {m.days}</span>

@@ -229,7 +229,6 @@ export const profileRouter = router({
       profile,
       isPersisted: Boolean(existing),
       publicUrl: `/agents/${profile.slug}`,
-      homeValueUrl: `/agents/${profile.slug}/home-value`,
       analytics: {
         profileViews: Number(analyticsRow?.profileViews ?? 0),
         chatMessages: Number(analyticsRow?.chatMessages ?? 0),
@@ -308,7 +307,6 @@ export const profileRouter = router({
       return {
         profile,
         publicUrl: `/agents/${profile.slug}`,
-        homeValueUrl: `/agents/${profile.slug}/home-value`,
       };
     }),
 

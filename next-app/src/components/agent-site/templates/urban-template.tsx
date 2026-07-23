@@ -517,13 +517,13 @@ export function UrbanTemplate({ profile, preview = false }: TemplateProps) {
             )}
           </div>
 
-          {/* Home Value CTA */}
+          {/* Seller consultation CTA */}
           <div className="mt-8">
             <Link
-              href={`/agents/${profile.slug}/home-value`}
+              href={profile.bookingUrl || `mailto:${profile.email}`}
               className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-cyan-400 transition-colors group"
             >
-              Find out what your home is worth
+              Discuss your selling goals
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100"

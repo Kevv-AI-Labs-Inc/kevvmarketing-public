@@ -4,9 +4,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   ExternalLink,
-  FileSearch,
   Globe2,
-  Home,
   MapPin,
   MessagesSquare,
   Sparkles,
@@ -18,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useT } from "@/i18n";
-import { formatCurrency, formatDateTime } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
 
 function getSourceCount(
@@ -31,13 +29,11 @@ function getSourceCount(
 export function FunnelsDashboard() {
   const { t, locale } = useT();
   const profileQuery = trpc.profile.getMine.useQuery();
-  const homeValueQuery = trpc.homeValue.getDashboard.useQuery();
   const leadsQuery = trpc.leads.dashboard.useQuery({ limit: 80 });
   const areaMagnetsQuery = trpc.share.listMine.useQuery({ sessionType: "area_magnet" });
 
   if (
     profileQuery.isLoading ||
-    homeValueQuery.isLoading ||
     leadsQuery.isLoading ||
     areaMagnetsQuery.isLoading
   ) {
@@ -49,23 +45,20 @@ export function FunnelsDashboard() {
   }
 
   const profileData = profileQuery.data;
-  const homeValueData = homeValueQuery.data;
   const sourceBreakdown = leadsQuery.data?.sourceBreakdown;
   const areaMagnets = areaMagnetsQuery.data ?? [];
 
   const agentSiteLeadCount =
     getSourceCount(sourceBreakdown, "agent_site_form") +
     getSourceCount(sourceBreakdown, "agent_site_chat");
-  const homeValueLeadCount = getSourceCount(sourceBreakdown, "home_value");
   const areaMagnetLeadCount = getSourceCount(sourceBreakdown, "area_magnet");
-  const totalFunnelLeads = agentSiteLeadCount + homeValueLeadCount + areaMagnetLeadCount;
+  const totalFunnelLeads = agentSiteLeadCount + areaMagnetLeadCount;
 
   const activeMagnets = areaMagnets.filter((magnet) => magnet.status === "active");
   const totalMagnetViews = areaMagnets.reduce((sum, magnet) => sum + (magnet.viewCount ?? 0), 0);
   const totalMagnetLeads = areaMagnets.reduce((sum, magnet) => sum + (magnet.leadCount ?? 0), 0);
   const liveEntryPoints =
     (profileData?.isPersisted ? 1 : 0) +
-    (homeValueData?.publicUrl ? 1 : 0) +
     (activeMagnets.length > 0 ? 1 : 0);
 
   return (
@@ -106,12 +99,6 @@ export function FunnelsDashboard() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="rounded-full px-5">
-                <Link href="/home-value">
-                  {t("funnelsDashboard.tuneHomeValue")}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="ghost" className="rounded-full px-5">
                 <Link href="/area-magnet">
                   {t("funnelsDashboard.openAreaMagnetStudio")}
                   <ArrowRight className="h-4 w-4" />
@@ -158,7 +145,7 @@ export function FunnelsDashboard() {
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardContent className="flex items-center gap-4 p-5">
             <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">
@@ -167,17 +154,6 @@ export function FunnelsDashboard() {
             <div>
               <div className="text-sm text-muted-foreground">{t("funnelsDashboard.agentSiteLeads")}</div>
               <div className="text-2xl font-semibold">{agentSiteLeadCount}</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="rounded-2xl bg-cyan-100 p-3 text-cyan-700">
-              <Home className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">{t("funnelsDashboard.homeValueLeads")}</div>
-              <div className="text-2xl font-semibold">{homeValueLeadCount}</div>
             </div>
           </CardContent>
         </Card>
@@ -192,19 +168,6 @@ export function FunnelsDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="rounded-2xl bg-violet-100 p-3 text-violet-700">
-              <FileSearch className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">{t("funnelsDashboard.valuationRequests")}</div>
-              <div className="text-2xl font-semibold">
-                {homeValueData?.stats.valuationRequests ?? 0}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
@@ -214,9 +177,6 @@ export function FunnelsDashboard() {
           </TabsTrigger>
           <TabsTrigger value="agent-site" className="rounded-xl">
             {t("funnelsDashboard.tabAgentSite")}
-          </TabsTrigger>
-          <TabsTrigger value="home-value" className="rounded-xl">
-            {t("funnelsDashboard.tabHomeValue")}
           </TabsTrigger>
           <TabsTrigger value="area-magnets" className="rounded-xl">
             {t("funnelsDashboard.tabAreaMagnets")}
@@ -237,12 +197,6 @@ export function FunnelsDashboard() {
                     status: profileData?.isPersisted ? t("funnelsDashboard.statusLive") : t("funnelsDashboard.statusDraft"),
                     metric: t("funnelsDashboard.capturedInquiries", { count: String(profileData?.analytics.inquiries ?? 0) }),
                     href: "/agent-site",
-                  },
-                  {
-                    title: t("funnelsDashboard.homeValueTitle"),
-                    status: homeValueData?.publicUrl ? t("funnelsDashboard.statusLive") : t("funnelsDashboard.statusNeedsSetup"),
-                    metric: t("funnelsDashboard.sellerLeads", { count: String(homeValueData?.stats.capturedLeads ?? 0) }),
-                    href: "/home-value",
                   },
                   {
                     title: t("funnelsDashboard.areaMagnetsTitle"),
@@ -275,7 +229,7 @@ export function FunnelsDashboard() {
                   {t("funnelsDashboard.leadMixDescription")}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-3">
+              <CardContent className="grid gap-4 md:grid-cols-2">
                 {[
                   {
                     title: t("funnelsDashboard.agentSiteTitle"),
@@ -283,13 +237,6 @@ export function FunnelsDashboard() {
                     note: `${profileData?.analytics.profileViews ?? 0} ${t("funnelsDashboard.profileViews").toLowerCase()} · ${profileData?.analytics.chatMessages ?? 0} ${t("funnelsDashboard.chatMessages").toLowerCase()}`,
                     icon: MessagesSquare,
                     tone: "bg-slate-100 text-slate-700",
-                  },
-                  {
-                    title: t("funnelsDashboard.homeValueTitle"),
-                    value: homeValueLeadCount,
-                    note: t("funnelsDashboard.requestsIn30d", { count: String(homeValueData?.stats.valuationRequests ?? 0) }),
-                    icon: Home,
-                    tone: "bg-cyan-100 text-cyan-700",
                   },
                   {
                     title: t("funnelsDashboard.areaMagnetsTitle"),
@@ -399,88 +346,6 @@ export function FunnelsDashboard() {
                 ) : (
                   <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">
                     {t("funnelsDashboard.noAgentSiteLeads")}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="home-value" className="space-y-6">
-          <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("funnelsDashboard.homeValueStatus")}</CardTitle>
-                <CardDescription>
-                  {t("funnelsDashboard.homeValueStatusDescription")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-2xl border p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="font-medium">{t("funnelsDashboard.publicHomeValueRoute")}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        {homeValueData?.publicUrl ?? t("funnelsDashboard.configureAgentSiteFirst")}
-                      </div>
-                    </div>
-                    {homeValueData?.publicUrl ? (
-                      <Button asChild variant="outline">
-                        <Link href={homeValueData.publicUrl} target="_blank">
-                          {t("funnelsDashboard.openRoute")}
-                          <ExternalLink className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-2xl border p-4">
-                    <div className="text-sm text-muted-foreground">{t("funnelsDashboard.requests30d")}</div>
-                    <div className="mt-2 text-2xl font-semibold">
-                      {homeValueData?.stats.valuationRequests ?? 0}
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border p-4">
-                    <div className="text-sm text-muted-foreground">{t("funnelsDashboard.capturedLeads30d")}</div>
-                    <div className="mt-2 text-2xl font-semibold">
-                      {homeValueData?.stats.capturedLeads ?? 0}
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border p-4">
-                    <div className="text-sm text-muted-foreground">{t("funnelsDashboard.leadSourceCount")}</div>
-                    <div className="mt-2 text-2xl font-semibold">{homeValueLeadCount}</div>
-                  </div>
-                </div>
-                <Button asChild>
-                  <Link href="/home-value">
-                    {t("funnelsDashboard.openHomeValueWorkspace")}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("funnelsDashboard.recentValuationActivity")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {homeValueData?.recentRuns.length ? (
-                  homeValueData.recentRuns.slice(0, 6).map((run) => (
-                    <div key={run.id} className="rounded-2xl border p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="font-medium">{run.address}</div>
-                        <Badge variant="secondary">
-                          {run.estimatedValue ? formatCurrency(run.estimatedValue, locale) : t("funnelsDashboard.estimateReady")}
-                        </Badge>
-                      </div>
-                      <div className="mt-2 text-sm text-muted-foreground">{run.summary}</div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">
-                    {t("funnelsDashboard.noValuationRuns")}
                   </div>
                 )}
               </CardContent>

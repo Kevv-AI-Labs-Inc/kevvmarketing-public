@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  BarChart3,
   Building2,
   Check,
   Compass,
@@ -35,8 +34,6 @@ const pillarIcons = {
 const toolIcons = {
   "content-factory": Sparkles,
   "flyer-studio": FileText,
-  "cma-studio": BarChart3,
-  "smart-match": Search,
   "magic-share": Share2,
   "showing-tour": Navigation,
   ads: Zap,
@@ -61,8 +58,6 @@ const crossBorderIcons = {
    ────────────────────────────────────────────────────────── */
 const featuredToolIds = new Set([
   "content-factory",
-  "smart-match",
-  "cma-studio",
   "showing-tour",
 ]);
 

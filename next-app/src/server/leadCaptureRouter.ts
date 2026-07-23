@@ -97,7 +97,6 @@ export const leadCaptureRouter = router({
       const defaultSources = [
         "agent_site_chat",
         "agent_site_form",
-        "home_value",
         "area_magnet",
         "magic_share",
         "postcard_import",

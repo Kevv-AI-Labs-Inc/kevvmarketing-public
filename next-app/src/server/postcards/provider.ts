@@ -253,7 +253,7 @@ async function dispatchLetter(input: PostcardDispatchInput): Promise<PostcardDis
 
   const body: Record<string, unknown> = {
     to,
-    file: input.letterHtml || "<html><body><h1>CMA Report</h1><p>{{body}}</p></body></html>",
+    file: input.letterHtml || "<html><body><h1>Market Update</h1><p>{{body}}</p></body></html>",
     color: true,
     ...(input.mergeVariables ? { merge_variables: input.mergeVariables } : {}),
     ...(input.sendDate && input.sendDate > new Date() ? { send_date: input.sendDate.toISOString().slice(0, 10) } : {}),

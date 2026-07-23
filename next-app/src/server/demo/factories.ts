@@ -2,7 +2,6 @@ import type {
   AgentProfile,
   Contact,
   PostcardTemplate,
-  ValuationResult,
 } from "@/lib/db/schema";
 
 export function buildDemoAgentProfile(overrides: Partial<AgentProfile> = {}): Partial<AgentProfile> {
@@ -73,63 +72,19 @@ export function buildDemoAgentProfile(overrides: Partial<AgentProfile> = {}): Pa
   };
 }
 
-export function buildDemoValuationResult(
-  overrides: Partial<ValuationResult> = {}
-): ValuationResult {
-  return {
-    estimatedValueLow: 2480000,
-    estimatedValueHigh: 2690000,
-    estimatedValue: 2580000,
-    appreciationRate: 6.4,
-    propertyDetails: {
-      beds: 4,
-      baths: 3,
-      sqft: 2480,
-      yearBuilt: 1987,
-      lotSize: "7,180 sqft",
-      propertyType: "Single Family",
-    },
-    comparableSales: [
-      {
-        address: "865 Forest Ave",
-        price: 2520000,
-        date: "2026-02-14",
-        beds: 4,
-        baths: 3,
-        sqft: 2410,
-      },
-      {
-        address: "901 Magnolia Dr",
-        price: 2665000,
-        date: "2026-01-29",
-        beds: 4,
-        baths: 3,
-        sqft: 2575,
-      },
-    ],
-    schoolRating: 9,
-    neighborhoodTrend:
-      "Move-up buyer demand remains strong, with renovated family homes trading quickly when pricing is disciplined.",
-    marketSummary:
-      "Inventory is still tight in premium school pockets. Homes with updated kitchens and a clear seller story are outperforming the broader market.",
-    ...overrides,
-  };
-}
-
 export function buildDemoContact(overrides: Partial<Contact> = {}): Partial<Contact> {
   return {
     id: 1,
     agentId: 1,
     agentProfileId: 1,
     conversationSessionId: null,
-    valuationRunId: null,
     externalId: null,
-    source: "home_value",
-    sourceRef: "demo-home-value",
+    source: "agent_site_form",
+    sourceRef: "demo-agent-site",
     status: "qualified",
     score: "hot",
     intent: "selling",
-    summary: "Owner requested a valuation and is evaluating list timing in the next 90 days.",
+    summary: "Owner requested a seller consultation and is evaluating list timing in the next 90 days.",
     name: "Daniel Park",
     firstName: "Daniel",
     lastName: "Park",
@@ -142,7 +97,7 @@ export function buildDemoContact(overrides: Partial<Contact> = {}): Partial<Cont
     area: "Menlo Park",
     timeline: "60-90 days",
     notes: "Requested comp-backed pricing guidance before renovation decisions.",
-    tags: ["seller", "valuation", "high-intent"],
+    tags: ["seller", "consultation", "high-intent"],
     metadata: {},
     addressLine1: "44 Oakview Dr",
     addressLine2: null,
@@ -164,12 +119,12 @@ export function buildDemoPostcardTemplate(
   return {
     id: 1,
     agentId: null,
-    name: "Luxury Seller Valuation",
-    category: "HOME_VALUATION",
+    name: "Luxury Seller Consultation",
+    category: "SELLER_CONSULTATION",
     isSystem: true,
     sizeCode: "6x9",
     thumbnailUrl: null,
-    note: "Seller-facing postcard that points homeowners into the AI valuation funnel.",
+    note: "Seller-facing postcard that invites homeowners into a direct consultation.",
     frontEditorState: null,
     backEditorState: null,
     frontRenderDefinition: null,

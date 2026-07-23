@@ -393,13 +393,13 @@ export default function ElegantTemplate({
             )}
           </div>
 
-          {/* Home Value CTA */}
+          {/* Seller consultation CTA */}
           <div className="mt-6">
             <Link
-              href={`/agents/${profile.slug}/home-value`}
+              href={profile.bookingUrl || `mailto:${profile.email}`}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-purple-600 transition-colors hover:text-purple-800"
             >
-              Get a Free Home Valuation <ArrowRight className="h-3.5 w-3.5" />
+              Discuss Your Selling Goals <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 

@@ -14,8 +14,7 @@ import {
 
 /**
  * Custom pgvector type for Drizzle ORM.
- * Stores 3072-dimensional vectors for embedding similarity search.
- * Dual columns (Gemini + OpenAI) enable A/B testing.
+ * Used by deal-story similarity search.
  */
 const vector = customType<{
   data: number[];
@@ -23,7 +22,7 @@ const vector = customType<{
   config: { dimensions: number };
 }>({
   dataType(config) {
-    return `vector(${config?.dimensions ?? 3072})`;
+    return `vector(${config?.dimensions ?? 1536})`;
   },
   fromDriver(value: string): number[] {
     // pgvector returns "[0.1,0.2,...]" format
@@ -211,7 +210,6 @@ export const contacts = pgTable("contacts", {
   agentId: integer("agent_id"),
   agentProfileId: integer("agent_profile_id"),
   conversationSessionId: integer("conversation_session_id"),
-  valuationRunId: integer("valuation_run_id"),
   externalId: varchar("external_id", { length: 255 }),
   source: varchar("source", { length: 64 }).default("manual").notNull(),
   sourceRef: varchar("source_ref", { length: 255 }),
@@ -243,69 +241,6 @@ export const contacts = pgTable("contacts", {
   addressVerifiedAt: timestamp("address_verified_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const buyerProfiles = pgTable(
-  "buyer_profiles",
-  {
-    id: serial("id").primaryKey(),
-    agentId: integer("agent_id"),
-    contactId: integer("contact_id").notNull(),
-    legacyClientId: integer("legacy_client_id"),
-    status: varchar("status", { length: 20 }).default("active").notNull(),
-    canonicalSummary: text("canonical_summary"),
-    hardFilters: jsonb("hard_filters").$type<{
-      city?: string | null;
-      postalCode?: string | null;
-      propertyType?: string | null;
-      minPrice?: number | null;
-      maxPrice?: number | null;
-      minBedrooms?: number | null;
-      maxBedrooms?: number | null;
-      status?: string | null;
-    }>().default({}),
-    softPreferences: jsonb("soft_preferences").$type<string[]>().default([]),
-    negativePreferences: jsonb("negative_preferences").$type<string[]>().default([]),
-    searchMetadata: jsonb("search_metadata").$type<Record<string, unknown>>().default({}),
-    embedding: vector("embedding", { dimensions: 1536 }),
-    embeddingModel: varchar("embedding_model", { length: 100 }),
-    embeddingUpdatedAt: timestamp("embedding_updated_at"),
-    lastMatchedAt: timestamp("last_matched_at"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  },
-  (table) => [uniqueIndex("buyer_profiles_contact_unique").on(table.contactId)]
-);
-
-export const smartMatchRuns = pgTable("smart_match_runs", {
-  id: serial("id").primaryKey(),
-  agentId: integer("agent_id"),
-  contactId: integer("contact_id").notNull(),
-  buyerProfileId: integer("buyer_profile_id"),
-  status: varchar("status", { length: 20 }).default("completed").notNull(),
-  queryText: text("query_text"),
-  hardFilters: jsonb("hard_filters").$type<Record<string, unknown>>().default({}),
-  topK: integer("top_k").default(8).notNull(),
-  retrievalSource: varchar("retrieval_source", { length: 30 }).default("search").notNull(),
-  candidateCount: integer("candidate_count").default(0).notNull(),
-  returnedCount: integer("returned_count").default(0).notNull(),
-  processingMs: integer("processing_ms").default(0).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const smartMatchResults = pgTable("smart_match_results", {
-  id: serial("id").primaryKey(),
-  runId: integer("run_id").notNull(),
-  listingKey: varchar("listing_key", { length: 255 }).notNull(),
-  listingId: varchar("listing_id", { length: 255 }),
-  listingSnapshot: jsonb("listing_snapshot").$type<Record<string, unknown>>().default({}),
-  semanticScore: integer("semantic_score").default(0).notNull(),
-  ruleScore: integer("rule_score").default(0).notNull(),
-  behaviorScore: integer("behavior_score").default(0).notNull(),
-  finalScore: integer("final_score").default(0).notNull(),
-  matchReasons: jsonb("match_reasons").$type<string[]>().default([]),
-  images: jsonb("images").$type<string[]>().default([]),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const conversationSessions = pgTable(
@@ -345,95 +280,6 @@ export const conversationMessages = pgTable("conversation_messages", {
   metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
-export type ValuationComparableSale = {
-  address: string;
-  price: number;
-  date: string;
-  beds: number;
-  baths: number;
-  sqft: number;
-  /** First property photo from MLS (if available) */
-  imageUrl?: string;
-};
-
-export type ValuationResult = {
-  estimatedValueLow: number;
-  estimatedValueHigh: number;
-  estimatedValue: number;
-  appreciationRate: number;
-  propertyDetails: {
-    beds: number;
-    baths: number;
-    sqft: number;
-    yearBuilt: number;
-    lotSize: string;
-    propertyType: string;
-  };
-  comparableSales: ValuationComparableSale[];
-  schoolRating: number;
-  neighborhoodTrend: string;
-  marketSummary: string;
-  equity?: number;
-  /** Confidence level: "high" = real comps, "medium" = listing only, "low" = heuristic */
-  dataConfidence?: "high" | "medium" | "low";
-  /** Human-readable data source label */
-  dataSource?: string;
-  /** Subject property hero image from MLS (if available) */
-  subjectImageUrl?: string;
-};
-
-export const valuationRuns = pgTable("valuation_runs", {
-  id: serial("id").primaryKey(),
-  agentId: integer("agent_id"),
-  agentProfileId: integer("agent_profile_id"),
-  contactId: integer("contact_id"),
-  source: varchar("source", { length: 64 }).default("home_value").notNull(),
-  status: varchar("status", { length: 20 }).default("completed").notNull(),
-  locale: varchar("locale", { length: 10 }).default("en"),
-  address: text("address").notNull(),
-  result: jsonb("result").$type<ValuationResult>(),
-  modelUsed: varchar("model_used", { length: 100 }),
-  provider: varchar("provider", { length: 100 }),
-  summary: text("summary"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// ─── Home Value Campaign Links ─────────────────────────────
-
-export const homeValueLinkSourceEnum = pgEnum("home_value_link_source", [
-  "postcard",
-  "social",
-  "embed",
-  "article",
-  "direct",
-]);
-
-/** Trackable campaign links for the Home Value funnel. */
-export const homeValueLinks = pgTable("home_value_links", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  agentProfileId: integer("agent_profile_id"),
-  token: varchar("token", { length: 64 }).notNull().unique(),
-  label: varchar("label", { length: 255 }),
-  source: homeValueLinkSourceEnum("source").default("direct").notNull(),
-  utmSource: varchar("utm_source", { length: 128 }),
-  utmMedium: varchar("utm_medium", { length: 128 }),
-  utmCampaign: varchar("utm_campaign", { length: 128 }),
-  ogTitle: varchar("og_title", { length: 255 }),
-  ogDescription: text("og_description"),
-  ogImageUrl: text("og_image_url"),
-  viewCount: integer("view_count").default(0).notNull(),
-  valuationCount: integer("valuation_count").default(0).notNull(),
-  leadCount: integer("lead_count").default(0).notNull(),
-  status: varchar("status", { length: 20 }).default("active").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export type HomeValueLink = typeof homeValueLinks.$inferSelect;
-export type InsertHomeValueLink = typeof homeValueLinks.$inferInsert;
 
 export const postcardContactImports = pgTable("postcard_contact_imports", {
   id: serial("id").primaryKey(),
@@ -544,7 +390,7 @@ export const postcardAutomations = pgTable("postcard_automations", {
   milestoneRules: jsonb("milestone_rules").$type<Array<{
     daysAfterClose: number;
     templateId?: number;
-    label: string; // "Thank You", "Home Maintenance", "Anniversary CMA"
+    label: string; // "Thank You", "Home Maintenance", "Annual Market Review"
     channel?: "postcard" | "letter";
   }>>().default([]),
   // Audience rules
@@ -596,8 +442,6 @@ export type ConversationSession = typeof conversationSessions.$inferSelect;
 export type InsertConversationSession = typeof conversationSessions.$inferInsert;
 export type ConversationMessage = typeof conversationMessages.$inferSelect;
 export type InsertConversationMessage = typeof conversationMessages.$inferInsert;
-export type ValuationRun = typeof valuationRuns.$inferSelect;
-export type InsertValuationRun = typeof valuationRuns.$inferInsert;
 export type PostcardContactImport = typeof postcardContactImports.$inferSelect;
 export type InsertPostcardContactImport = typeof postcardContactImports.$inferInsert;
 export type PostcardAddressValidation = typeof postcardAddressValidations.$inferSelect;
@@ -626,67 +470,6 @@ export const chatMessages = conversationMessages;
 
 
 
-
-export const clients = pgTable("clients", {
-  id: serial("id").primaryKey(),
-  externalId: varchar("externalId", { length: 255 }), // ID from external system (e.g., Homix CRM)
-  name: varchar("name", { length: 255 }),
-  email: varchar("email", { length: 320 }),
-  phone: varchar("phone", { length: 50 }),
-  // Preferences
-  budgetMin: varchar("budgetMin", { length: 20 }),
-  budgetMax: varchar("budgetMax", { length: 20 }),
-  preferredCities: text("preferredCities"), // JSON array
-  preferredBedrooms: integer("preferredBedrooms"),
-  preferredPropertyTypes: text("preferredPropertyTypes"), // JSON array
-  // Qualitative Preferences
-  lifestyleNotes: text("lifestyleNotes"),
-  mustHaveFeatures: text("mustHaveFeatures"), // JSON array
-  dealBreakers: text("dealBreakers"), // JSON array
-  profileSummary: text("profileSummary"), // Full profile text for AI
-  agentId: integer("agentId"),
-  buyerType: varchar("buyer_type", { length: 20 }),
-  // local | cross_border | investor | first_time
-  language: varchar("language", { length: 10 }).default("en"),
-  // en | zh | zh_en
-  wechatId: varchar("wechat_id", { length: 100 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
-
-export const recommendationLogs = pgTable("recommendationLogs", {
-  id: serial("id").primaryKey(),
-  clientId: integer("clientId"),
-  propertyId: integer("propertyId"),
-  listingKey: varchar("listingKey", { length: 255 }),
-  // AI Output
-  similarityScore: varchar("similarityScore", { length: 20 }),
-  boostScore: varchar("boostScore", { length: 20 }),
-  finalScore: varchar("finalScore", { length: 20 }),
-  aiPitchText: text("aiPitchText"), // Generated recommendation text
-  // Feedback
-  isSent: integer("isSent").default(0),
-  isClicked: integer("isClicked").default(0),
-  feedbackRating: integer("feedbackRating"), // 1-5 rating
-  feedbackNotes: text("feedbackNotes"),
-  feedbackType: varchar("feedbackType", { length: 20 }), // 'approved', 'rejected', 'pending'
-  // Context
-  queryText: text("queryText"), // Original client profile text used
-  hardFilters: text("hardFilters"), // JSON of filters applied
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export type Client = typeof clients.$inferSelect;
-export type InsertClient = typeof clients.$inferInsert;
-export type RecommendationLog = typeof recommendationLogs.$inferSelect;
-export type InsertRecommendationLog = typeof recommendationLogs.$inferInsert;
-
-// ============================================================
-// Integration tables for optional vector-search / listing-data services
-// ============================================================
-
-// NOTE: agentProfiles, clientProfiles, companyMlsAccess, apiKeys, apiUsage,
-// cmaAnalyses tables have been moved to listing-data-service.
 
 /**
  * Public listing share sessions for client-facing presentations.
@@ -748,10 +531,8 @@ export const shareLeads = pgTable("share_leads", {
 });
 
 // ============================================================
-// AI-Native Tables — Neighborhoods, Deal Stories, Showing Feedback
+// AI-Native Tables — Deal Stories
 // ============================================================
-
-// NOTE: neighborhoods table has been moved to listing-data-service.
 
 /**
  * Deal stories — completed transaction narratives.
@@ -786,36 +567,6 @@ export const dealStories = pgTable("deal_stories", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-/**
- * Showing feedback — per-visit client reactions.
- * Each record captures how a client reacted to a specific property showing.
- * Over time these accumulate to reveal true preferences vs. stated preferences.
- * Periodically aggregated back into client profile embeddings.
- */
-export const showingFeedback = pgTable("showing_feedback", {
-  id: serial("id").primaryKey(),
-  clientId: integer("client_id"), // FK to clients or client_profiles
-  propertyId: integer("property_id"), // FK to properties
-  listingKey: varchar("listing_key", { length: 255 }),
-  agentId: integer("agent_id"),
-  showingDate: timestamp("showing_date"),
-  // Structured feedback
-  overallRating: integer("overall_rating"), // 1-5
-  wouldRevisit: boolean("would_revisit"),
-  priceReaction: varchar("price_reaction", { length: 20 }), // "too_high" | "fair" | "good_deal"
-  // Qualitative (agent notes or client comments)
-  feedbackText: text("feedback_text"), // "Loved the floor plan but kitchen too small, HOA concerned her"
-  liked: jsonb("liked"), // string[] — things they liked
-  disliked: jsonb("disliked"), // string[] — things they didn't like
-  // Vector embedding
-  embedding: vector("embedding", { dimensions: 1536 }),
-  embeddingModel: varchar("embedding_model", { length: 100 }),
-  embeddingUpdatedAt: timestamp("embedding_updated_at"),
-  // Meta
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
 // Type exports for marketing tables
 export type ShareSession = typeof shareSessions.$inferSelect;
 export type InsertShareSession = typeof shareSessions.$inferInsert;
@@ -823,16 +574,8 @@ export type ShareSessionEvent = typeof shareSessionEvents.$inferSelect;
 export type InsertShareSessionEvent = typeof shareSessionEvents.$inferInsert;
 export type ShareLead = typeof shareLeads.$inferSelect;
 export type InsertShareLead = typeof shareLeads.$inferInsert;
-export type BuyerProfile = typeof buyerProfiles.$inferSelect;
-export type InsertBuyerProfile = typeof buyerProfiles.$inferInsert;
-export type SmartMatchRun = typeof smartMatchRuns.$inferSelect;
-export type InsertSmartMatchRun = typeof smartMatchRuns.$inferInsert;
-export type SmartMatchResult = typeof smartMatchResults.$inferSelect;
-export type InsertSmartMatchResult = typeof smartMatchResults.$inferInsert;
 export type DealStory = typeof dealStories.$inferSelect;
 export type InsertDealStory = typeof dealStories.$inferInsert;
-export type ShowingFeedback = typeof showingFeedback.$inferSelect;
-export type InsertShowingFeedback = typeof showingFeedback.$inferInsert;
 
 /**
  * Showing tours — shareable property route plans.
@@ -1210,60 +953,11 @@ export const agentInsights = pgTable("agent_insights", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// ============================================================
-// CMA Reports — Comparative Market Analysis presentations
-// ============================================================
-
-/**
- * CMA reports — branded property valuation presentations.
- * Agent inputs a listing → system pulls comps → AI analyzes → generates PDF.
- */
-export const cmaReports = pgTable("cma_reports", {
-  id: serial("id").primaryKey(),
-  agentId: integer("agent_id"),
-  listingKey: varchar("listing_key", { length: 255 }),
-  address: varchar("address", { length: 500 }),
-  targetData: jsonb("target_data").$type<Record<string, unknown>>(),
-  // target property snapshot
-  compsData: jsonb("comps_data").$type<Array<Record<string, unknown>>>(),
-  // comparable properties with adjustments
-  aiAnalysis: text("ai_analysis"),
-  // AI-generated market analysis narrative
-  suggestedPriceLow: varchar("suggested_price_low", { length: 20 }),
-  suggestedPriceHigh: varchar("suggested_price_high", { length: 20 }),
-  marketTrends: jsonb("market_trends").$type<Record<string, unknown>>(),
-  // { medianPrice, avgDOM, inventory, priceChangeYoY }
-  branding: jsonb("branding").$type<Record<string, unknown>>(),
-  // agent branding: logo, name, phone, colors
-  pdfUrl: text("pdf_url"),
-  status: varchar("status", { length: 20 }).default("draft").notNull(),
-  // draft | generating | ready | failed
-
-  // ── Next-Gen CMA Pipeline Fields ──
-  photoUrls: jsonb("photo_urls").$type<string[]>().default([]),
-  // uploaded interior photo R2 URLs
-  photoAnalysis: jsonb("photo_analysis").$type<Record<string, unknown>>(),
-  // Vision analysis result: conditionScore, upgradeLevel, features
-  webSearchResult: jsonb("web_search_result").$type<Record<string, unknown>>(),
-  // Tavily market intelligence: trends, citations, median price
-  reportResult: jsonb("report_result").$type<Record<string, unknown>>(),
-  // full CMAReportResult from the 5-stage pipeline
-  compCount: integer("comp_count").default(0),
-  // number of comparable sales found
-  dataSources: jsonb("data_sources").$type<string[]>().default([]),
-  // e.g. ["bbo_vector", "tavily_web_search", "photo_analysis", "bbo_neighborhood"]
-
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
 // Phase 4 type exports
 export type NeighborhoodScore = typeof neighborhoodScores.$inferSelect;
 export type InsertNeighborhoodScore = typeof neighborhoodScores.$inferInsert;
 export type AgentInsight = typeof agentInsights.$inferSelect;
 export type InsertAgentInsight = typeof agentInsights.$inferInsert;
-export type CmaReport = typeof cmaReports.$inferSelect;
-export type InsertCmaReport = typeof cmaReports.$inferInsert;
 
 // ============================================================
 // Prospecting Dashboard — AI Pitch Engine for Expired/FSBO Leads

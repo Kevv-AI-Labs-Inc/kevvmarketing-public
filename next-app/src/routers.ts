@@ -5,19 +5,14 @@
 import { router, publicProcedure } from "@/server/trpc";
 import { systemRouter } from "./server/_core/systemRouter";
 import { shareRouter } from "./server/shareRouter";
-import { smartMatchRouter } from "./server/smartMatchRouter";
 import { dealStoryRouter } from "./server/dealStoryRouter";
 import { studioRouter } from "./server/studioRouter";
 import { showingTourRouter } from "./server/showingTourRouter";
 import { contentRouter } from "./server/contentFactory/contentRouter";
-import { cmaRouter } from "./server/cma/cmaRouter";
 import { mlsRouter } from "./server/mls/mlsRouter";
-import { aiRouter } from "./server/ai/aiRouter";
-import { vectorRouter } from "./server/vector/vectorRouter";
 import { subscriptionRouter } from "./server/subscriptionRouter";
 import { leadCaptureRouter } from "./server/leadCaptureRouter";
 import { profileRouter } from "./server/profileRouter";
-import { homeValueRouter } from "./server/homeValueRouter";
 import { postcardRouter } from "./server/postcardRouter";
 import { prospectingRouter } from "./server/prospectingRouter";
 import { flyerRouter } from "./server/flyerRouter";
@@ -26,18 +21,13 @@ export const appRouter = router({
   system: systemRouter,
   mls: mlsRouter,
   share: shareRouter,
-  smartMatch: smartMatchRouter,
   dealStory: dealStoryRouter,
   studio: studioRouter,
   showingTour: showingTourRouter,
   content: contentRouter,
-  cma: cmaRouter,
-  ai: aiRouter,
-  vector: vectorRouter,
   subscription: subscriptionRouter,
   leads: leadCaptureRouter,
   profile: profileRouter,
-  homeValue: homeValueRouter,
   postcard: postcardRouter,
   prospecting: prospectingRouter,
   flyer: flyerRouter,

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/api/auth", "/s/", "/sm/"];
+const PUBLIC_PATHS = ["/login", "/api/auth", "/s/"];
 const EXACT_PUBLIC_PATHS = ["/", "/privacy", "/terms"];
 
 /**

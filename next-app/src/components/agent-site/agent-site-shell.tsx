@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ArrowRight, Building2, CalendarClock, Globe2, Mail, MapPin, Phone, Sparkles, Star } from "lucide-react";
 
 import { AgentSiteContactForm } from "@/components/agent-site/agent-site-contact-form";
@@ -130,10 +129,14 @@ export function AgentSiteShell({
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Button asChild className={theme.accent}>
-                    <Link href={`/agents/${profile.slug}/home-value`}>
-                      {t("agentSiteShell.getMyHomeValue")}
+                    <a
+                      href={profile.bookingUrl || `mailto:${profile.email}`}
+                      rel={profile.bookingUrl ? "noreferrer" : undefined}
+                      target={profile.bookingUrl ? "_blank" : undefined}
+                    >
+                      {t("agentSiteShell.requestConsultation")}
                       <ArrowRight className="h-4 w-4" />
-                    </Link>
+                    </a>
                   </Button>
                   {profile.bookingUrl ? (
                     <Button asChild variant="outline" className="border-white/20 bg-transparent text-current hover:bg-white/10">
@@ -338,7 +341,13 @@ export function AgentSiteShell({
                   {t("agentSiteShell.sellerCtaDescription")}
                 </p>
                 <Button asChild className={theme.accent}>
-                  <Link href={`/agents/${profile.slug}/home-value`}>{t("agentSiteShell.openHomeValueFunnel")}</Link>
+                  <a
+                    href={profile.bookingUrl || `mailto:${profile.email}`}
+                    rel={profile.bookingUrl ? "noreferrer" : undefined}
+                    target={profile.bookingUrl ? "_blank" : undefined}
+                  >
+                    {t("agentSiteShell.openSellerConsultation")}
+                  </a>
                 </Button>
               </CardContent>
             </Card>

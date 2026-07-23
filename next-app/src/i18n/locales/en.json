@@ -10,17 +10,15 @@
     "dealTools": "Deal Tools",
     "contentStudio": "Content Studio",
     "agentSite": "Agent Site",
-    "homeValue": "Home Value",
     "areaMagnet": "Area Magnet",
     "magicShare": "Magic Share",
-    "smartMatch": "Smart Match",
     "showingTour": "Showing Tour",
     "subscriptions": "Subscriptions",
     "postcards": "Postcards"
   },
   "metadata": {
     "rootTitle": "{{appName}} | AI real estate marketing workspace",
-    "rootDescription": "Use {{appName}} to run flyers, smart matches, share pages, subscriptions, public funnels, and bilingual real estate marketing workflows in one platform."
+    "rootDescription": "Use {{appName}} to run listing content, share pages, subscriptions, public funnels, and bilingual real estate marketing workflows in one platform."
   },
   "localeToggle": {
     "switchLabel": "Switch language",
@@ -46,7 +44,6 @@
     "listingList": "All Listings",
     "neighborhood": "Neighborhood Score",
     "clients": "Clients",
-    "smartMatch": "Smart Match",
     "magicShare": "Magic Share",
     "showingTour": "Showing Tour",
     "marketing": "Marketing",
@@ -54,7 +51,6 @@
     "flyerStudio": "Flyer Studio",
     "ads": "Ad Campaigns",
     "drip": "Drip Automation",
-    "cmaStudio": "CMA Analysis",
     "studios": "Video Studio",
     "subscriptions": "Subscriptions",
     "xhsShare": "XHS Notes",
@@ -139,15 +135,6 @@
     "paused": "Paused",
     "enrollments": "Enrollments",
     "createCampaign": "Create sequence"
-  },
-  "cma": {
-    "title": "CMA Analysis",
-    "newReport": "New report",
-    "reports": "Report history",
-    "suggestedPrice": "Suggested price",
-    "comps": "Comparable properties",
-    "adjustments": "Price adjustments",
-    "aiAnalysis": "AI analysis"
   },
   "cultural": {
     "title": "Feng Shui / Calendar",
@@ -323,7 +310,7 @@
       "line1": "One listing.",
       "line2": "Every channel.",
       "line3": "Both languages.",
-      "body": "{{appName}} turns MLS listings into AI flyers, social campaigns, WeChat content, CMA reports, and public funnels in one place, with English and Chinese working side by side.",
+      "body": "{{appName}} turns MLS listings into AI flyers, social campaigns, WeChat content, share pages, and public funnels in one place, with English and Chinese working side by side.",
       "primaryCta": "Start free",
       "secondaryCta": "About Kevv AI"
     },
@@ -349,8 +336,8 @@
       },
       "intelligence": {
         "badge": "Lead Intelligence",
-        "title": "Smart matching without manual searching",
-        "body": "AI buyer matching, showing routes, and market insights surface the opportunities worth moving first for every client."
+        "title": "Move the right opportunities forward",
+        "body": "Showing routes, listing activity, and engagement signals help agents focus on the clients and properties that need action next."
       }
     },
     "toolkit": {
@@ -366,14 +353,6 @@
       "flyerStudio": {
         "name": "Flyer Studio",
         "desc": "Drag-and-drop print and digital flyer creation"
-      },
-      "cmaStudio": {
-        "name": "CMA Analysis",
-        "desc": "Comparative market analysis and pricing reports"
-      },
-      "smartMatch": {
-        "name": "Smart Match",
-        "desc": "AI buyer-to-listing matching engine"
       },
       "magicShare": {
         "name": "Magic Share",
@@ -423,7 +402,7 @@
       "wechat": "Native WeChat article and mini-program sharing",
       "descriptions": "Property descriptions adapted for Chinese-speaking buyers",
       "bilingual": "Bilingual flyers, social posts, and email campaigns",
-      "matching": "Cross-border buyer matching and showing routes"
+      "matching": "Cross-border share pages and showing routes"
     },
     "crossBorderCards": {
       "wechat": {
@@ -491,7 +470,7 @@
       },
       "tools": {
         "title": "Real estate marketing tools",
-        "body": "Run AI listing content, CMA reports, social campaigns, and WeChat workflows for Chinese-speaking markets."
+        "body": "Run AI listing content, social campaigns, share pages, and WeChat workflows for Chinese-speaking markets."
       }
     },
     "providerStatus": {
@@ -641,7 +620,7 @@
       "heroBadge": "AI agent growth workspace",
       "heroTitle": "Build the funnel first, then turn leads into action.",
       "heroDescription": "The center of this system is no longer a pile of tool pages. It is the operating chain a real estate agent actually runs every day: funnels, leads, campaigns, deal tools, and content.",
-      "heroFootnote": "Public pages, home-value capture, area magnets, share pages, and direct mail all flow back into one lead spine, where AI helps qualify, prioritize, and trigger the next move.",
+      "heroFootnote": "Public agent pages, area magnets, share pages, and direct mail all flow back into one lead spine, where AI helps qualify, prioritize, and trigger the next move.",
       "actions": {
         "openLeads": "Open leads",
         "openFunnels": "Open funnels",
@@ -655,7 +634,7 @@
         "campaignsTitle": "Campaigns",
         "campaignsDescription": "Outbound and reactivation channels",
         "dealToolsTitle": "Deal Tools",
-        "dealToolsDescription": "Inventory, matching, showings, and CMA",
+        "dealToolsDescription": "Inventory, showings, and listing presentation",
         "contentTitle": "Content Studio",
         "contentDescription": "Flyers, video, and channel-ready content",
         "syncLabel": "Last sync",
@@ -667,11 +646,10 @@
         "funnels": {
           "eyebrow": "Funnels",
           "title": "Public entry points and seller funnels",
-          "description": "Treat the agent site, home value, and area magnet as one inbound funnel instead of three separate tools.",
+          "description": "Treat the agent site and area magnets as one inbound funnel instead of separate tools.",
           "actionLabel": "Open funnels",
           "modules": {
             "agentSite": "Agent Site",
-            "homeValue": "Home Value",
             "areaMagnet": "Area Magnet"
           }
         },
@@ -699,13 +677,12 @@
         },
         "dealTools": {
           "eyebrow": "Deal Tools",
-          "title": "Inventory, match, and presentation support",
-          "description": "Listings, Smart Match, Showing Tour, and CMA belong in deal support, not at the center of the marketing IA.",
+          "title": "Inventory and showing support",
+          "description": "Listings and Showing Tour belong in deal support, not at the center of the marketing information architecture.",
           "actionLabel": "Open deal tools",
           "modules": {
             "listings": "Listings",
-            "smartMatch": "Smart Match",
-            "cmaStudio": "CMA Analysis"
+            "showingTour": "Showing Tour"
           }
         },
         "content": {
@@ -725,7 +702,7 @@
       "platformModel": {
         "funnels": {
           "title": "Funnels",
-          "description": "Turn the agent site, home value, and lead magnets into one coherent public acquisition layer."
+          "description": "Turn the agent site and area magnets into one coherent public acquisition layer."
         },
         "leads": {
           "title": "Leads",
@@ -737,7 +714,7 @@
         },
         "dealTools": {
           "title": "Deal Tools",
-          "description": "Listings, Smart Match, showings, and CMA belong to the conversion layer, not the center of the marketing flow."
+          "description": "Listings and showings belong to the conversion layer, not the center of the marketing flow."
         },
         "content": {
           "title": "Content Studio",
@@ -828,181 +805,9 @@
         "deleted": "Subscription deleted",
         "deleteFailed": "Failed to delete subscription"
       }
-    },
-    "cmaStudio": {
-      "fallbackPrice": "Price pending",
-      "unnamedListing": "Unnamed listing",
-      "sourceLabels": {
-        "vector": "Vector match",
-        "sqlFallback": "SQL fallback"
-      },
-      "heroTitle": "CMA Analysis",
-      "heroDescription": "Pick a subject property, generate comparable analysis, and push the result directly into the client-facing share flow.",
-      "prefillLabel": "Subject ListingKey prefilled from external entry:",
-      "embedding": {
-        "pendingSummary": "listings still need vector embeddings",
-        "processing": "processing…",
-        "runNow": "Run now",
-        "running": "Running",
-        "triggerFailed": "Failed to trigger"
-      },
-      "subjectCard": {
-        "title": "1. Select subject property",
-        "description": "Search MLS listings and choose the subject property for this CMA.",
-        "searchPlaceholder": "Search address or listing ID",
-        "startSearch": "Enter an address, MLS number, or listing ID to begin searching for the subject property.",
-        "currentSubject": "Current subject",
-        "notSelected": "Not selected yet",
-        "comparableCount": "Comparable count",
-        "generating": "Generating",
-        "generate": "Generate CMA",
-        "loadingProperties": "Loading listings…",
-        "noProperties": "No listings found",
-        "mlsFallback": "MLS"
-      },
-      "outputCard": {
-        "title": "2. CMA output",
-        "description": "Review the subject and comparables, then jump into the share flow in one click.",
-        "empty": "Select a subject listing and generate a CMA first.",
-        "subject": "Subject property",
-        "comparables": "Comparables",
-        "unknownStatus": "Unknown",
-        "score": "Score",
-        "propertyFallback": "Property",
-        "openShare": "Open in share studio",
-        "shareTitlePrefix": "CMA highlights · "
-      },
-      "historyCard": {
-        "title": "Recent CMA history",
-        "description": "Reuse recent CMA results and generate client share links quickly.",
-        "loading": "Loading history…",
-        "empty": "No CMA history yet",
-        "comparableCount": "comparables",
-        "openShare": "Open share page",
-        "setSubject": "Use as subject",
-        "setSubjectSuccess": "Subject selected. You can regenerate the CMA now."
-      },
-      "toasts": {
-        "generated": "CMA generated",
-        "generatedDescription": "{{count}} comparable listings found ({{sourceLabel}})",
-        "failed": "Failed to generate CMA",
-        "selectSubject": "Select a subject listing first",
-        "noShareListings": "No listings available to send into the share page"
-      }
-    },
-    "aiRecommend": {
-      "titles": {
-        "smartMatch": "Smart Match",
-        "smartMatchDescription": "Generate listing recommendations and follow-up messaging from client needs.",
-        "summaryCopy": "Summary Copy",
-        "summaryCopyDescription": "Select listings from AI recommendations and copy summary messaging."
-      },
-      "section": {
-        "clientInfo": "Client profile",
-        "clientInfoDescription": "Enter the client profile and what they are looking for.",
-        "clientName": "Client name *",
-        "clientNamePlaceholder": "Example: Mr. Zhang",
-        "budget": "Budget",
-        "budgetMinPlaceholder": "Min",
-        "budgetMaxPlaceholder": "Max",
-        "budgetHint": "USD only, for example 800000",
-        "budgetSummaryRange": "Budget: ${{min}} - ${{max}}. ",
-        "budgetSummaryMinOnly": "Budget: at least ${{min}}. ",
-        "budgetSummaryMaxOnly": "Budget: up to ${{max}}. ",
-        "requirements": "Requirements *",
-        "requirementsPlaceholder": "Describe the client needs in detail, for example:\n- Wants Long Island\n- Needs 4 bedrooms and 2 bathrooms\n- Has children and needs strong schools\n- Prefers a quiet neighborhood\n- Wants a large backyard",
-        "submit": "Run Smart Match",
-        "submitting": "Analyzing client needs…",
-        "resultsJump": "View recommendations",
-        "emptyTitle": "Enter client needs to start",
-        "emptyDescription": "AI will match the most relevant listings.",
-        "resultsTitle": "Recommended listings",
-        "selectedCount": "Selected",
-        "selectedCountSuffix": "",
-        "matchScore": "Match",
-        "viewDetails": "Open listing",
-        "aiPitch": "AI pitch",
-        "copyPitch": "Copy pitch",
-        "copied": "Copied",
-        "generateCma": "Generate CMA",
-        "openShare": "Open share page",
-        "pitchEmpty": "Select one or more listings to view the AI pitch.",
-        "beds": "bd",
-        "baths": "ba",
-        "sqft": "sqft",
-        "notAvailable": "N/A"
-      },
-      "summary": {
-        "found": "{{count}} matched listings found · {{seconds}}s",
-        "shareTitle": "{{name}}'s AI picks"
-      },
-      "toasts": {
-        "recommendFailed": "Recommendation failed",
-        "feedbackSubmitted": "Feedback submitted",
-        "feedbackDescription": "Thanks. We’ll keep improving the recommendation model.",
-        "requiredFields": "Required fields missing",
-        "requiredFieldsDescription": "Client name and requirement details are required.",
-        "copied": "Copied to clipboard",
-        "selectOneListing": "Select at least one listing first"
-      },
-      "feedbackNotes": {
-        "approved": "Good recommendation",
-        "rejected": "Not helpful"
-      }
     }
   },
   "sharePages": {
-    "smartMatchShare": {
-      "fetchLoadError": "Failed to load share page",
-      "fetchFeedbackError": "Failed to submit feedback",
-      "loading": "Loading your personalized listing share...",
-      "notFoundTitle": "Share page not found",
-      "notFoundDescription": "This share link may have expired or been revoked.",
-      "kanbanTitle": "Kanban mode is coming soon",
-      "reportTitle": "Report mode is coming soon",
-      "comingSoon": "Coming soon"
-    },
-    "smartMatchStory": {
-      "commentSubmitted": "Comment submitted",
-      "commentFailed": "Failed to submit comment",
-      "networkError": "Network error",
-      "greeting": "Hi {{name}} 👋",
-      "curatedBy": "Curated by {{agentName}}",
-      "featuredCount": "featured listings",
-      "avgPricePerSqft": "avg price / sqft",
-      "start": "Start browsing →",
-      "galleryCounter": "Image {{current}}/{{total}}",
-      "prevImage": "Previous image",
-      "nextImage": "Next image",
-      "priceUnavailable": "Price N/A",
-      "expertJudgment": "{{agentName}}'s take",
-      "recommendation": "Recommendation",
-      "risks": "Risk notes",
-      "strategy": "Strategy",
-      "matchAnalysis": "Match analysis",
-      "closingStrategy": "Closing strategy",
-      "viewOriginal": "View original link",
-      "tour": "Tour",
-      "writeComment": "Leave feedback",
-      "commentPlaceholder": "Tell the agent what you think about this listing...",
-      "submitting": "Submitting...",
-      "submit": "Submit",
-      "back": "Back",
-      "needTwoListings": "At least 2 listings with coordinates are required",
-      "routePlanning": "Planning route...",
-      "hideRoute": "Hide route",
-      "showRoute": "Show route",
-      "listingCount": "{{count}} listings",
-      "routeFailed": "Failed to plan route",
-      "routeError": "Route planning error",
-      "stops": "stops",
-      "listPriceUnavailable": "N/A",
-      "bedsShort": "bd",
-      "bathsShort": "ba",
-      "sqftShort": "sqft",
-      "wechatCopied": "WeChat ID copied",
-      "wechatPrefix": "WeChat"
-    },
     "listingShare": {
       "loading": "Loading this listing share...",
       "notFoundTitle": "Share link unavailable",
@@ -1297,108 +1102,38 @@
     "metricFallback": "Metric",
     "libraryFallbackTitle": "Area magnet"
   },
-  "homeValue": {
-    "public": {
-      "badge": "AI seller funnel",
-      "title": "Know what your home could sell for",
-      "subtitle": "Get an instant AI valuation range, local positioning notes, and next-step seller strategy.",
-      "inputLabel": "Property address",
-      "inputPlaceholder": "123 Main St, Palo Alto, CA",
-      "inputButton": "Generate valuation",
-      "gateTitle": "Your valuation is ready",
-      "gateSubtitle": "Share your contact info to unlock the full report and let the agent follow up with a comp-backed strategy.",
-      "reportTitle": "Your AI valuation report",
-      "reportSubtitle": "This is not a static report. It is a live seller funnel stitched back into Kevv's unified lead system.",
-      "share": "Share this valuation page",
-      "copy": "Copy link",
-      "copied": "Copied",
-      "loading": "Loading Home Value",
-      "notFoundTitle": "Home Value page not found",
-      "notFoundDescription": "This valuation funnel is not live yet for the requested agent.",
-      "viewTags": {
-        "marketRead": "Market read",
-        "comps": "Comparable sales",
-        "neighborhood": "Neighborhood signal"
-      },
-      "errors": {
-        "addressRequired": "Please enter a full property address.",
-        "generateFailed": "Failed to generate valuation.",
-        "unlockSuccess": "Report unlocked.",
-        "unlockFailed": "Failed to unlock report.",
-        "copyFailed": "Copy failed."
-      },
-      "placeholders": {
-        "name": "Name",
-        "email": "Email",
-        "phone": "Phone",
-        "timeline": "Timeline",
-        "notes": "Are you most focused on pricing, prep scope, or launch timing?"
-      },
-      "actions": {
-        "generating": "Generating…",
-        "unlocking": "Unlocking…",
-        "unlockReport": "Unlock full report",
-        "explainer": "The funnel first generates the valuation, then uses a lead gate before the full report.",
-        "openAgentProfile": "Open full agent profile",
-        "bookCall": "Book a call"
-      },
-      "stats": {
-        "range": "Range",
-        "layout": "Layout",
-        "sqft": "Sqft",
-        "schoolScore": "School score"
-      },
-      "sections": {
-        "estimatedRange": "Estimated range",
-        "agentFollowUp": "Agent follow-up",
-        "comparableSales": "Comparable sales",
-        "price": "Price",
-        "marketNotes": "Market notes",
-        "shareHelp": "Share this seller funnel with neighbors or past clients and let the valuation page keep generating leads."
-      },
-      "shareSummary": "I just ran an AI home valuation and got a range of {{low}} - {{high}}."
-    }
-  },
   "funnelsDashboard": {
     "loading": "Loading funnels workspace...",
     "badge": "Funnels Workspace",
-    "moduleBadge": "Agent Site + Home Value + Area Magnet",
+    "moduleBadge": "Agent Site + Area Magnet",
     "eyebrow": "Funnels",
     "heroTitle": "Public entry points now work as one acquisition layer.",
-    "heroDescription": "Agent Site, Home Value, and Area Magnets all feed the same lead spine. Use this workspace to monitor performance, tighten each entry point, and push traffic into the right next action.",
+    "heroDescription": "Agent Site and Area Magnets feed the same lead spine. Use this workspace to monitor performance, tighten each entry point, and push traffic into the right next action.",
     "configureAgentSite": "Configure Agent Site",
-    "tuneHomeValue": "Tune Home Value",
     "openAreaMagnetStudio": "Open Area Magnet Studio",
     "liveEntryPoints": "Live entry points",
     "funnelLeads": "Funnel leads",
     "areaMagnetViews": "Area Magnet views",
     "agentSiteLeads": "Agent Site leads",
-    "homeValueLeads": "Home Value leads",
     "areaMagnetLeads": "Area Magnet leads",
-    "valuationRequests": "Valuation requests",
     "tabOverview": "Overview",
     "tabAgentSite": "Agent Site",
-    "tabHomeValue": "Home Value",
     "tabAreaMagnets": "Area Magnets",
     "moduleStatus": "Module status",
     "moduleStatusDescription": "Use each funnel as a different entry path into the same lead spine.",
     "agentSiteTitle": "Agent Site",
-    "homeValueTitle": "Home Value",
     "areaMagnetsTitle": "Area Magnets",
     "statusLive": "Live",
     "statusDraft": "Draft",
-    "statusNeedsSetup": "Needs setup",
     "statusActive": "Active",
     "statusIdle": "Idle",
     "capturedInquiries": "{{count}} captured inquiries",
-    "sellerLeads": "{{count}} seller leads",
     "totalMagnets": "{{count}} total magnets",
     "openModule": "Open module",
     "leadMixTitle": "Lead mix by funnel",
     "leadMixDescription": "The key question here is not which tool exists. It is which public entry point is actually converting attention into leads.",
     "profileViews": "Profile views",
     "chatMessages": "Chat messages",
-    "requestsIn30d": "{{count}} requests in the last 30 days",
     "viewsAndLeads": "{{views}} views · {{leads}} captured leads",
     "agentSiteStatus": "Agent Site status",
     "agentSiteStatusDescription": "Public profile, contact form, and AI chat should work together as your general inbound layer.",
@@ -1414,18 +1149,6 @@
     "intent": "intent",
     "areaPending": "area pending",
     "noAgentSiteLeads": "No agent-site leads yet.",
-    "homeValueStatus": "Home Value status",
-    "homeValueStatusDescription": "This funnel is your seller-entry wedge. It should convert curiosity into a named, high-intent valuation lead.",
-    "publicHomeValueRoute": "Public Home Value route",
-    "configureAgentSiteFirst": "Configure Agent Site first to activate this route.",
-    "openRoute": "Open route",
-    "requests30d": "Requests (30d)",
-    "capturedLeads30d": "Captured leads (30d)",
-    "leadSourceCount": "Lead source count",
-    "openHomeValueWorkspace": "Open Home Value workspace",
-    "recentValuationActivity": "Recent valuation activity",
-    "estimateReady": "Estimate ready",
-    "noValuationRuns": "No valuation runs yet.",
     "areaMagnetStatus": "Area Magnet status",
     "areaMagnetStatusDescription": "Area Magnets are the market-specific lead traps inside your funnel layer. They should keep compounding views, leads, and follow-up signals.",
     "totalMagnetsLabel": "Total magnets",
@@ -1442,8 +1165,8 @@
     "noRecentActivity": "No recent activity",
     "noAreaMagnets": "No area magnets created yet.",
     "operatingRule": "Operating rule",
-    "operatingRuleDescription": "Treat these three modules as one funnel system, not separate products.",
-    "operatingRuleP1": "Use `Agent Site` as the general inbound layer, `Home Value` as the seller-intent wedge, and `Area Magnets` as market-specific acquisition hooks.",
+    "operatingRuleDescription": "Treat these two modules as one funnel system, not separate products.",
+    "operatingRuleP1": "Use Agent Site as the general inbound layer and Area Magnets as market-specific acquisition hooks.",
     "operatingRuleP2": "The real KPI is not page count. It is how efficiently these entry points push named leads into `Leads`, where AI can rank urgency and route the next action."
   },
   "postcardsDashboard": {
@@ -1504,66 +1227,10 @@
     "campaignLaunched": "Campaign launched.",
     "launchFailed": "Launch failed."
   },
-  "homeValueDashboard": {
-    "loading": "Loading Home Value dashboard...",
-    "eyebrow": "Home Value",
-    "heroTitle": "Seller valuation funnel",
-    "heroDescription": "Public-facing valuation experience that routes homeowners into `valuation_runs`, unified `contacts`, agent insights, and drip enrollments.",
-    "openPublicFunnel": "Open public funnel",
-    "configureFirst": "Configure agent site first",
-    "valuationRequests30d": "Valuation requests (30d)",
-    "capturedSellerLeads30d": "Captured seller leads (30d)",
-    "primaryRoute": "Primary route",
-    "setupFirst": "Set up /agent-site first",
-    "recentValuationRequests": "Recent valuation requests",
-    "estimateReady": "Estimate ready",
-    "noValuationRequests": "No valuation requests yet. Publish the funnel and drive traffic from the new agent site CTA.",
-    "recentSellerLeads": "Recent seller leads",
-    "unnamedSellerLead": "Unnamed seller lead",
-    "noDirectContact": "No direct contact method",
-    "areaPending": "Area pending",
-    "score": "score",
-    "noSellerLeads": "No seller leads captured yet.",
-    "operatingNotes": "Operating notes",
-    "operatingNote1": "`CMA Studio` remains your internal pricing workspace. `Home Value` is public and seller-acquisition oriented.",
-    "operatingNote2": "Every successful gate submission writes to `contacts`, links the row back to `valuation_runs`, then creates an `agent_insight` and checks active `new_lead` drip campaigns.",
-    "campaignLinks": {
-      "sectionTitle": "Campaign Links",
-      "createLink": "Create Link",
-      "linkCreated": "Campaign link created",
-      "linkUpdated": "Link updated",
-      "noLinksYet": "No campaign links yet",
-      "createFirstLink": "Create a tracked link to share your Home Value funnel via postcards, social media, or website embeds.",
-      "labelField": "Link Name",
-      "labelPlaceholder": "e.g. March Postcard - Arcadia",
-      "sourceLabel": "Channel",
-      "sourcePostcard": "Postcard",
-      "sourceSocial": "Social",
-      "sourceEmbed": "Embed",
-      "sourceArticle": "Article",
-      "sourceDirect": "Direct",
-      "advancedOptions": "UTM & Social Preview",
-      "ogTitlePlaceholder": "Custom social preview title...",
-      "ogDescriptionPlaceholder": "Custom social preview description...",
-      "copyUrl": "Copy URL",
-      "urlCopied": "Link copied to clipboard",
-      "showQr": "Show QR Code",
-      "qrTitle": "QR Code",
-      "qrGenerating": "Generating QR code...",
-      "downloadQr": "Download QR",
-      "copyEmbed": "Embed Code",
-      "embedTitle": "Embed Code",
-      "embedDescription": "Paste this code into any website to embed your Home Value funnel.",
-      "embedCopied": "Embed code copied",
-      "iframeSnippet": "iframe",
-      "scriptSnippet": "script",
-      "archiveLink": "Archive"
-    }
-  },
   "leadsDashboard": {
     "eyebrow": "Lead Center",
     "title": "Leads Workspace",
-    "description": "Leads from Agent Site chat, Home Value, Area Magnet, and postcard imports all land here. Filter, qualify, and route from a single surface.",
+    "description": "Leads from Agent Site chat, Area Magnet, and postcard imports all land here. Filter, qualify, and route from a single surface.",
     "loading": "Loading leads…",
     "filters": "Filters",
     "searchPlaceholder": "Search leads",
@@ -1586,7 +1253,7 @@
     "insightsTitle": "AI Insights",
     "noInsights": "No insights yet.",
     "workspaceNote": "Workspace note",
-    "workspaceNoteContent": "All sources (agent site chat, home value forms, Area Magnet, postcard imports) flow into the same contact spine. Qualification, routing, and automation all start here.",
+    "workspaceNoteContent": "All sources (agent site chat, Area Magnet, postcard imports) flow into the same contact spine. Qualification, routing, and automation all start here.",
     "statusUpdated": "Lead status updated.",
     "statusUpdateFailed": "Status update failed.",
     "selectLeadsAndTemplate": "Select leads and a postcard template.",
@@ -1654,7 +1321,6 @@
     "liveProfile": "Live profile",
     "draftProfile": "Draft profile",
     "publicRoute": "Public route",
-    "homeValueRoute": "Home Value route",
     "recentCapturedLeads": "Recent captured leads",
     "anonymousLead": "Anonymous lead",
     "noDirectContact": "No direct contact stored",
@@ -1670,7 +1336,6 @@
     "template": "template",
     "aiFallbackTitle": "AI-first real estate advisor",
     "aiFallbackBio": "Turn your public page into a real lead engine: market context, instant chat, and next-step conversion without losing brand control.",
-    "getMyHomeValue": "Get My Home Value",
     "bookStrategyCall": "Book a strategy call",
     "experience": "Experience",
     "yrs": "yrs",
@@ -1678,28 +1343,29 @@
     "experienceDescription": "Guidance for buyer, seller, and relocation conversations.",
     "languagesLabel": "Languages",
     "liveCtas": "Live CTAs",
-    "ctasDescription": "Chat, inquiry form, and Home Value funnel work together.",
+    "ctasDescription": "Chat, inquiry forms, and direct consultation work together.",
     "publicFunnel": "Public funnel",
     "positioning": "Positioning",
     "whyClients": "Why clients use this page",
-    "whyClientsDescription": "This is not a static biography. It is the front door for AI chat, seller valuation, and structured lead capture.",
+    "whyClientsDescription": "This is not a static biography. It is the front door for AI chat, direct consultation, and structured lead capture.",
     "conversionPath": "Conversion path",
     "threeEntryPoints": "One page, three entry points",
     "step1": "1. Read positioning and recent proof.",
     "step2": "2. Start AI chat or send a direct inquiry.",
-    "step3": "3. Move seller traffic into the Home Value funnel.",
+    "step3": "3. Route seller interest into a direct consultation.",
     "recentTransactions": "Recent transactions",
     "testimonialsLabel": "Testimonials",
     "recognition": "Recognition",
     "sellerCta": "Seller CTA",
-    "sellerCtaTitle": "Turn owners into structured seller leads",
-    "sellerCtaDescription": "Route homeowners into a branded valuation experience, then sync those leads back into your unified Kevv contact spine.",
-    "openHomeValueFunnel": "Open Home Value funnel",
+    "sellerCtaTitle": "Turn owner interest into a direct conversation",
+    "sellerCtaDescription": "Invite homeowners to book or email you directly, then manage the inquiry in your unified Kevv contact spine.",
     "directInquiry": "Direct inquiry",
     "contactAgent": "Contact {{name}}",
     "inquiryDescription": "Send an inquiry that goes straight into the unified leads workspace.",
     "previewNotes": "Preview notes",
-    "previewDescription": "This preview shares the same visual system as the public page. Chat and inquiry are disabled here, but the public route will activate them."
+    "previewDescription": "This preview shares the same visual system as the public page. Chat and inquiry are disabled here, but the public route will activate them.",
+    "requestConsultation": "Request a consultation",
+    "openSellerConsultation": "Start a seller consultation"
   },
   "publicAgentSite": {
     "loading": "Loading profile...",
@@ -1766,7 +1432,6 @@
     "address": "Address",
     "publicRemarks": "Public Remarks",
     "noRemarks": "No remarks available",
-    "generateCma": "Generate CMA",
     "addToShare": "Add to Share",
     "pricePending": "Price TBD",
     "addressUnknown": "Address unknown",
@@ -2257,87 +1922,6 @@
     "emptyPrompt": "Select a platform and enter property info",
     "emptyDescription": "AI generates title, body, hashtags, and photo suggestions tailored to each platform"
   },
-  "smartMatchWorkspace": {
-    "eyebrow": "Buyer Matching",
-    "title": "Smart Match",
-    "description": "Pick a Kevv contact, layer in the latest home-search requirements, and return active listings that are ready for sharing or CMA follow-up.",
-    "beta": "Buyer profile matching",
-    "contactsTitle": "Contacts",
-    "contactsDescription": "Start from the contact record Kevv already knows: summary, budget, lead history, and learned preferences.",
-    "contactSearchLabel": "Search contacts",
-    "contactSearchPlaceholder": "Search by name, email, phone, or area",
-    "loadingContacts": "Loading contacts...",
-    "noContacts": "No contacts are ready for Smart Match yet",
-    "noContactsDescription": "Capture or import contacts from Agent Site, Home Value, Area Magnet, or other lead sources first.",
-    "unnamedContact": "Unnamed contact",
-    "noPrimaryContact": "No email or phone yet",
-    "profileReady": "Profile ready",
-    "selectedContactTitle": "Selected client",
-    "selectedContactDescription": "Kevv reads the contact profile first, then layers in this round of home-search constraints.",
-    "areaLabel": "Target area",
-    "budgetLabel": "Budget range",
-    "emptyField": "Pending",
-    "summaryLabel": "Current profile summary",
-    "noSummary": "This contact does not have enough profile context yet. Add a home-search brief and run the match to start building one.",
-    "selectContactHint": "Select a contact from the left column first.",
-    "requirementsTitle": "Current search requirements",
-    "requirementsDescription": "Add the latest home search brief, budget boundaries, and housing constraints. Kevv merges them into the buyer profile.",
-    "searchBriefLabel": "Home search brief",
-    "searchBriefPlaceholder": "Example: Looking for a detached home in Irvine 92618, budget 1.8M-2.2M, commute to Newport, ideally with a yard, strong kitchen, and bright natural light.",
-    "cityLabel": "City",
-    "postalCodeLabel": "ZIP code",
-    "propertyTypeLabel": "Property type",
-    "propertyTypePlaceholder": "Example: Single Family",
-    "minBedroomsLabel": "Min bedrooms",
-    "maxBedroomsLabel": "Max bedrooms",
-    "minPriceLabel": "Min budget",
-    "maxPriceLabel": "Max budget",
-    "runMatch": "Match active listings",
-    "running": "Matching...",
-    "runFailed": "Smart Match failed",
-    "resultsTitle": "Match results",
-    "resultsDescription": "Kevv narrows the active inventory with hard filters first, then re-ranks with the buyer profile.",
-    "resultMeta": "{{count}} results · {{source}} retrieval",
-    "profileCardTitle": "Buyer profile used",
-    "runCardTitle": "Run context",
-    "candidateCount": "Candidate pool:",
-    "processingTime": "Processing time:",
-    "hardFiltersLabel": "Hard filters:",
-    "selectedCount": "{{count}} listing(s) selected",
-    "openShare": "Open Magic Share",
-    "createCma": "Create CMA",
-    "noResults": "No suitable active listings were found",
-    "finalScoreLabel": "Final score",
-    "semanticScoreLabel": "Semantic score",
-    "ruleScoreLabel": "Rule score",
-    "behaviorScoreLabel": "Preference score",
-    "noRunYet": "No recent Smart Match run yet",
-    "noRunYetDescription": "Select a contact and add the latest search requirements. Matching listings, reasons, and follow-up actions will appear here.",
-    "addressFallback": "Address pending",
-    "shareNeedsSelection": "Select at least one listing before opening the share flow",
-    "cmaNeedsSelection": "Select at least one listing before creating a CMA",
-    "selectContactFirst": "Select a contact first",
-    "nlSearchTab": "AI Natural Language Search",
-    "contactMatchTab": "Contact Matching",
-    "nlSearchTitle": "Natural Language Search",
-    "nlSearchDescription": "Describe the property you're looking for — AI parses it into precise search criteria",
-    "nlSearchPlaceholder": "e.g., 3 bed homes near good schools in Arcadia under 1.2M with garage\nor: Irvine 好学区 150万以内 4房 带院子",
-    "nlSearchParsing": "AI parsing...",
-    "nlSearchButton": "AI Smart Search",
-    "nlParsedTitle": "AI Parsed Query",
-    "nlFiltersLabel": "Structured Filters",
-    "nlFeaturesLabel": "Features",
-    "nlLifestyleLabel": "Lifestyle",
-    "nlSemanticLabel": "Semantic Search",
-    "nlResultsDescription": "AI parse → structured retrieve → semantic re-rank",
-    "nlCandidates": "candidates",
-    "nlResults": "results",
-    "nlNoResults": "No matching listings found. Try broadening your search.",
-    "nlEmptyTitle": "Enter a natural language search",
-    "nlEmptyDescription": "AI automatically decomposes your query into structured filters + semantic features, retrieves precisely then re-ranks intelligently",
-    "nlSearchFailed": "Search failed",
-    "nlSearchEmpty": "Please enter a search query"
-  },
   "notFound": {
     "title": "Page Not Found",
     "description": "Sorry, the page you are looking for doesn't exist.",
@@ -2347,13 +1931,12 @@
   "shares": {
     "eyebrow": "My Shares",
     "heroTitle": "Share Management",
-    "heroDescription": "Manage all outbound share links in one place — listing shares, area magnets, home value pages, and your public profile. View engagement stats and manage access.",
+    "heroDescription": "Manage listing shares, area magnets, and your public profile in one place. View engagement stats and manage access.",
     "createListingShare": "New Listing Share",
     "createAreaMagnet": "New Area Magnet",
     "filterAll": "All",
     "typeListingShare": "Listing Share",
     "typeAreaMagnet": "Area Magnet",
-    "typeHomeValue": "Home Value",
     "typeAgentSite": "Agent Site",
     "searchPlaceholder": "Search shares...",
     "listTitle": "All Shares",
@@ -2361,7 +1944,6 @@
     "emptyAll": "No shares yet. Create your first share from Magic Share or Area Magnet.",
     "emptyFiltered": "No shares match the current filters.",
     "permanentLink": "Permanent link",
-    "valuations": "Valuations",
     "leads": "Leads",
     "reshare": "Re-share",
     "preview": "Preview card"

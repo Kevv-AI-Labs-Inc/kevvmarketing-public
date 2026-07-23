@@ -12,8 +12,6 @@ const pillarConfig = [
 const toolConfig = [
   { id: "content-factory", key: "contentFactory" },
   { id: "flyer-studio", key: "flyerStudio" },
-  { id: "cma-studio", key: "cmaStudio" },
-  { id: "smart-match", key: "smartMatch" },
   { id: "magic-share", key: "magicShare" },
   { id: "showing-tour", key: "showingTour" },
   { id: "ads", key: "ads" },
@@ -50,7 +48,7 @@ const crossBorderCardConfig = [
 
 const statsConfig = [
   { value: "10×", key: "fasterContent" },
-  { value: "13+", key: "integratedTools" },
+  { value: "11+", key: "integratedTools" },
   { value: "2", key: "languages" },
 ] as const;
 

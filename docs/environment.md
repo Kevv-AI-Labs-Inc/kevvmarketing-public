@@ -42,14 +42,9 @@ This project now uses a cleaned deployment surface. The list below is split into
 - `AZURE_OPENAI_VIDEO_API_KEY`
 - `OPENAI_MODEL`
 - `OPENAI_EMBEDDING_MODEL`
-- `AI_TASK_HOME_VALUE_MODEL`
 - `AI_TASK_PROSPECTING_MODEL`
 - `AI_TASK_AREA_MAGNET_MODEL`
 - `AI_TASK_CONTENT_MODEL`
-- `AI_TASK_CMA_MODEL`
-- `AI_TASK_CMA_REPORT_MODEL`
-- `AI_TASK_CMA_PHOTO_MODEL`
-- `AI_TASK_SMART_MATCH_MODEL`
 - `AI_TASK_EMBEDDING_MODEL`
 - `GEMINI_API_KEY`
 - `GEMINI_MODEL`
@@ -73,10 +68,6 @@ This project now uses a cleaned deployment surface. The list below is split into
 
 ### Webhooks
 - `WEBHOOK_SECRET`
-
-### CMA market research
-- `SEARCH_PROVIDER`
-- `TAVILY_API_KEY`
 
 ### Video studio
 - `OPENAI_VIDEO_MODEL`
@@ -130,5 +121,13 @@ These were previously accepted or documented, but are no longer part of the supp
 - `AZURE_OPENAI_BATCH_API_KEY`
 - `OPENAI_BATCH_ENDPOINT`
 - `OPENAI_BATCH_REQUEST_URL`
+- `AI_TASK_HOME_VALUE_MODEL`
+- `AI_TASK_CMA_MODEL`
+- `AI_TASK_CMA_REPORT_MODEL`
+- `AI_TASK_CMA_PHOTO_MODEL`
+- `AI_TASK_SMART_MATCH_MODEL`
+- `RENTCAST_API_KEY`
+- `SEARCH_PROVIDER`
+- `TAVILY_API_KEY`
 - `LOB_WEBHOOK_SECRET`
 - `VIDEO_PROVIDER`

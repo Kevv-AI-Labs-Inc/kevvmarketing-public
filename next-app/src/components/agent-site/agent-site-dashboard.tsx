@@ -1067,7 +1067,7 @@ export function AgentSiteDashboard() {
                   >
                     <Textarea
                       className="font-mono text-xs"
-                      placeholder={`例：\n- 专长华人跨境客户\n- 服务区域：费里蒙 / 尔湾 / 底特律\n- 风格：专业、简洁、不过度节尔\n- 如果用户问价格，先引导到 Home Value 函道`}
+                      placeholder={`例：\n- 专长华人跨境客户\n- 服务区域：费里蒙 / 尔湾 / 底特律\n- 风格：专业、简洁、不过度承诺\n- 如果用户问价格，引导预约卖房咨询`}
                       rows={8}
                       value={form.chatSystemPrompt}
                       onChange={(e) => set("chatSystemPrompt", e.target.value)}

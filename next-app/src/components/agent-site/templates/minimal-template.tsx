@@ -298,16 +298,16 @@ export default function MinimalTemplate({ profile, preview = false }: TemplatePr
             Work with {firstName}
           </h2>
           <p className="text-sm text-gray-500 font-light max-w-md mx-auto mb-10">
-            Whether you&apos;re buying, selling, or simply curious about your home&apos;s value,{" "}
+            Whether you&apos;re buying, selling, or planning your next move,{" "}
             {firstName} is here to help.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href={`/agents/${profile.slug}/home-value`}
+              href={profile.bookingUrl || `mailto:${profile.email}`}
               className="inline-flex items-center gap-2 px-6 py-3 text-sm tracking-wider uppercase font-light border border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
             >
-              What&apos;s My Home Worth?
+              Discuss Selling My Home
               <svg
                 className="h-3.5 w-3.5"
                 fill="none"

@@ -6,12 +6,12 @@
  *
  * Why:
  *   Different tasks have different cost / quality / latency tradeoffs:
- *   - Valuation + Prospecting → need strong reasoning → heavier model
- *   - Content gen + Smart Match → need speed → lighter model
- *   - Embeddings → fixed model, separate Azure deployment
+ *   - Prospecting + area reports need stronger reasoning
+ *   - Content generation favors speed
+ *   - Embeddings use a fixed, separate Azure deployment
  *
  * Configuration priority (highest wins):
- *   1. Per-task env var  (AI_TASK_HOME_VALUE_MODEL=gpt-4o)
+ *   1. Per-task env var  (AI_TASK_PROSPECTING_MODEL=gpt-4o)
  *   2. Global model var  (OPENAI_MODEL=gpt-4o-mini)
  *   3. Hardcoded default (gpt-4o-mini)
  *
@@ -23,7 +23,7 @@
  *
  * Usage:
  *   import { AI_TASKS } from "@/server/_core/ai-tasks";
- *   await invokeLLM({ task: AI_TASKS.HOME_VALUE, messages: [...] });
+ *   await invokeLLM({ task: AI_TASKS.CONTENT, messages: [...] });
  */
 
 import { ENV } from "./env";
@@ -31,22 +31,12 @@ import { ENV } from "./env";
 // ─── Task Identifiers ──────────────────────────────────────────
 
 export const AI_TASKS = {
-  /** Home value estimation with CMA + neighborhood data */
-  HOME_VALUE: "home-value",
   /** Prospecting pitch brief generation */
   PROSPECTING: "prospecting",
   /** Area magnet market report */
   AREA_MAGNET: "area-magnet",
   /** Social/email/XHS content generation */
   CONTENT: "content",
-  /** CMA comparative market analysis narrative (legacy) */
-  CMA: "cma",
-  /** CMA full pipeline — final synthesis report (heavy reasoning) */
-  CMA_REPORT: "cma-report",
-  /** CMA photo analysis — interior condition assessment (Vision) */
-  CMA_PHOTO: "cma-photo",
-  /** Smart match market brief / welcome text / share analysis */
-  SMART_MATCH: "smart-match",
   /** Vector embedding generation */
   EMBEDDING: "embedding",
 } as const;
@@ -76,13 +66,10 @@ export interface AITaskProfile {
  *
  * Recommended Azure deployments:
  *
- *   Heavy reasoning (valuation, prospecting, area magnet):
+ *   Heavy reasoning (prospecting, area magnet):
  *     → gpt-4o  (or gpt-4.1 when available)
  *
- *   Medium tasks (content gen, CMA narrative):
- *     → gpt-4o-mini
- *
- *   Light tasks (smart match snippets):
+ *   Medium tasks (content generation):
  *     → gpt-4o-mini
  *
  *   Embeddings:
@@ -90,12 +77,6 @@ export interface AITaskProfile {
  *     → text-embedding-3-large (3072 dim, higher quality)
  */
 const PROFILES: Record<AITask, AITaskProfile> = {
-  [AI_TASKS.HOME_VALUE]: {
-    model: process.env.AI_TASK_HOME_VALUE_MODEL || ENV.openaiModel,
-    maxTokens: 1024,
-    scope: "chat",
-    description: "Home value estimation with CMA + neighborhood data",
-  },
   [AI_TASKS.PROSPECTING]: {
     model: process.env.AI_TASK_PROSPECTING_MODEL || ENV.openaiModel,
     maxTokens: 4000,
@@ -113,30 +94,6 @@ const PROFILES: Record<AITask, AITaskProfile> = {
     maxTokens: 2000,
     scope: "chat",
     description: "Marketing content (social, email, XHS, newsletter)",
-  },
-  [AI_TASKS.CMA]: {
-    model: process.env.AI_TASK_CMA_MODEL || ENV.openaiModel,
-    maxTokens: 2000,
-    scope: "chat",
-    description: "CMA comparative analysis narrative (legacy)",
-  },
-  [AI_TASKS.CMA_REPORT]: {
-    model: process.env.AI_TASK_CMA_REPORT_MODEL || ENV.openaiModel,
-    maxTokens: 4000,
-    scope: "chat",
-    description: "CMA full pipeline final synthesis — bilingual report",
-  },
-  [AI_TASKS.CMA_PHOTO]: {
-    model: process.env.AI_TASK_CMA_PHOTO_MODEL || ENV.openaiModel,
-    maxTokens: 1000,
-    scope: "chat",
-    description: "CMA interior photo condition assessment (Vision)",
-  },
-  [AI_TASKS.SMART_MATCH]: {
-    model: process.env.AI_TASK_SMART_MATCH_MODEL || ENV.openaiModel,
-    maxTokens: 1000,
-    scope: "chat",
-    description: "Smart match brief / welcome text / share analysis",
   },
   [AI_TASKS.EMBEDDING]: {
     model: process.env.AI_TASK_EMBEDDING_MODEL || ENV.openaiEmbeddingModel,

@@ -351,7 +351,7 @@ async function invokeOpenAI(params: InvokeParams): Promise<InvokeResult> {
  *
  * Usage:
  *   // Task-aware (recommended):
- *   await invokeLLM({ task: "home-value", messages: [...] });
+ *   await invokeLLM({ task: "content", messages: [...] });
  *
  *   // Explicit model (override):
  *   await invokeLLM({ model: "gpt-4o", messages: [...] });

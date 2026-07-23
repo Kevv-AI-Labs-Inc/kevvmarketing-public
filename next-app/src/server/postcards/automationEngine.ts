@@ -51,8 +51,8 @@ export const DEFAULT_CLOSED_DEAL_MILESTONES = [
   { daysAfterClose: 30, label: "Home Maintenance Tips", channel: "postcard" as const },
   { daysAfterClose: 90, label: "Neighborhood Update", channel: "postcard" as const },
   { daysAfterClose: 180, label: "6-Month Market Report", channel: "letter" as const },
-  { daysAfterClose: 365, label: "Happy Anniversary + CMA", channel: "letter" as const },
-  { daysAfterClose: 730, label: "2-Year Market Update + CMA", channel: "letter" as const },
+  { daysAfterClose: 365, label: "Happy Anniversary + Market Review", channel: "letter" as const },
+  { daysAfterClose: 730, label: "2-Year Market Review", channel: "letter" as const },
 ];
 
 // ─── CRUD ─────────────────────────────────────────────────
