@@ -1,5 +1,5 @@
 import type { Db } from "@/lib/db";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { clientEvents, engagementScores } from "@/lib/db/schema";
 import { EVENT_TYPES } from "@/server/tracking/eventTracker";
@@ -11,6 +11,15 @@ import {
 import { createPgMemDb } from "../../helpers/pg-mem-db";
 
 describe("engagement scoring", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-30T00:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("computes weighted scores and upserts engagement rows", async () => {
     const harness = await createPgMemDb();
     const db = harness.db as unknown as Db;
