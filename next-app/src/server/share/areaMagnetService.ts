@@ -1,13 +1,9 @@
 import { invokeLLM, type InvokeResult } from "@/server/_core/llm";
 import { ENV } from "@/server/_core/env";
-import {
-  searchListings,
-  getNeighborhoodSummary,
-} from "@/server/clients/listingDataClient";
+import { searchListings } from "@/server/clients/listingDataClient";
 import type {
   ListingData,
   SearchFilters,
-  NeighborhoodSummary,
 } from "@/server/clients/types";
 
 // ─── Public Types ──────────────────────────────────────────────
@@ -65,8 +61,6 @@ type MarketSnapshot = {
     livingArea: number | null;
     pricePerSqft: number | null;
   }>;
-  // P0-1: BBO neighborhood enrichment
-  neighborhood: NeighborhoodSummary | null;
   // P0-3: magnetType-specific extras
   magnetTypeExtras: Record<string, unknown>;
   rawMetrics: {
@@ -246,7 +240,6 @@ function buildSearchFilters(input: GenerateAreaMagnetInput): SearchFilters {
  */
 async function fetchMagnetTypeExtras(
   input: GenerateAreaMagnetInput,
-  neighborhood: NeighborhoodSummary | null,
   activeListings: ListingData[],
   soldListings: ListingData[]
 ): Promise<Record<string, unknown>> {
@@ -254,9 +247,7 @@ async function fetchMagnetTypeExtras(
 
   switch (input.magnetType) {
     case "school_move_up": {
-      // Emphasize school data + family-size homes (3+ bed)
-      extras.schoolRating = neighborhood?.schoolRating ?? null;
-      extras.walkScore = neighborhood?.walkScore ?? null;
+      // Emphasize family-size homes (3+ bed).
       const familyHomes = activeListings.filter(
         (r) => (r.bedroomsTotal ?? 0) >= 3
       );
@@ -400,22 +391,16 @@ function filterByTimeWindow(
   });
 }
 
-// ─── Inventory Fetch + BBO Enrichment ──────────────────────────
+// ─── Inventory Fetch ────────────────────────────────────────────
 
 async function fetchInventory(input: GenerateAreaMagnetInput) {
   const filters = buildSearchFilters(input);
 
-  // Parallel fetch: active + sold + BBO neighborhood
-  const [activeResponse, closedResponse, soldResponse, neighborhoodResult] =
-    await Promise.allSettled([
-      searchListings({ ...filters, status: "Active" }),
-      searchListings({ ...filters, status: "Closed" }),
-      searchListings({ ...filters, status: "Sold" }),
-      // P0-1: fetch BBO neighborhood summary for ZIP-based queries
-      input.scopeType === "zip"
-        ? getNeighborhoodSummary(input.query.trim())
-        : Promise.resolve(null),
-    ]);
+  const [activeResponse, closedResponse, soldResponse] = await Promise.allSettled([
+    searchListings({ ...filters, status: "Active" }),
+    searchListings({ ...filters, status: "Closed" }),
+    searchListings({ ...filters, status: "Sold" }),
+  ]);
 
   const activeListings =
     activeResponse.status === "fulfilled"
@@ -430,16 +415,11 @@ async function fetchInventory(input: GenerateAreaMagnetInput) {
       ? (soldResponse.value.data ?? [])
       : [];
 
-  const neighborhood =
-    neighborhoodResult.status === "fulfilled"
-      ? neighborhoodResult.value
-      : null;
-
   // P0-1: Apply 6-month time window to sold data
   const mergedSold = closedListings.length > 0 ? closedListings : soldListings;
   const filteredSold = filterByTimeWindow(mergedSold, 6);
 
-  return { activeListings, soldListings: filteredSold, neighborhood };
+  return { activeListings, soldListings: filteredSold };
 }
 
 // ─── Build Enriched Snapshot ───────────────────────────────────
@@ -447,8 +427,7 @@ async function fetchInventory(input: GenerateAreaMagnetInput) {
 async function buildSnapshot(
   input: GenerateAreaMagnetInput,
   activeListings: ListingData[],
-  soldListings: ListingData[],
-  neighborhood: NeighborhoodSummary | null
+  soldListings: ListingData[]
 ): Promise<MarketSnapshot> {
   const activePrices = activeListings
     .map((row) => toNumber(row.listPrice))
@@ -481,7 +460,6 @@ async function buildSnapshot(
   // P0-3: fetch magnetType-specific extras
   const magnetTypeExtras = await fetchMagnetTypeExtras(
     input,
-    neighborhood,
     activeListings,
     soldListings
   );
@@ -510,8 +488,6 @@ async function buildSnapshot(
       activeListings.length > 0 ? activeListings : soldListings
     ),
     featuredListings,
-    // P0-1
-    neighborhood,
     // P0-3
     magnetTypeExtras,
     rawMetrics: {
@@ -562,13 +538,6 @@ function buildFallbackNarrative(
         : `Active listings average ~$${Math.round(snapshot.activePricePerSqft)}/sqft`
       : "";
 
-  // P0-1: Neighborhood enrichment
-  const neighborhoodStory = snapshot.neighborhood
-    ? isChinese
-      ? `该区域学区评分 ${snapshot.neighborhood.schoolRating ?? "N/A"}/10，步行指数 ${snapshot.neighborhood.walkScore ?? "N/A"}/100`
-      : `School rating ${snapshot.neighborhood.schoolRating ?? "N/A"}/10, Walk Score ${snapshot.neighborhood.walkScore ?? "N/A"}/100`
-    : "";
-
   if (isChinese) {
     const priceStory = snapshot.activeMedianPrice
       ? `${sl} 当前在售中位价约 ${formatCurrency(snapshot.activeMedianPrice)}`
@@ -593,7 +562,7 @@ function buildFallbackNarrative(
     return {
       title: defaultTitle(input, sl, locale),
       heroHook: `${priceStory}，${demandStory}。${sqftStory ? sqftStory + "。" : ""}对${audienceLabel}来说，这是一个值得尽快判断窗口期的位置。`,
-      summary: `${sl} 当前样本显示 ${snapshot.activeCount} 套活跃房源、${snapshot.soldCount} 套近期成交（6个月内），${domStory}。${neighborhoodStory ? neighborhoodStory + "。" : ""}这份报告把价格、节奏和可操作策略压缩成一页。`,
+      summary: `${sl} 当前样本显示 ${snapshot.activeCount} 套活跃房源、${snapshot.soldCount} 套近期成交（6个月内），${domStory}。这份报告把价格、节奏和可操作策略压缩成一页。`,
       insightBullets: [
         `${sl} 当前可见库存 ${snapshot.activeCount} 套，适合拿来判断供应压力。`,
         snapshot.activeMedianPrice
@@ -601,7 +570,7 @@ function buildFallbackNarrative(
           : "当前挂牌中位价仍在整理中。",
         `${domStory}，最活跃的物业类型以 ${topTypes} 为主。`,
         `${demandStory}，很适合作为首次触达客户的市场干货。`,
-        ...(neighborhoodStory ? [neighborhoodStory + "。"] : []),
+        `近 6 个月可见成交样本 ${snapshot.soldCount} 套，可用于校准当前市场判断。`,
       ],
       reportSections: [
         {
@@ -610,7 +579,7 @@ function buildFallbackNarrative(
         },
         {
           title: "供需结构",
-          body: `当前最常见的在售类型集中在 ${topTypes}。${neighborhoodStory ? neighborhoodStory + "。" : ""}无论你想触达卖家还是买家，这都足够支撑一个明确的内容切口。`,
+          body: `当前最常见的在售类型集中在 ${topTypes}。无论你想触达卖家还是买家，这都足够支撑一个明确的内容切口。`,
         },
         {
           title: "行动建议",
@@ -664,7 +633,7 @@ function buildFallbackNarrative(
   return {
     title: defaultTitle(input, sl, locale),
     heroHook: `${priceStory}, and ${demandStory}. ${sqftStory ? sqftStory + ". " : ""}For ${audienceLabel}, this is a window worth evaluating now.`,
-    summary: `${sl} currently shows ${snapshot.activeCount} active listings and ${snapshot.soldCount} recent sales (past 6 months), ${domStory}. ${neighborhoodStory ? neighborhoodStory + ". " : ""}This report compresses pricing, pace, and actionable strategy into one shareable page.`,
+    summary: `${sl} currently shows ${snapshot.activeCount} active listings and ${snapshot.soldCount} recent sales (past 6 months), ${domStory}. This report compresses pricing, pace, and actionable strategy into one shareable page.`,
     insightBullets: [
       `${sl} has ${snapshot.activeCount} visible listings — enough to gauge supply pressure.`,
       snapshot.activeMedianPrice
@@ -672,7 +641,7 @@ function buildFallbackNarrative(
         : "Median asking price is still being compiled.",
       `${domStory.charAt(0).toUpperCase() + domStory.slice(1)}, with the most active property types being ${topTypes}.`,
       `${demandStory.charAt(0).toUpperCase() + demandStory.slice(1)} — solid material for a first-touch market conversation.`,
-      ...(neighborhoodStory ? [neighborhoodStory + "."] : []),
+      `${snapshot.soldCount} visible sales from the past six months help calibrate the current market read.`,
     ],
     reportSections: [
       {
@@ -681,7 +650,7 @@ function buildFallbackNarrative(
       },
       {
         title: "Supply & Demand",
-        body: `The most common active property types are ${topTypes}. ${neighborhoodStory ? neighborhoodStory + ". " : ""}Whether you're targeting sellers or buyers, this data supports a clear content angle.`,
+        body: `The most common active property types are ${topTypes}. Whether you're targeting sellers or buyers, this data supports a clear content angle.`,
       },
       {
         title: "Recommended Action",
@@ -788,7 +757,7 @@ async function generateNarrative(
     spring_market:
       "Focus on new listing pace, absorption rate, months of supply, and seasonal momentum. Emphasize timing windows.",
     school_move_up:
-      "Emphasize school ratings, family-friendly homes (3+ bedrooms), and move-up timing. Reference school data if available.",
+      "Emphasize family-friendly homes (3+ bedrooms) and move-up timing without inventing school data.",
     off_market_brief:
       "Focus on price reductions, high DOM listings, sold-to-list ratios, and seller fatigue signals. Position the agent as having insider market read.",
     renovation_roi:
@@ -802,7 +771,6 @@ async function generateNarrative(
     "Write concise, commercial, agent-ready copy. Avoid generic fluff.",
     magnetTypePromptMap[input.magnetType],
     "Include price-per-sqft insights when data is available.",
-    "If neighborhood data (school ratings, walk scores) is provided, weave it naturally into insights.",
     "Return JSON only.",
   ].join(" ");
 
@@ -817,20 +785,7 @@ async function generateNarrative(
         ctaGoal: "capture lead for follow-up",
       },
       input,
-      snapshot: {
-        ...snapshot,
-        // Include enrichment data in prompt
-        neighborhood: snapshot.neighborhood
-          ? {
-              schoolRating: snapshot.neighborhood.schoolRating,
-              walkScore: snapshot.neighborhood.walkScore,
-              medianHomePrice: snapshot.neighborhood.medianHomePrice,
-              profileText: snapshot.neighborhood.profileText,
-              highlights: snapshot.neighborhood.highlights,
-            }
-          : null,
-        magnetTypeExtras: snapshot.magnetTypeExtras,
-      },
+      snapshot,
       outputSchema: {
         title: "string",
         heroHook: "string",
@@ -927,8 +882,7 @@ export async function generateAreaMagnetReport(
       input.captureFields.length > 0 ? input.captureFields : ["email"],
   };
 
-  const { activeListings, soldListings, neighborhood } =
-    await fetchInventory(normalizedInput);
+  const { activeListings, soldListings } = await fetchInventory(normalizedInput);
   if (activeListings.length === 0 && soldListings.length === 0) {
     throw new Error(
       "No listing data was available for this area. Try a nearby ZIP, neighborhood, or building."
@@ -938,8 +892,7 @@ export async function generateAreaMagnetReport(
   const snapshot = await buildSnapshot(
     normalizedInput,
     activeListings,
-    soldListings,
-    neighborhood
+    soldListings
   );
   const generation = await generateNarrative(normalizedInput, snapshot);
 
@@ -996,25 +949,6 @@ export async function generateAreaMagnetReport(
     },
   ];
 
-  // P0-1: neighborhood-enriched metrics
-  if (snapshot.neighborhood) {
-    const n = snapshot.neighborhood;
-    if (n.schoolRating !== null) {
-      metrics.push({
-        label: "School rating",
-        value: `${n.schoolRating}/10`,
-        detail: "Area school quality index",
-      });
-    }
-    if (n.walkScore !== null) {
-      metrics.push({
-        label: "Walk Score",
-        value: `${n.walkScore}/100`,
-        detail: "Walkability index",
-      });
-    }
-  }
-
   const title =
     generation.narrative.title ||
     defaultTitle(normalizedInput, snapshot.scopeLabel, detectLocale(normalizedInput));
@@ -1025,7 +959,6 @@ export async function generateAreaMagnetReport(
 
   // Determine data source label
   const dataSourceParts = ["bbo-search"];
-  if (snapshot.neighborhood) dataSourceParts.push("neighborhood");
   if (Object.keys(snapshot.magnetTypeExtras).length > 0)
     dataSourceParts.push(normalizedInput.magnetType);
 
@@ -1069,15 +1002,6 @@ export async function generateAreaMagnetReport(
         priceRangeDistribution: snapshot.priceRangeDistribution,
         propertyTypeMix: snapshot.propertyTypeMix,
       },
-      // P0-1: expose neighborhood data to frontend for charts
-      neighborhood: snapshot.neighborhood
-        ? {
-            schoolRating: snapshot.neighborhood.schoolRating,
-            walkScore: snapshot.neighborhood.walkScore,
-            medianHomePrice: snapshot.neighborhood.medianHomePrice,
-            profileText: snapshot.neighborhood.profileText,
-          }
-        : null,
       // P0-3: expose magnetType extras to frontend
       magnetTypeExtras: snapshot.magnetTypeExtras,
       featuredListings: snapshot.featuredListings,

@@ -4,11 +4,9 @@
  * Flow:
  *   Stage 1 — Subject Resolution    (BBO getListing / resolveByAddress / RentCast)
  *   Stage 2a — Photo Analysis        (Azure GPT Vision)       ┐
- *   Stage 2b — Vector Comp Match     (BBO getCmaByListing)    ├── parallel
- *   Stage 2c — RentCast AVM + Comps  (RentCast /v1/avm/value) │
- *   Stage 3  — Tavily Web Search     (3 parallel queries)     │
- *   Stage 4  — Neighborhood Context  (BBO getNeighborhoodSummary) ┘
- *   Stage 5 — Final LLM Synthesis    (Azure GPT → structured JSON)
+ *   Stage 2b — RentCast AVM + Comps  (RentCast /v1/avm/value) ├── parallel
+ *   Stage 3  — Tavily Web Search     (3 parallel queries)     ┘
+ *   Stage 4 — Final LLM Synthesis    (Azure GPT → structured JSON)
  *
  * Each stage degrades gracefully so the pipeline never crashes —
  * it just produces a report with fewer data sources.
@@ -24,16 +22,10 @@
  */
 
 import { invokeLLM } from "../_core/llm";
-import {
-  getListing,
-  getCmaByListing,
-  getNeighborhoodSummary,
-  searchListings,
-} from "../clients/listingDataClient";
+import { getListing } from "../clients/listingDataClient";
 import type {
   ListingData,
   CmaComparable,
-  NeighborhoodSummary,
 } from "../clients/types";
 import { ListingDataServiceError } from "../clients/types";
 import {
@@ -43,7 +35,6 @@ import {
 } from "../clients/rentCastClient";
 import type { RentCastAvmResponse, RentCastComparable } from "../clients/rentCastClient";
 import { RentCastError } from "../clients/rentCastClient";
-import { ENV } from "../_core/env";
 import { searchMarketIntelligence } from "./tavilyClient";
 import type { MarketIntelligence } from "./tavilyClient";
 import { analyzePropertyPhotos } from "./photoAnalyzer";
@@ -132,13 +123,6 @@ export interface CMAReportResult {
   };
   comparables: CMAComparableEntry[];
   marketIntelligence: MarketIntelligence;
-  neighborhood?: {
-    schoolRating?: number;
-    walkScore?: number;
-    crimeIndex?: number;
-    medianHomePrice?: string;
-    profileText?: string;
-  };
   rentCastValuation?: RentCastValuation;
   priceRecommendation: {
     low: string;
@@ -212,27 +196,7 @@ async function resolveSubject(
   return { listing: null, listingKey: null, rentCastProperty: null };
 }
 
-// ─── Stage 2b: Vector Comp Match ──────────────────────────────
-
-async function fetchVectorComps(
-  listingKey: string | null,
-  limit: number,
-): Promise<{ comps: CmaComparable[]; source: "vector" | "sql_fallback" }> {
-  if (!listingKey) return { comps: [], source: "sql_fallback" };
-
-  try {
-    const res = await getCmaByListing(listingKey, limit);
-    return {
-      comps: res.data.comparables ?? [],
-      source: res.data.source,
-    };
-  } catch (err) {
-    console.warn("[cmaPipeline] getCmaByListing failed:", err);
-    return { comps: [], source: "sql_fallback" };
-  }
-}
-
-// ─── Stage 2c: RentCast AVM + Comps ──────────────────────────
+// ─── Stage 2b: RentCast AVM + Comps ──────────────────────────
 
 async function fetchRentCastData(
   address: string,
@@ -271,19 +235,6 @@ async function fetchRentCastData(
       console.warn("[cmaPipeline] RentCast AVM failed:", err);
     }
     return { avm: null, comps: [] };
-  }
-}
-
-// ─── Stage 4: Neighborhood Context ──────────────────────────
-
-async function fetchNeighborhood(
-  zipCode: string | null | undefined,
-): Promise<NeighborhoodSummary | null> {
-  if (!zipCode) return null;
-  try {
-    return await getNeighborhoodSummary(zipCode);
-  } catch {
-    return null;
   }
 }
 
@@ -379,33 +330,14 @@ function calculateCompAdjustments(
 // ─── Comp Deduplication & Merging ─────────────────────────────
 
 function deduplicateComps(
-  bboComps: CmaComparable[],
-  rentCastComps: CmaComparable[],
+  comps: CmaComparable[],
 ): CmaComparable[] {
   const seen = new Map<string, CmaComparable>();
 
-  // BBO comps take priority (they have vector similarity scores)
-  for (const comp of bboComps) {
-    const key = normalizeAddress(comp.address ?? "");
-    if (key && !seen.has(key)) {
-      seen.set(key, { ...comp, source: comp.source ?? "bbo_vector" });
-    }
-  }
-
-  // RentCast comps fill in the gaps
-  for (const comp of rentCastComps) {
+  for (const comp of comps) {
     const key = normalizeAddress(comp.address ?? "");
     if (key && !seen.has(key)) {
       seen.set(key, comp);
-    } else if (key && seen.has(key)) {
-      // Merge yearBuilt/soldDate from RentCast if BBO comp lacks them
-      const existing = seen.get(key)!;
-      if (!existing.yearBuilt && comp.yearBuilt) {
-        existing.yearBuilt = comp.yearBuilt;
-      }
-      if (!existing.soldDate && comp.soldDate) {
-        existing.soldDate = comp.soldDate;
-      }
     }
   }
 
@@ -425,12 +357,11 @@ function buildSynthesisPrompt(params: {
   subject: CMAReportResult["subject"];
   comps: CMAComparableEntry[];
   marketIntel: MarketIntelligence;
-  neighborhood: NeighborhoodSummary | null;
   photoAnalysis: PhotoAnalysisResult | null;
   rentCastAvm: RentCastAvmResponse | null;
   locale: "en" | "zh";
 }): string {
-  const { subject, comps, marketIntel, neighborhood, photoAnalysis, rentCastAvm } = params;
+  const { subject, comps, marketIntel, photoAnalysis, rentCastAvm } = params;
 
   const subjectBlock = `SUBJECT PROPERTY:
   Address   : ${subject.address}
@@ -478,15 +409,6 @@ function buildSynthesisPrompt(params: {
   Avg DOM         : ${marketIntel.avgDaysOnMarket ?? "N/A"}
   Trends          : ${marketIntel.recentTrends.slice(0, 500)}`;
 
-  const neighborhoodBlock = neighborhood
-    ? `NEIGHBORHOOD DATA (ZIP ${neighborhood.zipCode}):
-  School Rating   : ${neighborhood.schoolRating ?? "N/A"}/10
-  Walk Score      : ${neighborhood.walkScore ?? "N/A"}/100
-  Crime Index     : ${neighborhood.crimeIndex ?? "N/A"} (lower = safer)
-  Median Price    : ${neighborhood.medianHomePrice ?? "N/A"}
-  Profile         : ${neighborhood.profileText?.slice(0, 200) ?? "N/A"}`
-    : "NEIGHBORHOOD DATA: Not available";
-
   const photoBlock = photoAnalysis
     ? `INTERIOR PHOTO ANALYSIS:
   Condition Score : ${photoAnalysis.conditionScore}/10
@@ -514,7 +436,6 @@ Weight the data sources as follows:
 2. RentCast AVM — independent valuation anchor for calibration
 3. Market intelligence — trend context
 4. Photo analysis — condition premium/discount
-5. Neighborhood data — location context
 
 ${subjectBlock}
 
@@ -525,8 +446,6 @@ ${guidanceBlock}
 ${rentCastBlock}
 
 ${marketBlock}
-
-${neighborhoodBlock}
 
 ${photoBlock}
 
@@ -550,7 +469,6 @@ async function synthesizeReport(params: {
   subject: CMAReportResult["subject"];
   comps: CMAComparableEntry[];
   marketIntel: MarketIntelligence;
-  neighborhood: NeighborhoodSummary | null;
   photoAnalysis: PhotoAnalysisResult | null;
   rentCastAvm: RentCastAvmResponse | null;
   locale: "en" | "zh";
@@ -669,7 +587,7 @@ export async function runCMAPipeline(
   const dataSources: string[] = [];
 
   // ── Stage 1: Subject Resolution (~300ms) ──────────────────
-  const { listing, listingKey, rentCastProperty } = await resolveSubject(input);
+  const { listing, rentCastProperty } = await resolveSubject(input);
   if (listing) dataSources.push("bbo_listing");
   if (rentCastProperty) dataSources.push("rentcast_property");
 
@@ -693,21 +611,13 @@ export async function runCMAPipeline(
     .filter(Boolean)
     .join(", ");
 
-  // ── Stages 2a + 2b + 2c + 3 + 4: Parallel (~1.5-2s) ─────
+  // ── Stages 2a + 2b + 3: Parallel (~1.5-2s) ───────────────
   const compLimit = input.compLimit ?? 8;
   const photoUrls = input.photoUrls ?? [];
   const enablePhotos = input.enablePhotoAnalysis !== false && photoUrls.length > 0;
   const enableWeb = input.enableWebSearch !== false;
   const enableRentCast = input.enableRentCast !== false;
-  const enableBboNeighborhood = !!subject.zipCode;
-
-  const [
-    photoResult,
-    compResult,
-    rentCastResult,
-    webResult,
-    neighborhoodResult,
-  ] = await Promise.allSettled([
+  const [photoResult, rentCastResult, webResult] = await Promise.allSettled([
     // Stage 2a: Photo analysis
     enablePhotos
       ? analyzePropertyPhotos({
@@ -717,10 +627,7 @@ export async function runCMAPipeline(
         })
       : Promise.resolve(null),
 
-    // Stage 2b: BBO vector comp match
-    fetchVectorComps(listingKey, compLimit),
-
-    // Stage 2c: RentCast AVM + comps
+    // Stage 2b: RentCast AVM + comps
     enableRentCast
       ? fetchRentCastData(fullAddress, compLimit)
       : Promise.resolve({ avm: null, comps: [] }),
@@ -739,11 +646,6 @@ export async function runCMAPipeline(
           recentTrends: "Web search disabled.",
           citations: [],
         }),
-
-    // Stage 4: BBO neighborhood
-    enableBboNeighborhood
-      ? fetchNeighborhood(subject.zipCode)
-      : Promise.resolve(null),
   ]);
 
   // Unwrap results
@@ -754,10 +656,6 @@ export async function runCMAPipeline(
     subject.photoAnalysis = photoAnalysis;
     subject.imageUrls = photoUrls;
   }
-
-  const rawBboComps: CmaComparable[] =
-    compResult.status === "fulfilled" ? compResult.value.comps : [];
-  if (rawBboComps.length > 0) dataSources.push("bbo_vector");
 
   const rentCastData = rentCastResult.status === "fulfilled"
     ? rentCastResult.value
@@ -771,14 +669,7 @@ export async function runCMAPipeline(
       : { marketType: "balanced", recentTrends: "Web search failed.", citations: [] };
   if (marketIntel.citations.length > 0) dataSources.push("tavily_web_search");
 
-  const neighborhood: NeighborhoodSummary | null =
-    neighborhoodResult.status === "fulfilled"
-      ? neighborhoodResult.value
-      : null;
-  if (neighborhood) dataSources.push("bbo_neighborhood");
-
-  // ── Merge & Deduplicate Comps ────────────────────────────
-  const allComps = deduplicateComps(rawBboComps, rentCastData.comps);
+  const allComps = deduplicateComps(rentCastData.comps);
 
   // ── Build Comparables with market-calibrated adjustments ──
   const conditionScore = photoAnalysis?.conditionScore;
@@ -829,7 +720,6 @@ export async function runCMAPipeline(
     subject,
     comps: comparables,
     marketIntel,
-    neighborhood,
     photoAnalysis,
     rentCastAvm: rentCastData.avm,
     locale,
@@ -842,15 +732,6 @@ export async function runCMAPipeline(
     subject,
     comparables,
     marketIntelligence: marketIntel,
-    neighborhood: neighborhood
-      ? {
-          schoolRating: neighborhood.schoolRating ?? undefined,
-          walkScore: neighborhood.walkScore ?? undefined,
-          crimeIndex: neighborhood.crimeIndex ?? undefined,
-          medianHomePrice: neighborhood.medianHomePrice ?? undefined,
-          profileText: neighborhood.profileText ?? undefined,
-        }
-      : undefined,
     rentCastValuation,
     priceRecommendation,
     executiveSummary,

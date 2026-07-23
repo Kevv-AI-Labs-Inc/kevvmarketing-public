@@ -22,13 +22,6 @@ import type {
   AddressResolveResponse,
   AddressCandidatesResponse,
   AddressLookupInput,
-  // CMA
-  CmaByListingResponse,
-  // Neighborhood
-  NeighborhoodSummary,
-  // Vector (legacy)
-  VectorSearchResponse,
-  VectorSearchParams,
   // Health
   SyncStatusResponse,
   SearchFilters,
@@ -66,18 +59,6 @@ type RawListingMediaResponse = {
   media?: import("./types").MediaItem[] | null;
   imageUrls?: string[] | null;
   thumbnailUrl?: string | null;
-};
-
-type RawVectorSearchResponse = {
-  data?: Array<{
-    listing?: RawListingRecord | null;
-    score?: number | null;
-    media?: import("./types").MediaItem[] | null;
-  }> | null;
-  meta?: {
-    total?: number;
-    embeddingModel?: string;
-  } | null;
 };
 
 function asString(value: unknown) {
@@ -414,108 +395,6 @@ export async function getSyncStatus(): Promise<SyncStatusResponse> {
   return res.data;
 }
 
-// ─── Internal Endpoints (/api/internal) ────────────────────────
-
-/**
- * POST /api/internal/cma/by-listing
- * Return CMA comparables for a subject listing using BBO's
- * vector search (or SQL fallback).
- *
- * BBO handles embedding generation internally — no need to call
- * generateEmbedding() on our side.
- *
- * limit: 1-20, default 10
- */
-export async function getCmaByListing(
-  listingKey: string,
-  limit = 5,
-): Promise<CmaByListingResponse> {
-  const res = await getClient().post<CmaByListingResponse>(
-    "/api/internal/cma/by-listing",
-    { listingKey, limit },
-  );
-  return res.data;
-}
-
-/**
- * GET /api/internal/listings/:listingKey/similar
- * Return similar active/recent listings for a subject.
- * (Lighter-weight than CMA — no closed-sales filter.)
- *
- * limit: 1-20, default 8
- */
-export async function getSimilarListings(
-  listingKey: string,
-  limit = 8,
-): Promise<{
-  subject: import("./types").CmaSubject;
-  items: import("./types").CmaComparable[];
-  meta: { total: number; source: "vector" | "sql_fallback" };
-}> {
-  const res = await getClient().get(
-    `/api/internal/listings/${encodeURIComponent(listingKey)}/similar`,
-    { params: { limit } },
-  );
-  return res.data;
-}
-
-/**
- * GET /api/internal/neighborhoods/:zipCode/summary
- * Return neighborhood profile for a ZIP code.
- * Includes schoolRating, walkScore, medianHomePrice, profileText, etc.
- *
- * Returns null if BBO has no data for that ZIP.
- */
-export async function getNeighborhoodSummary(
-  zipCode: string,
-): Promise<NeighborhoodSummary | null> {
-  try {
-    const res = await getClient().get<NeighborhoodSummary>(
-      `/api/internal/neighborhoods/${encodeURIComponent(zipCode)}/summary`,
-    );
-    return res.data;
-  } catch (err) {
-    // 404 = no neighborhood data for this ZIP — not an error, just return null
-    if (err instanceof ListingDataServiceError && err.statusCode === 404) {
-      return null;
-    }
-    throw err;
-  }
-}
-
-// ─── Legacy: direct vector search (kept for other use-cases) ───
-
-/**
- * POST /api/v1/vector/search
- * Low-level vector similarity search using a pre-computed embedding.
- * For home-value estimation prefer getCmaByListing() which handles
- * embedding generation and filtering internally.
- */
-export async function vectorSearch(
-  params: VectorSearchParams,
-): Promise<VectorSearchResponse> {
-  const res = await getClient().post<RawVectorSearchResponse>(
-    "/api/v1/vector/search",
-    params,
-  );
-  return {
-    data: Array.isArray(res.data.data)
-      ? res.data.data.map((item) => ({
-          listing: normalizeListingData(item.listing ?? {}),
-          score:
-            typeof item.score === "number" && Number.isFinite(item.score)
-              ? item.score
-              : 0,
-          media: Array.isArray(item.media) ? item.media : [],
-        }))
-      : [],
-    meta: {
-      total: res.data.meta?.total ?? 0,
-      embeddingModel: res.data.meta?.embeddingModel ?? "",
-    },
-  };
-}
-
 // ─── Namespace export ──────────────────────────────────────────
 
 export const listingDataClient = {
@@ -529,10 +408,4 @@ export const listingDataClient = {
   getListingsBatch,
   getListingMedia,
   getSyncStatus,
-  // Internal
-  getCmaByListing,
-  getSimilarListings,
-  getNeighborhoodSummary,
-  // Legacy
-  vectorSearch,
 };

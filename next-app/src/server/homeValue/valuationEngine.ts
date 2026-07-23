@@ -11,29 +11,20 @@
  *    1b. On 409 (ambiguous) → pick highest-confidence candidate automatically
  *    1c. On 404 → POST /api/v1/listings/address-candidates → fuzzy trigram match
  *
- *  Stage 2 — CMA + Neighborhood (parallel, only when Stage 1 succeeds)
- *    POST /api/internal/cma/by-listing           →  real closed comps
- *    GET  /api/internal/neighborhoods/:zip/summary →  school / walk / median price
+ *  Stage 2 — Fetch the subject listing image when Stage 1 succeeds
  *
- *  Stage 3 — AI synthesis (when comps are available)
- *    invokeLLM() with subject + comps + neighborhood context
- *    → structured ValuationResult JSON
- *
- *  Fallback — heuristic estimate (city-bias + address hash seed)
- *    Used whenever BBO is unreachable or returns no useful data.
+ *  Stage 3 — Heuristic estimate (city-bias + address hash seed)
  *
  * Cost per call (with BBO configured):
  *   BBO calls: free (internal)
- *   AI tokens: ~$0.003-0.005 (GPT-4o / Gemini)
- *   Embedding: $0 (BBO generates embeddings for CMA internally)
+ *   AI tokens: $0
  *
  * Latency p50 with BBO:
- *   Stage 1 (~300 ms) → Stage 2 parallel (~400 ms) → Stage 3 (~1.2 s)
+ *   Stage 1 (~300 ms) → Stage 2 image lookup (~200 ms) → Stage 3 local estimate
  *   Total ≈ 1.9-2.2 s  (user sees "Generating..." animation)
  */
 
 import { ENV } from "@/server/_core/env";
-import { invokeLLM } from "@/server/_core/llm";
 import {
   resolveByAddress,
   getAddressCandidates,
@@ -41,19 +32,11 @@ import {
   getListingByMls,
   getListing,
   getListingMedia,
-  getListingsBatch,
-  getCmaByListing,
-  getNeighborhoodSummary,
 } from "@/server/clients/listingDataClient";
 import { geocodeWithGoogle } from "@/server/mapProviders/googleProvider";
 import { buildDemoValuationResult } from "@/server/demo/factories";
 import type { ValuationResult } from "@/lib/db/schema";
-import type {
-  ListingData,
-  CmaComparable,
-  NeighborhoodSummary,
-  AddressCandidate,
-} from "@/server/clients/types";
+import type { ListingData, AddressCandidate } from "@/server/clients/types";
 import { ListingDataServiceError } from "@/server/clients/types";
 
 // ─── Types ─────────────────────────────────────────────────────
@@ -325,40 +308,7 @@ async function tryResolveByGeocode(
   }
 }
 
-// ─── Stage 2a: CMA Comparables ────────────────────────────────
-
-/**
- * Fetch closed comps from BBO's CMA engine.
- * BBO handles vector embedding + pgvector similarity search internally.
- * Falls back to SQL-based comp selection if vectors aren't available.
- */
-async function tryGetCmaComps(listingKey: string): Promise<CmaComparable[]> {
-  try {
-    const res = await getCmaByListing(listingKey, 5);
-    return res.data.comparables ?? [];
-  } catch {
-    return [];
-  }
-}
-
-// ─── Stage 2b: Neighborhood Data ──────────────────────────────
-
-/**
- * Fetch neighborhood profile from BBO by ZIP code.
- * Provides schoolRating, walkScore, medianHomePrice, profileText.
- */
-async function tryGetNeighborhood(
-  postalCode: string | null | undefined,
-): Promise<NeighborhoodSummary | null> {
-  if (!postalCode) return null;
-  try {
-    return await getNeighborhoodSummary(postalCode);
-  } catch {
-    return null;
-  }
-}
-
-// ─── Stage 2c: Property Images ──────────────────────────────────
+// ─── Stage 2: Property Image ────────────────────────────────────
 
 /**
  * Fetch hero image URL for the subject property.
@@ -378,217 +328,7 @@ async function tryGetSubjectImage(listingKey: string): Promise<string | null> {
   }
 }
 
-/**
- * Fetch thumbnail images for CMA comparable properties.
- * Uses batch lookup to minimize API calls.
- * Returns a map of listingKey → first image URL.
- */
-async function tryGetCompImages(
-  compKeys: string[],
-): Promise<Map<string, string>> {
-  const imageMap = new Map<string, string>();
-  if (compKeys.length === 0) return imageMap;
-
-  try {
-    const batch = await getListingsBatch(compKeys);
-    for (const [key, listing] of batch) {
-      const firstImg = listing.imageUrls?.[0] ?? null;
-      if (firstImg) imageMap.set(key, firstImg);
-    }
-  } catch {
-    // Non-critical — comps will just lack images
-  }
-  return imageMap;
-}
-
-// ─── Stage 3: AI Synthesis ─────────────────────────────────────
-
-function buildValuationPrompt({
-  address,
-  listing,
-  comps,
-  neighborhood,
-  locale,
-}: {
-  address: string;
-  listing: ListingData | null;
-  comps: CmaComparable[];
-  neighborhood: NeighborhoodSummary | null;
-  locale: "en" | "zh";
-}): string {
-  // Subject property block
-  const subjectBlock = listing
-    ? `SUBJECT PROPERTY (from MLS):
-  Address   : ${listing.unparsedAddress}
-  Status    : ${listing.standardStatus}
-  List Price: ${listing.listPrice}
-  Beds/Baths: ${listing.bedroomsTotal ?? "?"} bd / ${listing.bathroomsTotalInteger ?? "?"} ba
-  Sqft      : ${listing.livingArea ?? "unknown"}
-  Year Built: ${listing.yearBuilt ?? "unknown"}
-  Type      : ${listing.propertyType}`
-    : `SUBJECT PROPERTY: ${address}
-  (Not found in active MLS — use comps only to derive estimate)`;
-
-  // Comparable sales block
-  const compsBlock = comps
-    .map((c, i) => {
-      const score = c.score !== null ? ` (similarity ${c.score.toFixed(3)})` : "";
-      return `Comp ${i + 1}${score}:
-  Address   : ${c.address ?? "unknown"}
-  City      : ${c.city ?? "unknown"}
-  Sale Price: ${c.price ?? "unknown"}
-  Status    : ${c.status ?? "unknown"}
-  Beds/Baths: ${c.bedrooms ?? "?"} bd / ${c.bathrooms ?? "?"} ba
-  Sqft      : ${c.livingArea ?? "unknown"}`;
-    })
-    .join("\n\n");
-
-  // Neighborhood block (rich context for AI)
-  const neighborhoodBlock = neighborhood
-    ? `NEIGHBORHOOD DATA (ZIP ${neighborhood.zipCode}):
-  Name            : ${neighborhood.name ?? neighborhood.city ?? "unknown"}
-  School Rating   : ${neighborhood.schoolRating ?? "N/A"}/10
-  Walk Score      : ${neighborhood.walkScore ?? "N/A"}/100
-  Crime Index     : ${neighborhood.crimeIndex ?? "N/A"} (lower = safer)
-  Median Home Price: ${neighborhood.medianHomePrice ?? "N/A"}
-  Profile         : ${neighborhood.profileText ?? "N/A"}`
-    : `NEIGHBORHOOD DATA: Not available for this area`;
-
-  const langNote =
-    locale === "zh"
-      ? 'Write "marketSummary" and "neighborhoodTrend" in Simplified Chinese.'
-      : 'Write "marketSummary" and "neighborhoodTrend" in English.';
-
-  return `You are a licensed real estate appraiser. Analyze the subject property, comparable sales, and neighborhood data to produce a market value estimate.
-
-${subjectBlock}
-
-COMPARABLE CLOSED SALES (from BBO vector/CMA engine):
-${compsBlock}
-
-${neighborhoodBlock}
-
-${langNote}
-
-Return ONLY valid JSON — no markdown fences, no extra keys, no explanation:
-{
-  "estimatedValue": <integer, best point estimate in USD>,
-  "estimatedValueLow": <integer, conservative low end ~4-5% below center>,
-  "estimatedValueHigh": <integer, optimistic high end ~4-5% above center>,
-  "appreciationRate": <float, estimated YoY appreciation %, e.g. 4.2>,
-  "propertyDetails": {
-    "beds": <integer>,
-    "baths": <integer>,
-    "sqft": <integer>,
-    "yearBuilt": <integer>,
-    "lotSize": "<string, e.g. '5200 sqft'>",
-    "propertyType": "<string>"
-  },
-  "comparableSales": [
-    {
-      "address": "<string>",
-      "price": <integer sale price>,
-      "date": "<YYYY-MM-DD or approximate>",
-      "beds": <integer>,
-      "baths": <integer>,
-      "sqft": <integer>
-    }
-  ],
-  "schoolRating": <integer 1-10, use neighborhood data if available>,
-  "neighborhoodTrend": "<one sentence>",
-  "marketSummary": "<2-3 sentences about this property's value and current market context>"
-}`;
-}
-
-async function synthesizeWithAI({
-  address,
-  listing,
-  comps,
-  neighborhood,
-  locale,
-  seed,
-}: {
-  address: string;
-  listing: ListingData | null;
-  comps: CmaComparable[];
-  neighborhood: NeighborhoodSummary | null;
-  locale: "en" | "zh";
-  seed: number;
-}): Promise<ValuationResult | null> {
-  try {
-    const prompt = buildValuationPrompt({ address, listing, comps, neighborhood, locale });
-
-    const response = await invokeLLM({
-      task: "home-value",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a professional real estate appraiser. Return only valid JSON matching the schema provided. No markdown. No explanation outside the JSON.",
-        },
-        { role: "user", content: prompt },
-      ],
-      responseFormat: { type: "json_object" },
-    });
-
-    const raw =
-      typeof response.choices[0].message.content === "string"
-        ? response.choices[0].message.content
-        : JSON.stringify(response.choices[0].message.content);
-
-    const parsed = JSON.parse(raw) as Partial<ValuationResult>;
-    if (!parsed.estimatedValue || typeof parsed.estimatedValue !== "number") return null;
-
-    const demo = buildDemoValuationResult();
-    const ev = parsed.estimatedValue;
-
-    // Use neighborhood schoolRating if AI didn't provide one
-    const schoolRating =
-      parsed.schoolRating ??
-      neighborhood?.schoolRating ??
-      7 + (seed % 3);
-
-    return {
-      ...demo,
-      ...parsed,
-      estimatedValue: roundToNearestThousand(ev),
-      estimatedValueLow: roundToNearestThousand(
-        parsed.estimatedValueLow ?? Math.round(ev * 0.955),
-      ),
-      estimatedValueHigh: roundToNearestThousand(
-        parsed.estimatedValueHigh ?? Math.round(ev * 1.045),
-      ),
-      appreciationRate: parsed.appreciationRate ?? 3.5,
-      propertyDetails: {
-        ...demo.propertyDetails,
-        ...(parsed.propertyDetails ?? {}),
-        beds: parsed.propertyDetails?.beds ?? listing?.bedroomsTotal ?? 3 + (seed % 3),
-        baths:
-          parsed.propertyDetails?.baths ?? listing?.bathroomsTotalInteger ?? 2 + (seed % 2),
-        sqft:
-          parsed.propertyDetails?.sqft ??
-          (Number(String(listing?.livingArea ?? "").replace(/[^\d.]/g, "")) ||
-            1600 + (seed % 1600)),
-        yearBuilt:
-          parsed.propertyDetails?.yearBuilt ??
-          listing?.yearBuilt ??
-          1978 + (seed % 38),
-      },
-      comparableSales:
-        parsed.comparableSales && parsed.comparableSales.length > 0
-          ? parsed.comparableSales
-          : demo.comparableSales,
-      schoolRating,
-      neighborhoodTrend: parsed.neighborhoodTrend ?? demo.neighborhoodTrend,
-      marketSummary: parsed.marketSummary ?? demo.marketSummary,
-    } as ValuationResult;
-  } catch {
-    // LLM unavailable, JSON parse error, network issue → fall through
-    return null;
-  }
-}
-
-// ─── Heuristic Fallback ────────────────────────────────────────
+// ─── Stage 3: Heuristic Estimate ───────────────────────────────
 
 function buildLocalizedSummary(params: {
   city: string;
@@ -709,54 +449,6 @@ function buildHeuristicEstimate({
   };
 }
 
-// ─── Image Enrichment ────────────────────────────────────────
-
-/**
- * Attach real MLS photos to comparable sales in the AI result,
- * matching by address (AI comp address → BBO comp address).
- * Also attach subject property hero image.
- */
-function enrichResultWithImages(
-  result: ValuationResult,
-  bboComps: CmaComparable[],
-  compImages: Map<string, string>,
-  subjectImageUrl: string | null,
-): ValuationResult {
-  // Build address → imageUrl map from BBO comps
-  const addrToImage = new Map<string, string>();
-  for (const comp of bboComps) {
-    const key = comp.listingKey;
-    const img = compImages.get(key);
-    if (img && comp.address) {
-      addrToImage.set(comp.address.toLowerCase().trim(), img);
-      // Also map by listingKey in case AI uses it
-      addrToImage.set(key.toLowerCase(), img);
-    }
-  }
-
-  const enrichedComps = result.comparableSales.map((sale) => {
-    // Try exact address match first
-    const addrKey = sale.address.toLowerCase().trim();
-    let imageUrl = addrToImage.get(addrKey);
-    // Fuzzy: check if any BBO comp address starts with the same street number+name
-    if (!imageUrl) {
-      for (const [bboAddr, img] of addrToImage) {
-        if (bboAddr.startsWith(addrKey.split(",")[0]) || addrKey.startsWith(bboAddr.split(",")[0])) {
-          imageUrl = img;
-          break;
-        }
-      }
-    }
-    return imageUrl ? { ...sale, imageUrl } : sale;
-  });
-
-  return {
-    ...result,
-    comparableSales: enrichedComps,
-    subjectImageUrl: subjectImageUrl ?? undefined,
-  };
-}
-
 // ─── Main Export ───────────────────────────────────────────────
 
 export async function generateHomeValueEstimate({
@@ -792,45 +484,9 @@ export async function generateHomeValueEstimate({
   const city =
     listing?.city || extractCity(address) || fallbackArea || "Local market";
 
-  // ── Stage 2: CMA comps + Neighborhood + Subject Image (parallel) ──
-  const [comps, neighborhood, subjectImageUrl] = listingKey
-    ? await Promise.all([
-        tryGetCmaComps(listingKey),
-        tryGetNeighborhood(listing?.postalCode),
-        tryGetSubjectImage(listingKey),
-      ])
-    : [[], null, null];
-
-  // ── Stage 2c: Fetch comp images in parallel ──
-  const compKeys = comps
-    .map((c) => c.listingKey)
-    .filter(Boolean);
-  const compImages = compKeys.length > 0 ? await tryGetCompImages(compKeys) : new Map<string, string>();
-
-  // ── Stage 3: AI synthesis (when we have real comps) ────────
-  if (comps.length > 0) {
-    const aiResult = await synthesizeWithAI({
-      address,
-      listing,
-      comps,
-      neighborhood,
-      locale,
-      seed,
-    });
-
-    if (aiResult) {
-      // Attach images to comps and subject
-      const enrichedResult = enrichResultWithImages(aiResult, comps, compImages, subjectImageUrl);
-      return {
-        result: enrichedResult,
-        modelUsed: "kevv-home-value-ai-v1",
-        provider: `bbo-cma(${comps.length},${neighborhood ? "neighborhood" : "no-neighborhood"})`,
-        summary: enrichedResult.marketSummary,
-        dataConfidence: "high",
-        dataSource: locale === "zh" ? "基于 MLS 真实成交数据" : "Based on MLS comparable sales data",
-      };
-    }
-  }
+  const subjectImageUrl = listingKey
+    ? await tryGetSubjectImage(listingKey)
+    : null;
 
   // If we have a listing but no comps, still better than pure heuristic
   if (listing) {

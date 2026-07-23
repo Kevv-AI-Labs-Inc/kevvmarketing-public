@@ -29,7 +29,6 @@ export interface CMAPresentation {
   subject: CMAReportResult["subject"];
   comparables: CMAReportResult["comparables"];
   marketIntelligence: CMAReportResult["marketIntelligence"];
-  neighborhood: CMAReportResult["neighborhood"];
   priceRecommendation: CMAReportResult["priceRecommendation"];
   executiveSummary: CMAReportResult["executiveSummary"];
   dataSources: string[];
@@ -63,7 +62,6 @@ export function buildCMAPresentation(
     subject: result.subject,
     comparables: result.comparables,
     marketIntelligence: result.marketIntelligence,
-    neighborhood: result.neighborhood,
     priceRecommendation: result.priceRecommendation,
     executiveSummary: result.executiveSummary,
     dataSources: result.dataSources,

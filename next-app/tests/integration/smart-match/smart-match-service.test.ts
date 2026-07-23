@@ -18,14 +18,12 @@ import { createPgMemDb } from "../../helpers/pg-mem-db";
 const {
   mockSearchListings,
   mockGetListingsBatch,
-  mockVectorSearch,
   mockGenerateEmbedding,
   mockGenerateMockEmbedding,
   mockGetEmbeddingModelId,
 } = vi.hoisted(() => ({
   mockSearchListings: vi.fn(),
   mockGetListingsBatch: vi.fn(),
-  mockVectorSearch: vi.fn(),
   mockGenerateEmbedding: vi.fn(),
   mockGenerateMockEmbedding: vi.fn(),
   mockGetEmbeddingModelId: vi.fn(),
@@ -34,7 +32,6 @@ const {
 vi.mock("@/server/clients/listingDataClient", () => ({
   searchListings: mockSearchListings,
   getListingsBatch: mockGetListingsBatch,
-  vectorSearch: mockVectorSearch,
 }));
 
 vi.mock("@/server/embeddingService", () => ({
@@ -62,7 +59,6 @@ describe("smartMatchService", () => {
     mockGenerateEmbedding.mockImplementation(async (text: string) => fakeEmbedding(text));
     mockGenerateMockEmbedding.mockImplementation((text: string) => fakeEmbedding(text));
     mockGetEmbeddingModelId.mockReturnValue("test:embedding");
-    mockVectorSearch.mockRejectedValue(new Error("vector unavailable"));
 
     return { harness, db };
   }

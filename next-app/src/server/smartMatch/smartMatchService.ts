@@ -19,14 +19,12 @@ import {
 import {
   getListingsBatch,
   searchListings,
-  vectorSearch,
 } from "@/server/clients/listingDataClient";
 import type {
   ListingData,
   SearchFilters,
-  VectorSearchResult,
 } from "@/server/clients/types";
-import { parseSearchQuery, buildSemanticText } from "./queryParser";
+import { parseSearchQuery } from "./queryParser";
 
 export type SmartMatchLocale = "zh" | "en";
 
@@ -619,15 +617,11 @@ async function structuralRetrieve(args: {
 
 // ─── Phase 2: Semantic Re-rank ────────────────────────────────
 //
-// Take the structurally-retrieved candidates and re-rank them using:
-// 1. Embedding cosine similarity (query embedding vs listing)
-// 2. Feature/lifestyle token matching
-// 3. Soft preference matching
-// 4. Negative preference penalty
+// Take the structurally-retrieved candidates and re-rank them using local
+// feature, preference, and negative-preference matching.
 
 async function semanticRerank(args: {
   candidates: ListingData[];
-  queryEmbedding: number[];
   queryText: string;
   hardFilters: SmartMatchHardFilters;
   softPreferences: string[];
@@ -637,28 +631,6 @@ async function semanticRerank(args: {
   topK: number;
   locale: SmartMatchLocale;
 }): Promise<MatchCandidate[]> {
-  // Try to get vector similarities for the candidates (batch)
-  let vectorScores = new Map<string, number>();
-
-  try {
-    const vectorResponse = await vectorSearch({
-      embedding: args.queryEmbedding,
-      topK: Math.min(args.candidates.length, 50),
-      filters: toSearchFilters(args.hardFilters),
-    });
-
-    if (vectorResponse.data?.length > 0) {
-      vectorScores = new Map(
-        vectorResponse.data.map((item: VectorSearchResult) => [
-          item.listing.listingKey,
-          item.score,
-        ]),
-      );
-    }
-  } catch {
-    // Vector search unavailable — proceed with local scoring only
-  }
-
   const scored = args.candidates.map((listing) => {
     const candidate = scoreListing({
       listing,
@@ -669,7 +641,7 @@ async function semanticRerank(args: {
       lifestyle: args.lifestyle,
       queryText: args.queryText,
       locale: args.locale,
-      vectorSimilarity: vectorScores.get(listing.listingKey) ?? null,
+      vectorSimilarity: null,
     });
     return candidate;
   });
@@ -681,11 +653,9 @@ async function semanticRerank(args: {
   return enrichImages(topResults);
 }
 
-// ─── Legacy Retrieve (vector-first, fallback to search) ──────
-// Kept for backward compatibility with contact-based matching
+// ─── Contact-based structured retrieve ───────────────────────
 
 async function retrieveCandidatesLegacy(args: {
-  queryEmbedding: number[];
   queryText: string;
   hardFilters: SmartMatchHardFilters;
   softPreferences: string[];
@@ -693,49 +663,6 @@ async function retrieveCandidatesLegacy(args: {
   topK: number;
   locale: SmartMatchLocale;
 }) {
-  const filters = toSearchFilters(args.hardFilters);
-
-  try {
-    const response = await vectorSearch({
-      embedding: args.queryEmbedding,
-      topK: Math.min(Math.max(args.topK * 4, 20), 50),
-      filters,
-    });
-
-    if ((response.data ?? []).length > 0) {
-      const ranked = response.data
-        .map((item: VectorSearchResult) => {
-          const candidate = scoreListing({
-            listing: item.listing,
-            hardFilters: args.hardFilters,
-            softPreferences: args.softPreferences,
-            negativePreferences: args.negativePreferences,
-            features: [],
-            lifestyle: [],
-            queryText: args.queryText,
-            locale: args.locale,
-            vectorSimilarity: item.score,
-          });
-
-          return {
-            ...candidate,
-            images: item.media?.slice(0, 5).map((media) => media.mediaURL) ?? [],
-          };
-        })
-        .sort((a, b) => b.finalScore - a.finalScore)
-        .slice(0, args.topK);
-
-      return {
-        retrievalSource: "vector" as const,
-        candidateCount: response.data.length,
-        items: ranked,
-      };
-    }
-  } catch {
-    // Fall back to structured search.
-  }
-
-  // Fallback: use two-phase retrieve → re-rank
   const { listings } = await structuralRetrieve({
     hardFilters: args.hardFilters,
     topK: args.topK,
@@ -743,7 +670,6 @@ async function retrieveCandidatesLegacy(args: {
 
   const reranked = await semanticRerank({
     candidates: listings,
-    queryEmbedding: args.queryEmbedding,
     queryText: args.queryText,
     hardFilters: args.hardFilters,
     softPreferences: args.softPreferences,
@@ -900,7 +826,6 @@ export async function generateSmartMatch(
         .returning();
 
   const retrieval = await retrieveCandidatesLegacy({
-    queryEmbedding,
     queryText,
     hardFilters,
     softPreferences: preferenceSummary.softPreferences,
@@ -1069,14 +994,9 @@ export async function generateNLSearch(
     candidateMultiplier: 5,
   });
 
-  // ── Step 3: Generate Embedding (~200-300ms) ─────────────
-  const semanticText = buildSemanticText(parsed);
-  const queryEmbedding = await generateEmbedding(semanticText);
-
-  // ── Step 4: Semantic Re-rank (~50-100ms) ────────────────
+  // ── Step 3: Local preference re-rank ─────────────────────
   const reranked = await semanticRerank({
     candidates: listings,
-    queryEmbedding,
     queryText: input.query,
     hardFilters,
     softPreferences,
@@ -1089,7 +1009,7 @@ export async function generateNLSearch(
 
   const processingMs = Date.now() - startedAt;
 
-  // ── Step 5: Persist run for analytics ───────────────────
+  // ── Step 4: Persist run for analytics ───────────────────
   const [run] = await db
     .insert(smartMatchRuns)
     .values({

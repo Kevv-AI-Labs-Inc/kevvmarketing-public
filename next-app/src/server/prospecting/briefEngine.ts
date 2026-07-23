@@ -2,7 +2,7 @@
  * Prospect Brief Engine — Data gathering → LLM call → Parse response.
  *
  * Generates AI-powered pitch packages for expired/FSBO listings.
- * Data pipeline: listing lookup → comps search → LLM generation → structured parse.
+ * Data pipeline: listing lookup → LLM generation → structured parse.
  */
 
 import { randomUUID } from "crypto";
@@ -122,45 +122,10 @@ export async function resolveListing(
   return { type: "not_found" };
 }
 
-/**
- * Fetch comparable sales for a listing via BBO vector search.
- * Returns ListingData-shaped objects for prompt building.
- */
-async function fetchComps(listing: ListingData): Promise<ListingData[]> {
-  try {
-    const res = await listingDataClient.getCmaByListing(listing.listingKey, 5);
-    // Map CmaComparable back to ListingData shape for prompt compatibility
-    return res.data.comparables.map((c) => ({
-      listingKey: c.listingKey,
-      listingId: c.listingId ?? "",
-      standardStatus: c.status ?? "Closed",
-      unparsedAddress: c.address ?? "Unknown",
-      city: c.city ?? "",
-      stateOrProvince: "",
-      postalCode: c.postalCode ?? "",
-      latitude: "",
-      longitude: "",
-      listPrice: c.price ?? "0",
-      closePrice: c.price ?? undefined,
-      propertyType: c.propertyType ?? "",
-      bedroomsTotal: c.bedrooms,
-      bathroomsTotalInteger: c.bathrooms,
-      livingArea: c.livingArea ?? "",
-      publicRemarks: "",
-      listAgentFullName: "",
-      listOfficeName: "",
-    }));
-  } catch (err) {
-    console.warn("[briefEngine] Comps unavailable:", (err as Error).message);
-    return [];
-  }
-}
-
 // ─── LLM Prompt ───────────────────────────────────────────
 
 function buildPrompt(
   listing: ListingData,
-  comps: ListingData[],
   tone: BriefTone,
   language: BriefLanguage
 ): string {
@@ -176,16 +141,6 @@ function buildPrompt(
   const agent = listing.listAgentFullName ?? "unknown";
   const office = listing.listOfficeName ?? "unknown";
   const propertyType = listing.propertyType ?? "unknown";
-
-  const compsSection =
-    comps.length > 0
-      ? comps
-          .map(
-            (c, i) =>
-              `Comp ${i + 1}: ${c.unparsedAddress}, ${c.city} — $${c.closePrice ?? c.listPrice}, ${c.bedroomsTotal ?? "?"}bd/${c.bathroomsTotalInteger ?? "?"}ba, ${c.livingArea ?? "?"}sqft, closed ${c.closeDate ?? "unknown"}`
-          )
-          .join("\n")
-      : "No comparable sales data available. Note this in your analysis.";
 
   const toneInstructions = {
     professional:
@@ -213,9 +168,6 @@ function buildPrompt(
 - Property: ${propertyType}, ${beds}bd/${baths}ba, ${sqft} sqft, built ${yearBuilt}
 - Listing Agent: ${agent} (${office})
 - Remarks: ${remarks}
-
-## Comparable Sales
-${compsSection}
 
 ## Instructions
 ${langInstruction}
@@ -253,9 +205,9 @@ Generate the following sections as valid JSON (and nothing else):
 Requirements:
 - Provide exactly 3 pitch angles ranked by confidence (0-100)
 - Provide exactly 3 objection handlers
-- Base diagnosis on actual listing data and comps, not generic advice
+- Base diagnosis on the actual listing data, not generic advice
 - Scripts must reference specific details from this listing (price, DOM, neighborhood)
-- If comps are unavailable, note it in diagnosis but still generate useful angles based on listing data`;
+- Do not claim access to comparable sales that were not provided`;
 }
 
 // ─── Parse LLM Response ───────────────────────────────────
@@ -297,7 +249,7 @@ function parseBriefResponse(raw: string): {
 
 /**
  * Generate a Prospect Brief for a listing.
- * Pipeline: resolve listing → fetch comps → LLM → parse → return.
+ * Pipeline: resolve listing → LLM → parse → return.
  */
 export async function generateBrief(
   input: GenerateBriefInput
@@ -324,11 +276,8 @@ export async function generateBrief(
   const { listing } = resolution;
   const listingData = listing.data;
 
-  // Step 2: Fetch comps (10s timeout, degrades gracefully)
-  const comps = await fetchComps(listingData);
-
-  // Step 3: Build prompt and call LLM
-  const prompt = buildPrompt(listingData, comps, tone, language);
+  // Step 2: Build prompt and call LLM
+  const prompt = buildPrompt(listingData, tone, language);
 
   const llmResult = await invokeLLM({
     task: "prospecting",
@@ -344,7 +293,7 @@ export async function generateBrief(
       ? llmResult.choices[0].message.content
       : "";
 
-  // Step 4: Parse response
+  // Step 3: Parse response
   const parsed = parseBriefResponse(rawResponse);
 
   return {
@@ -364,8 +313,8 @@ export async function generateBrief(
       yearBuilt: listingData.yearBuilt,
       listAgentFullName: listingData.listAgentFullName,
       listOfficeName: listingData.listOfficeName,
-      compsCount: comps.length,
-      compsAvailable: comps.length > 0,
+      compsCount: 0,
+      compsAvailable: false,
     },
     diagnosis: parsed.diagnosis,
     pitchAngles: parsed.pitchAngles,

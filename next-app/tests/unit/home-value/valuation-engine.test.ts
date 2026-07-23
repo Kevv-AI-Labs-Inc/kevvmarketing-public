@@ -6,8 +6,7 @@ import { resolveByAddress } from "@/server/clients/listingDataClient";
 
 vi.mock("@/server/clients/listingDataClient", () => ({
   resolveByAddress: vi.fn(),
-  getCmaByListing: vi.fn(),
-  getNeighborhoodSummary: vi.fn(),
+  getListingMedia: vi.fn(),
 }));
 
 describe("generateHomeValueEstimate", () => {

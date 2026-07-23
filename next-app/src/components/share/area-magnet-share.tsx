@@ -279,7 +279,6 @@ export default function AreaMagnetShare({
   const capture = asRecord(magnetPayload.capture) ?? {};
   const shareKit = asRecord(magnetPayload.shareKit) ?? {};
   const snapshotData = asRecord(magnetPayload.snapshot) ?? {};
-  const neighborhoodData = asRecord(magnetPayload.neighborhood) ?? {};
   const scopeLabel =
     getString(magnetPayload.scopeLabel) ||
     getString(asRecord(data.magnetScope)?.normalizedLabel) ||

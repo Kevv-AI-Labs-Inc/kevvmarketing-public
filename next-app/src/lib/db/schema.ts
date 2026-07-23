@@ -748,10 +748,8 @@ export const shareLeads = pgTable("share_leads", {
 });
 
 // ============================================================
-// AI-Native Tables — Neighborhoods, Deal Stories, Showing Feedback
+// AI-Native Tables — Deal Stories and Showing Feedback
 // ============================================================
-
-// NOTE: neighborhoods table has been moved to listing-data-service.
 
 /**
  * Deal stories — completed transaction narratives.
@@ -1251,7 +1249,7 @@ export const cmaReports = pgTable("cma_reports", {
   compCount: integer("comp_count").default(0),
   // number of comparable sales found
   dataSources: jsonb("data_sources").$type<string[]>().default([]),
-  // e.g. ["bbo_vector", "tavily_web_search", "photo_analysis", "bbo_neighborhood"]
+  // e.g. ["rentcast_avm", "rentcast_comps", "tavily_web_search", "photo_analysis"]
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

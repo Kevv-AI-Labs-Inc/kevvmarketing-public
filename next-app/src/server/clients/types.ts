@@ -112,28 +112,8 @@ export interface AddressCandidatesResponse {
   data: AddressCandidate[];
 }
 
-// ─── CMA Types ─────────────────────────────────────────────────
-
 /**
- * The subject listing summary returned inside a CMA response.
- * Mirrors BBO's `CmaSubject` shape from apiPlatformService.ts.
- */
-export interface CmaSubject {
-  listingKey: string | null;
-  listingId: string | null;
-  address: string | null;
-  city: string | null;
-  postalCode: string | null;
-  price: string | null;          // listPrice (or closePrice for closed)
-  propertyType: string | null;
-  bedrooms: number | null;
-  bathrooms: number | null;
-  livingArea: string | null;
-}
-
-/**
- * One comparable sale returned inside a CMA response.
- * score = cosine similarity from vector search (null if SQL fallback).
+ * One comparable sale used by the marketing-app CMA pipeline.
  */
 export interface CmaComparable {
   listingKey: string;
@@ -148,66 +128,9 @@ export interface CmaComparable {
   livingArea: string | null;
   yearBuilt: number | null;
   status: string | null;
-  score: number | null;          // vector similarity score (0-1)
+  score: number | null;
   soldDate?: string | null;      // close date for sold comps
-  source?: "bbo_vector" | "bbo_search" | "rentcast"; // origin of this comp
-}
-
-/**
- * Response from POST /api/internal/cma/by-listing
- */
-export interface CmaByListingResponse {
-  data: {
-    subject: CmaSubject;
-    comparables: CmaComparable[];
-    source: "vector" | "sql_fallback";
-  };
-  meta: {
-    total: number;
-    source: "vector" | "sql_fallback";
-  };
-}
-
-// ─── Neighborhood Types ────────────────────────────────────────
-
-/**
- * Response from GET /api/internal/neighborhoods/:zipCode/summary
- * Mirrors BBO's neighborhoods DB row (drizzle/schema.ts).
- */
-export interface NeighborhoodSummary {
-  id: number;
-  zipCode: string;
-  city: string | null;
-  stateOrProvince: string | null;
-  county: string | null;
-  name: string | null;
-  schoolRating: number | null;      // 1-10
-  walkScore: number | null;         // 0-100
-  crimeIndex: number | null;        // lower = safer
-  medianHomePrice: string | null;   // e.g. "850000"
-  medianHouseholdIncome: string | null;
-  populationDensity: number | null;
-  medianAge: number | null;
-  profileText: string | null;       // AI-generated neighbourhood description
-  highlights: unknown;              // jsonb array of bullet strings
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ─── Vector Search (legacy / direct embedding path) ───────────
-
-export interface VectorSearchResult {
-  listing: ListingData;
-  score: number;
-  media: MediaItem[];
-}
-
-export interface VectorSearchResponse {
-  data: VectorSearchResult[];
-  meta: {
-    total: number;
-    embeddingModel: string;
-  };
+  source?: "rentcast";
 }
 
 // ─── Other Response Types ──────────────────────────────────────
@@ -252,12 +175,6 @@ export interface ProximitySearchInput {
   longitude: number;
   radiusKm?: number;
   limit?: number;
-}
-
-export interface VectorSearchParams {
-  embedding: number[];
-  topK?: number;
-  filters?: SearchFilters;
 }
 
 // ─── API Error ─────────────────────────────────────────────────
